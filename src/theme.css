@@ -58,40 +58,23 @@ body {
 
 /* ---------- Taskbar ---------- */
 .taskbar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: calc(100vh * 1.5 / 24);
-  width: 100%;
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  z-index: 9000;
-  background-image:
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 9000;
+  height: calc(100vh * 1.5 / 24); padding: 0 12px; overflow: visible;
+  background:
     linear-gradient(to bottom, var(--c4) 0%, transparent 18%),
-    linear-gradient(to top, var(--c5) 30%, transparent 40%),
-    linear-gradient(to right, var(--c6) 40%, var(--c5) 35%, var(--c1) 30%);
-  border-top: 1.5px solid
-    color-mix(in srgb, white 25%, color-mix(in srgb, var(--c1) 35%, transparent));
+    linear-gradient(to top, color-mix(in srgb, var(--c5) 30%, transparent) 0%, transparent 40%),
+    linear-gradient(to right, color-mix(in srgb, var(--c6) 40%, transparent) 0%, color-mix(in srgb, var(--c5) 35%, transparent) 50%, color-mix(in srgb, var(--c1) 30%, transparent) 100%);
+  border-top: 1.5px solid color-mix(in srgb, white 25%, color-mix(in srgb, var(--c1) 35%, transparent));
   backdrop-filter: var(--blur-taskbar);
   -webkit-backdrop-filter: var(--blur-taskbar);
-  box-shadow:
-    0 -2px 24px color-mix(in srgb, var(--c1) 25%, transparent),
-    inset 0 1px 0 var(--white-hi-soft);
+  box-shadow: 0 -2px 24px color-mix(in srgb, var(--c1) 25%, transparent), 0 -1px 0 var(--c4) inset, inset 0 2px 12px var(--white-hi-soft), inset 0 -2px 8px color-mix(in srgb, var(--c5) 20%, rgba(0,0,0,0.15));
+  display: flex; align-items: center; justify-content: flex-end;
 }
 
 .taskbar::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 5%;
-  right: 5%;
-  height: 1px;
-  background: linear-gradient(to right, transparent, var(--c5), transparent);
-  opacity: 0.25;
-  pointer-events: none;
+  content: ''; position: absolute; top: 0; left: 5%; right: 5%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--c5) 30%, var(--c5) 70%, transparent);
+  opacity: 0.25; pointer-events: none;
 }
 
 .taskbar-start {

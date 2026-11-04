@@ -14,10 +14,10 @@ export default function Taskbar() {
     hour12: false,
   });
 
-  const date = now.toLocaleDateString('pt-BR', {
+  const date = now.toLocaleDateString([], {
+    weekday: 'short',
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric',
   });
 
   return (
