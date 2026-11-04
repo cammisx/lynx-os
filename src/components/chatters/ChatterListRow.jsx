@@ -1,6 +1,15 @@
 import { PencilIcon, TrashIcon } from '@/components/icons';
 
-export default function ChatterListRow({ chatter, onEdit, onDelete }) {
+const formatCommission = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const num = Number(value);
+  if (Number.isNaN(num)) return null;
+  return `${Number.isInteger(num) ? num : num.toFixed(1)}%`;
+};
+
+export default function ChatterListRow({ chatter, displayName, user, onEdit, onRemove }) {
+  const commission = chatter ? formatCommission(chatter.comissao) : null;
+
   return (
     <div
       className="md-row"
@@ -25,7 +34,7 @@ export default function ChatterListRow({ chatter, onEdit, onDelete }) {
             textOverflow: 'ellipsis',
           }}
         >
-          {chatter.nome_exibicao || 'Sem nome'}
+          {displayName}
         </span>
         <span
           style={{
@@ -36,33 +45,39 @@ export default function ChatterListRow({ chatter, onEdit, onDelete }) {
             textOverflow: 'ellipsis',
           }}
         >
-          {chatter.usuario_email || '—'}
+          {user?.email || chatter?.usuario_email || '—'}
         </span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--c1)' }}>
-          {`${Number(chatter.comissao ?? 0)}%`}
-        </span>
+        {commission ? (
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--c1)' }}>{commission}</span>
+        ) : (
+          <span style={{ fontSize: 11, color: 'var(--c2)', opacity: 0.6 }}>sem comissão</span>
+        )}
+
         <div style={{ display: 'flex', gap: 6 }}>
           <button
             type="button"
             className="md-icon-btn"
             title="Editar"
             aria-label="Editar"
-            onClick={() => onEdit(chatter)}
+            onClick={onEdit}
           >
             <PencilIcon size={15} />
           </button>
-          <button
-            type="button"
-            className="md-icon-btn md-icon-danger"
-            title="Excluir"
-            aria-label="Excluir"
-            onClick={() => onDelete(chatter)}
-          >
-            <TrashIcon size={15} />
-          </button>
+
+          {chatter && (
+            <button
+              type="button"
+              className="md-icon-btn md-icon-danger"
+              title="Remover comissão"
+              aria-label="Remover comissão"
+              onClick={onRemove}
+            >
+              <TrashIcon size={15} />
+            </button>
+          )}
         </div>
       </div>
     </div>

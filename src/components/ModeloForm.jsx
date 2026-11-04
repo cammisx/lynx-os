@@ -73,7 +73,7 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
     try {
       const members = chosen.map((chatter) => ({
         usuario_id: chatter.usuario_id,
-        usuario_nome: chatter.nome_exibicao || chatter.usuario_email || '',
+        usuario_nome: chatter.nome,
         identificador: ids[chatter.usuario_id] || '',
       }));
       if (model) {
@@ -121,7 +121,7 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
           {chatters.map((chatter) => (
             <ChatterRow
               key={chatter.usuario_id}
-              nome={chatter.nome_exibicao || chatter.usuario_email}
+              nome={chatter.nome}
               checked={selected.has(chatter.usuario_id)}
               identificador={ids[chatter.usuario_id] || ''}
               error={errors[chatter.usuario_id]}

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import GlassSelect from '@/components/GlassSelect';
 
 const inputStyle = {
   width: '100%',
@@ -17,51 +16,28 @@ const inputStyle = {
 
 const labelStyle = { fontSize: 10, color: 'var(--c2)', opacity: 0.7 };
 
-const suggestion = (user) => {
-  const words = String(user?.full_name || '').trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return user?.email || '';
-  if (words.length === 1) return words[0];
-  return `${words[0]} ${words[words.length - 1]}`;
+const cleanCommission = (value) => {
+  const normalized = value.replace(',', '.').replace(/[^\d.]/g, '');
+  const [int, ...rest] = normalized.split('.');
+  if (rest.length === 0) return int.slice(0, 3);
+  return `${int.slice(0, 3)}.${rest.join('').slice(0, 1)}`;
 };
 
-export default function ChatterForm({ chatter, users, onCancel, onSaved }) {
-  const [usuarioId, setUsuarioId] = useState(chatter?.usuario_id || '');
-  const [nome, setNome] = useState(chatter?.nome_exibicao || '');
+export default function ChatterForm({ user, chatter, onCancel, onSaved }) {
+  const [nome, setNome] = useState(
+    chatter?.nome_exibicao || user?.full_name || user?.email || ''
+  );
   const [comissao, setComissao] = useState(
     chatter && chatter.comissao !== undefined && chatter.comissao !== null ? String(chatter.comissao) : ''
   );
-  const [edited, setEdited] = useState(!!chatter);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-
-  const options = chatter
-    ? [
-        {
-          value: chatter.usuario_id,
-          label: chatter.nome_exibicao || chatter.usuario_email || 'Chatter',
-          sublabel: chatter.usuario_email,
-        },
-      ]
-    : users.map((user) => ({
-        value: user.id,
-        label: user.full_name || user.email,
-        sublabel: user.email,
-      }));
-
-  const selectUser = (id) => {
-    setUsuarioId(id);
-    if (!edited) setNome(suggestion(users.find((user) => user.id === id)));
-  };
 
   const save = async () => {
     if (saving) return;
     const cleanName = nome.trim();
     const parsed = Number(String(comissao).replace(',', '.'));
 
-    if (!chatter && !usuarioId) {
-      setError('Selecione um usuário.');
-      return;
-    }
     if (!cleanName) {
       setError('Informe o nome de exibição.');
       return;
@@ -73,22 +49,17 @@ export default function ChatterForm({ chatter, users, onCancel, onSaved }) {
 
     setError('');
     setSaving(true);
+    const payload = {
+      usuario_id: user.id,
+      usuario_email: user.email || '',
+      nome_exibicao: cleanName,
+      comissao: Math.round(parsed * 10) / 10,
+      ativo: true,
+    };
+
     try {
-      if (chatter) {
-        await base44.entities.Chatter.update(chatter.id, {
-          nome_exibicao: cleanName,
-          comissao: parsed,
-        });
-      } else {
-        const user = users.find((item) => item.id === usuarioId);
-        await base44.entities.Chatter.create({
-          usuario_id: usuarioId,
-          usuario_email: user?.email || '',
-          nome_exibicao: cleanName,
-          comissao: parsed,
-          ativo: true,
-        });
-      }
+      if (chatter) await base44.entities.Chatter.update(chatter.id, payload);
+      else await base44.entities.Chatter.create(payload);
       await onSaved();
     } finally {
       setSaving(false);
@@ -97,15 +68,11 @@ export default function ChatterForm({ chatter, users, onCancel, onSaved }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontFamily: 'var(--font-main)' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <span style={labelStyle}>Usuário</span>
-        <GlassSelect
-          value={usuarioId}
-          options={options}
-          onChange={selectUser}
-          placeholder="Selecione um usuário"
-          disabled={!!chatter}
-        />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--c3)' }}>
+          {user?.full_name || user?.email}
+        </span>
+        <span style={{ fontSize: 11, color: 'var(--c2)' }}>{user?.email}</span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -113,10 +80,7 @@ export default function ChatterForm({ chatter, users, onCancel, onSaved }) {
         <input
           style={inputStyle}
           value={nome}
-          onChange={(event) => {
-            setEdited(true);
-            setNome(event.target.value);
-          }}
+          onChange={(event) => setNome(event.target.value)}
           placeholder="Ex.: Ana"
         />
       </div>
@@ -127,7 +91,7 @@ export default function ChatterForm({ chatter, users, onCancel, onSaved }) {
           <input
             style={{ ...inputStyle, paddingRight: 26 }}
             value={comissao}
-            onChange={(event) => setComissao(event.target.value.replace(/[^\d.,]/g, ''))}
+            onChange={(event) => setComissao(cleanCommission(event.target.value))}
             inputMode="decimal"
             placeholder="0"
           />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
@@ -8,23 +8,27 @@ import ArchivedSection from '@/components/models/ArchivedSection';
 import ArchiveDialog from '@/components/models/ArchiveDialog';
 import { UsersIcon, PlusIcon } from '@/components/icons';
 import { emitModelsChanged } from '@/lib/desktopEvents';
+import { buildChatterNames } from '@/lib/chatterNames';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
 export default function ModelosWindow({ onClose }) {
   const [models, setModels] = useState([]);
   const [chatters, setChatters] = useState([]);
+  const [users, setUsers] = useState([]);
   const [form, setForm] = useState(null);
   const [pendingArchive, setPendingArchive] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
 
   const load = async () => {
-    const [modelResult, chatterResult] = await Promise.all([
+    const [modelResult, chatterResult, userResult] = await Promise.all([
       base44.entities.Modelo.list(),
       base44.entities.Chatter.list(),
+      base44.entities.User.list(),
     ]);
     setModels(asList(modelResult));
     setChatters(asList(chatterResult));
+    setUsers(asList(userResult));
   };
 
   useEffect(() => {
@@ -65,6 +69,14 @@ export default function ModelosWindow({ onClose }) {
     await afterChange();
   };
 
+  const chatterOptions = useMemo(() => {
+    const names = buildChatterNames(chatters);
+    return users.map((user) => ({
+      usuario_id: user.id,
+      nome: names[user.id] || user.full_name || user.email || '',
+    }));
+  }, [users, chatters]);
+
   const activeModels = models.filter((model) => !model.arquivada);
   const archivedModels = models.filter((model) => model.arquivada);
 
@@ -73,7 +85,7 @@ export default function ModelosWindow({ onClose }) {
       <Window title="Modelos" icon={UsersIcon} onClose={onClose} width={620} height={470}>
         {form ? (
           <ModeloForm
-            chatters={chatters}
+            chatters={chatterOptions}
             model={form === 'new' ? null : form}
             onCancel={() => setForm(null)}
             onSaved={afterChange}
