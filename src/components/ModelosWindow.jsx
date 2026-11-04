@@ -3,7 +3,10 @@ import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
 import ModeloForm from '@/components/ModeloForm';
-import { UsersIcon, PlusIcon, PencilIcon, TrashIcon } from '@/components/icons';
+import ModeloRow from '@/components/models/ModeloRow';
+import ArchivedSection from '@/components/models/ArchivedSection';
+import ArchiveDialog from '@/components/models/ArchiveDialog';
+import { UsersIcon, PlusIcon } from '@/components/icons';
 import { emitModelsChanged } from '@/lib/desktopEvents';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
@@ -12,6 +15,7 @@ export default function ModelosWindow({ onClose }) {
   const [models, setModels] = useState([]);
   const [chatters, setChatters] = useState([]);
   const [form, setForm] = useState(null);
+  const [pendingArchive, setPendingArchive] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
 
   const load = async () => {
@@ -33,12 +37,36 @@ export default function ModelosWindow({ onClose }) {
     emitModelsChanged();
   };
 
+  const archiveModel = async () => {
+    if (!pendingArchive) return;
+    await base44.entities.Modelo.update(pendingArchive.id, {
+      arquivada: true,
+      arquivada_em: new Date().toISOString(),
+    });
+    setPendingArchive(null);
+    await afterChange();
+  };
+
+  const restoreModel = async (model) => {
+    await base44.entities.Modelo.update(model.id, { arquivada: false, arquivada_em: null });
+    await afterChange();
+  };
+
+  const openDelete = async (model) => {
+    const result = await base44.entities.Shift.filter({ modelo_id: model.id }, { limit: 500 });
+    setPendingDelete({ model, count: asList(result).length });
+  };
+
   const removeModel = async () => {
     if (!pendingDelete) return;
-    await base44.entities.Modelo.delete(pendingDelete.id);
+    await base44.entities.Shift.deleteMany({ modelo_id: pendingDelete.model.id });
+    await base44.entities.Modelo.delete(pendingDelete.model.id);
     setPendingDelete(null);
     await afterChange();
   };
+
+  const activeModels = models.filter((model) => !model.arquivada);
+  const archivedModels = models.filter((model) => model.arquivada);
 
   return (
     <>
@@ -74,62 +102,38 @@ export default function ModelosWindow({ onClose }) {
               </button>
             </div>
 
-            {models.length === 0 && (
+            {activeModels.length === 0 && (
               <span style={{ fontSize: 11, color: 'var(--c2)', opacity: 0.6 }}>
                 Nenhuma modelo cadastrada ainda.
               </span>
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {models.map((model) => (
-                <div
+              {activeModels.map((model) => (
+                <ModeloRow
                   key={model.id}
-                  className="md-row"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 10,
-                    padding: '8px 10px',
-                    borderRadius: 8,
-                    border: '1px solid color-mix(in srgb, var(--c2) 10%, transparent)',
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--c3)' }}>
-                      {model.nome}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'var(--c2)' }}>
-                      {(model.chatters || []).length} chatters
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    <button
-                      type="button"
-                      className="md-icon-btn"
-                      title="Editar"
-                      aria-label="Editar"
-                      onClick={() => setForm(model)}
-                    >
-                      <PencilIcon size={15} />
-                    </button>
-                    <button
-                      type="button"
-                      className="md-icon-btn md-icon-danger"
-                      title="Excluir"
-                      aria-label="Excluir"
-                      onClick={() => setPendingDelete(model)}
-                    >
-                      <TrashIcon size={15} />
-                    </button>
-                  </div>
-                </div>
+                  model={model}
+                  onEdit={setForm}
+                  onArchive={setPendingArchive}
+                  onDelete={openDelete}
+                />
               ))}
             </div>
+
+            <ArchivedSection models={archivedModels} onRestore={restoreModel} />
           </div>
         )}
       </Window>
+
+      {pendingArchive &&
+        createPortal(
+          <ArchiveDialog
+            model={pendingArchive}
+            onCancel={() => setPendingArchive(null)}
+            onConfirm={archiveModel}
+          />,
+          document.body
+        )}
 
       {pendingDelete &&
         createPortal(
@@ -146,7 +150,7 @@ export default function ModelosWindow({ onClose }) {
           >
             <div
               style={{
-                width: 320,
+                width: 340,
                 background: 'color-mix(in srgb, var(--c8) 72%, transparent)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
@@ -161,7 +165,12 @@ export default function ModelosWindow({ onClose }) {
               }}
             >
               <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--c3)' }}>
-                Excluir “{pendingDelete.nome}”?
+                Excluir “{pendingDelete.model.nome}”?
+              </p>
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--c2)', lineHeight: 1.5 }}>
+                {pendingDelete.count > 0
+                  ? `${pendingDelete.count} ${pendingDelete.count === 1 ? 'turno será apagado' : 'turnos serão apagados'} junto com ela.`
+                  : 'Esta modelo não tem turnos salvos.'}
               </p>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button

@@ -166,14 +166,23 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
   const visibleModels = useMemo(() => {
     const isAdmin = user?.role === 'admin';
     return models.filter(
-      (model) => isAdmin || (model.chatters || []).some((chatter) => chatter.usuario_id === userId)
+      (model) =>
+        !model.arquivada &&
+        (isAdmin || (model.chatters || []).some((chatter) => chatter.usuario_id === userId))
     );
   }, [models, user, userId]);
+
+  const archivedModels = useMemo(() => models.filter((model) => model.arquivada), [models]);
 
   const tabs = useMemo(
     () => [{ id: 'agenda', label: 'Minha Agenda' }, ...visibleModels.map((model) => ({ id: model.id, label: model.nome }))],
     [visibleModels]
   );
+
+  useEffect(() => {
+    if (!open || activeTab === 'agenda') return;
+    if (!visibleModels.some((model) => model.id === activeTab)) setActiveTab('agenda');
+  }, [open, activeTab, visibleModels]);
 
   const activeShift = useMemo(
     () => ownShifts.find((shift) => shift.status === 'em_andamento') || null,
@@ -190,13 +199,21 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
   }, [ownShifts]);
 
   const gridShifts = useMemo(() => {
-    if (activeTab === 'agenda') return weekShifts.filter((shift) => shift.usuario_id === userId);
+    const base = weekShifts.filter((shift) => {
+      if (archivedModels.some((model) => model.id === shift.modelo_id)) return false;
+      if (!shift.modelo_id) {
+        return !archivedModels.some((model) => model.nome === shift.modelo_nome);
+      }
+      return true;
+    });
+
+    if (activeTab === 'agenda') return base.filter((shift) => shift.usuario_id === userId);
     const model = visibleModels.find((item) => item.id === activeTab);
     if (!model) return [];
-    return weekShifts.filter(
+    return base.filter(
       (shift) => shift.modelo_id === model.id || (!shift.modelo_id && shift.modelo_nome === model.nome)
     );
-  }, [weekShifts, activeTab, userId, visibleModels]);
+  }, [weekShifts, activeTab, userId, visibleModels, archivedModels]);
 
   const punchIn = async () => {
     if (!nextShift) return;

@@ -87,6 +87,26 @@ export function TrashIcon({ size = 16, className }) {
   );
 }
 
+export function ArchiveIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <rect x="3" y="4" width="18" height="4" rx="1" />
+      <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
+      <line x1="10" y1="12" x2="14" y2="12" />
+    </Svg>
+  );
+}
+
+export function MoreIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
+    </Svg>
+  );
+}
+
 export function CloseIcon({ size = 16, className }) {
   return (
     <Svg size={size} className={className}>

@@ -297,6 +297,10 @@ body {
   color: #ff6b6b;
 }
 
+.md-restore:hover {
+  background-color: color-mix(in srgb, var(--c1) 12%, transparent);
+}
+
 .rp-chip {
   transition: background-color 0.12s, border-color 0.12s, color 0.12s;
 }

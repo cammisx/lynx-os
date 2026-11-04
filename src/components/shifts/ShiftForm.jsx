@@ -29,8 +29,12 @@ const atHour = (date, hour) => {
 };
 
 export default function ShiftForm({ users, models, shift, defaultDate, onCancel, onSaved }) {
+  const shiftModel = shift?.modelo_id ? models.find((item) => item.id === shift.modelo_id) : null;
+  const archivedModel = shiftModel?.arquivada ? shiftModel : null;
+  const activeModels = models.filter((model) => !model.arquivada);
+
   const [usuarioId, setUsuarioId] = useState(shift?.usuario_id || '');
-  const [modeloId, setModeloId] = useState(shift?.modelo_id || '');
+  const [modeloId, setModeloId] = useState(archivedModel ? '' : shift?.modelo_id || '');
   const [inicio, setInicio] = useState(() =>
     shift?.inicio ? new Date(shift.inicio) : atHour(defaultDate || new Date(), 8)
   );
@@ -133,12 +137,17 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
           onChange={(event) => setModeloId(event.target.value)}
         >
           <option value="">Selecione…</option>
-          {models.map((model) => (
+          {activeModels.map((model) => (
             <option key={model.id} value={model.id}>
               {model.nome}
             </option>
           ))}
         </select>
+        {archivedModel && !modeloId && (
+          <span style={{ fontSize: 11, color: '#ff6b6b' }}>
+            A modelo deste turno está arquivada, escolha outra
+          </span>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: 8 }}>

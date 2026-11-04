@@ -89,6 +89,7 @@ const weekLabelStyle = {
 export default function TurnosWindow({ onClose }) {
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()));
   const [modelFilter, setModelFilter] = useState('todas');
+  const [showArchived, setShowArchived] = useState(false);
   const [shifts, setShifts] = useState([]);
   const [models, setModels] = useState([]);
   const [users, setUsers] = useState([]);
@@ -115,7 +116,7 @@ export default function TurnosWindow({ onClose }) {
       inicio: { $lt: weekEnd.toISOString() },
       fim: { $gt: new Date(weekStartMs).toISOString() },
     };
-    if (modelFilter !== 'todas') query.modelo_id = modelFilter;
+    if (modelFilter !== 'todas' && modelFilter !== 'arquivadas') query.modelo_id = modelFilter;
     const result = await base44.entities.Shift.filter(query, { sort: 'inicio', limit: 200 });
     setShifts(asList(result));
   };
@@ -143,6 +144,18 @@ export default function TurnosWindow({ onClose }) {
   };
 
   const chatterNames = buildChatterNames(chatters);
+  const archivedModels = models.filter((model) => model.arquivada);
+  const isArchivedShift = (shift) => {
+    if (archivedModels.some((model) => model.id === shift.modelo_id)) return true;
+    return !shift.modelo_id && archivedModels.some((model) => model.nome === shift.modelo_nome);
+  };
+
+  const visibleShifts = shifts.filter((shift) => {
+    if (modelFilter === 'arquivadas') return isArchivedShift(shift);
+    if (showArchived) return true;
+    return !isArchivedShift(shift);
+  });
+
   const days = Array.from({ length: 7 }, (_, i) => addDays(anchor, i));
   const range = `${shortDate(days[0])} – ${shortDate(days[6])}`;
 
@@ -177,11 +190,14 @@ export default function TurnosWindow({ onClose }) {
                 aria-label="Filtrar por modelo"
               >
                 <option value="todas">Todas</option>
-                {models.map((model) => (
-                  <option key={model.id} value={model.id}>
-                    {model.nome}
-                  </option>
-                ))}
+                {models
+                  .filter((model) => !model.arquivada)
+                  .map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.nome}
+                    </option>
+                  ))}
+                <option value="arquivadas">Arquivadas</option>
               </select>
 
               <button
@@ -235,14 +251,33 @@ export default function TurnosWindow({ onClose }) {
               </button>
             </div>
 
-            {shifts.length === 0 && (
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 11,
+                color: 'var(--c2)',
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={(event) => setShowArchived(event.target.checked)}
+                style={{ accentColor: 'var(--c1)', cursor: 'pointer' }}
+              />
+              Mostrar arquivadas
+            </label>
+
+            {visibleShifts.length === 0 && (
               <span style={{ fontSize: 11, color: 'var(--c2)', opacity: 0.6 }}>
                 Nenhum turno nesta semana.
               </span>
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {shifts.map((shift) => {
+              {visibleShifts.map((shift) => {
                 const color = STATUS_COLOR[shift.status] || 'var(--c2)';
                 const markedDays = sortDays(shift.dias_semana);
                 const repeatLabel = markedDays.length

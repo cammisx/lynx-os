@@ -21,6 +21,14 @@
           }
         }
       }
+    },
+    "arquivada": {
+      "type": "boolean",
+      "default": false
+    },
+    "arquivada_em": {
+      "type": "string",
+      "format": "date-time"
     }
   },
   "required": [
