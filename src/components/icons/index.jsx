@@ -57,6 +57,31 @@ export function LogInIcon({ size = 16, className }) {
   );
 }
 
+export function PauseIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <line x1="9" y1="5" x2="9" y2="19" />
+      <line x1="15" y1="5" x2="15" y2="19" />
+    </Svg>
+  );
+}
+
+export function PlayIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <polygon points="7 4 19 12 7 20 7 4" />
+    </Svg>
+  );
+}
+
+export function StopIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <rect x="6" y="6" width="12" height="12" rx="1.5" />
+    </Svg>
+  );
+}
+
 export function PlusIcon({ size = 16, className }) {
   return (
     <Svg size={size} className={className}>

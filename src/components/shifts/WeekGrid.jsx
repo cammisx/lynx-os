@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ShiftTooltip from '@/components/shifts/ShiftTooltip';
 import { expandShift } from '@/lib/shiftRepeat';
+import { localDateKey, occurrenceKey } from '@/lib/ponto';
 
 const DAY_MS = 86400000;
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -54,7 +55,7 @@ const assignLanes = (items) => {
   return result;
 };
 
-const buildBlocks = (days, shifts) => {
+const buildBlocks = (days, shifts, pontoIndex) => {
   const windowStart = days[0].getTime();
   const windowEnd = days[days.length - 1].getTime() + DAY_MS;
   const occurrences = shifts.flatMap((shift) => expandShift(shift, windowStart, windowEnd));
@@ -72,9 +73,11 @@ const buildBlocks = (days, shifts) => {
       const key = `${occurrence.shift.id}-${dayStart}`;
       if (seen.has(key)) return;
       seen.add(key);
+      const dateKey = localDateKey(occurrence.start);
       items.push({
         key,
         shift: occurrence.shift,
+        ponto: pontoIndex?.[occurrenceKey(occurrence.shift.id, dateKey)] || null,
         start: from,
         end: to,
         top: ((from - dayStart) / DAY_MS) * 100,
@@ -86,9 +89,9 @@ const buildBlocks = (days, shifts) => {
   });
 };
 
-export default function WeekGrid({ days, shifts, userId, chatterNames = {} }) {
+export default function WeekGrid({ days, shifts, userId, chatterNames = {}, pontoIndex }) {
   const [hover, setHover] = useState(null);
-  const blocksByDay = buildBlocks(days, shifts);
+  const blocksByDay = buildBlocks(days, shifts, pontoIndex);
   const totalBlocks = blocksByDay.reduce((sum, list) => sum + list.length, 0);
 
   return (
@@ -199,7 +202,13 @@ export default function WeekGrid({ days, shifts, userId, chatterNames = {} }) {
                     key={block.key}
                     style={style}
                     onMouseEnter={(event) =>
-                      setHover({ key: block.key, shift, x: event.clientX, y: event.clientY })
+                      setHover({
+                        key: block.key,
+                        shift,
+                        ponto: block.ponto,
+                        x: event.clientX,
+                        y: event.clientY,
+                      })
                     }
                     onMouseMove={(event) =>
                       setHover((prev) =>
@@ -209,7 +218,22 @@ export default function WeekGrid({ days, shifts, userId, chatterNames = {} }) {
                       )
                     }
                     onMouseLeave={() => setHover(null)}
-                  />
+                  >
+                    {block.ponto?.entrada && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          left: 4,
+                          bottom: 4,
+                          width: 4,
+                          height: 4,
+                          borderRadius: '50%',
+                          background: block.ponto.saida ? 'var(--c2)' : 'var(--c16)',
+                          pointerEvents: 'none',
+                        }}
+                      />
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -237,6 +261,7 @@ export default function WeekGrid({ days, shifts, userId, chatterNames = {} }) {
 
       <ShiftTooltip
         shift={hover?.shift}
+        ponto={hover?.ponto}
         name={hover?.shift ? chatterNames[hover.shift.usuario_id] : ''}
         x={hover?.x}
         y={hover?.y}

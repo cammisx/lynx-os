@@ -26,11 +26,11 @@ const Row = ({ label, value }) => (
   </div>
 );
 
-export default function ShiftTooltip({ shift, name, x, y }) {
+export default function ShiftTooltip({ shift, ponto, name, x, y }) {
   if (!shift) return null;
 
   const isLive = shift.status === 'em_andamento';
-  const estimatedHeight = isLive ? 74 : 96;
+  const estimatedHeight = (isLive ? 74 : 96) + (ponto?.entrada ? 22 : 0);
 
   let left = x + 14;
   if (left + WIDTH + 8 > window.innerWidth) left = x - 14 - WIDTH;
@@ -64,6 +64,7 @@ export default function ShiftTooltip({ shift, name, x, y }) {
       <Row label="Chatter" value={name || shift.usuario_nome || '—'} />
       <Row label="Início" value={timeOf(shift.inicio)} />
       {!isLive && <Row label="Fim" value={timeOf(shift.fim)} />}
+      {ponto?.entrada && <Row label="Ponto de entrada" value={timeOf(ponto.entrada)} />}
     </div>,
     document.body
   );

@@ -1,0 +1,51 @@
+{
+  "name": "RegistroPonto",
+  "type": "object",
+  "properties": {
+    "shift_id": {
+      "type": "string"
+    },
+    "ocorrencia_data": {
+      "type": "string"
+    },
+    "usuario_id": {
+      "type": "string"
+    },
+    "usuario_nome": {
+      "type": "string"
+    },
+    "modelo_id": {
+      "type": "string"
+    },
+    "modelo_nome": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "entrada",
+        "pausa",
+        "retorno",
+        "saida"
+      ],
+      "enumColors": [
+        "green",
+        "yellow",
+        "blue",
+        "red"
+      ],
+      "default": "entrada"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "shift_id",
+    "ocorrencia_data",
+    "usuario_id",
+    "tipo",
+    "timestamp"
+  ]
+}

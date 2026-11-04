@@ -340,6 +340,58 @@ body {
   display: none;
 }
 
+.ponto-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-family: var(--font-main);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.ponto-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ponto-primary {
+  background-color: color-mix(in srgb, var(--c1) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c1) 45%, transparent);
+  color: var(--c1);
+}
+
+.ponto-primary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--c1) 32%, transparent);
+}
+
+.ponto-blue {
+  background-color: color-mix(in srgb, var(--c16) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c16) 45%, transparent);
+  color: var(--c16);
+}
+
+.ponto-blue:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--c16) 30%, transparent);
+}
+
+.ponto-danger {
+  background-color: color-mix(in srgb, #ff6b6b 18%, transparent);
+  border: 1px solid color-mix(in srgb, #ff6b6b 45%, transparent);
+  color: #ff6b6b;
+}
+
+.ponto-danger:hover:not(:disabled) {
+  background-color: color-mix(in srgb, #ff6b6b 28%, transparent);
+}
+
+.ponto-pulse {
+  animation: clk-punch-pulse 1.8s ease-in-out infinite;
+}
+
 .gs-field:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--c1) 40%, transparent);
 }

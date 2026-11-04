@@ -4,6 +4,13 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { CHATTERS_CHANGED, MODELS_CHANGED, SHIFTS_CHANGED } from '@/lib/desktopEvents';
 import { buildChatterNames } from '@/lib/chatterNames';
+import { expandShift } from '@/lib/shiftRepeat';
+import {
+  buildPontoIndex,
+  clockLabel,
+  localDateKey,
+  occurrenceKey,
+} from '@/lib/ponto';
 import ShiftWidget from '@/components/shifts/ShiftWidget';
 import WeekToolbar from '@/components/shifts/WeekToolbar';
 import WeekGrid from '@/components/shifts/WeekGrid';
@@ -30,14 +37,17 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()));
   const [weekShifts, setWeekShifts] = useState([]);
   const [ownShifts, setOwnShifts] = useState([]);
+  const [registros, setRegistros] = useState([]);
   const [models, setModels] = useState([]);
   const [chatters, setChatters] = useState([]);
   const [activeTab, setActiveTab] = useState('agenda');
   const [saving, setSaving] = useState(null);
+  const [feedback, setFeedback] = useState(null);
   const [tick, setTick] = useState(0);
   const [modelsVersion, setModelsVersion] = useState(0);
   const [chattersVersion, setChattersVersion] = useState(0);
   const panelRef = useRef(null);
+  const feedbackTimer = useRef(null);
   const userId = user?.id;
 
   useEffect(() => {
@@ -56,6 +66,8 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
     const id = setInterval(() => setTick((n) => n + 1), REFRESH_MS);
     return () => clearInterval(id);
   }, [open]);
+
+  useEffect(() => () => clearTimeout(feedbackTimer.current), []);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -161,6 +173,24 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
     };
   }, [open, userId, tick]);
 
+  useEffect(() => {
+    if (!open || !userId) return undefined;
+    let active = true;
+    base44.entities.RegistroPonto.filter(
+      { usuario_id: userId },
+      { sort: '-timestamp', limit: 200 }
+    )
+      .then((result) => {
+        if (active) setRegistros(asList(result));
+      })
+      .catch(() => {
+        if (active) setRegistros([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [open, userId, tick]);
+
   const chatterNames = useMemo(() => buildChatterNames(chatters), [chatters]);
 
   const visibleModels = useMemo(() => {
@@ -174,31 +204,142 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
 
   const archivedModels = useMemo(() => models.filter((model) => model.arquivada), [models]);
 
-  const tabs = useMemo(
-    () => [{ id: 'agenda', label: 'Minha Agenda' }, ...visibleModels.map((model) => ({ id: model.id, label: model.nome }))],
-    [visibleModels]
+  const pontoIndex = useMemo(() => buildPontoIndex(registros), [registros]);
+
+  const openEntries = useMemo(
+    () =>
+      Object.values(pontoIndex)
+        .filter((entry) => entry.entrada && !entry.saida)
+        .sort((a, b) => b.entrada - a.entrada)
+        .map((entry) => ({
+          shiftId: entry.shiftId,
+          dateKey: entry.dateKey,
+          modeloId: entry.modeloId,
+          modeloNome: entry.modeloNome,
+          entradaAt: entry.entrada,
+          pausaAbertaAt: entry.pausaAberta,
+          pausasMs: entry.pausasMs,
+        })),
+    [pontoIndex]
   );
 
-  useEffect(() => {
-    if (!open || activeTab === 'agenda') return;
-    if (!visibleModels.some((model) => model.id === activeTab)) setActiveTab('agenda');
-  }, [open, activeTab, visibleModels]);
+  const ponto = useMemo(() => {
+    const activeEntry = openEntries[0];
+    if (activeEntry) {
+      return {
+        ...activeEntry,
+        mode: activeEntry.pausaAbertaAt ? 'pausa' : 'ativo',
+      };
+    }
 
-  const activeShift = useMemo(
-    () => ownShifts.find((shift) => shift.status === 'em_andamento') || null,
-    [ownShifts]
-  );
-
-  const nextShift = useMemo(() => {
     const now = Date.now();
-    return (
-      ownShifts
-        .filter((shift) => shift.status === 'agendado' && new Date(shift.inicio).getTime() >= now)
-        .sort((a, b) => new Date(a.inicio).getTime() - new Date(b.inicio).getTime())[0] || null
+    const windowStart = startOfDay(new Date()).getTime();
+    const windowEnd = windowStart + 7 * DAY_MS;
+    const archivedIds = new Set(
+      models.filter((model) => model.arquivada).map((model) => model.id)
     );
-  }, [ownShifts]);
 
-  const gridShifts = useMemo(() => {
+    const next = ownShifts
+      .filter((shift) => !archivedIds.has(shift.modelo_id))
+      .flatMap((shift) => expandShift(shift, windowStart, windowEnd))
+      .filter((occurrence) => occurrence.end > now)
+      .sort((a, b) => a.start - b.start)
+      .find((occurrence) => {
+        const dateKey = localDateKey(occurrence.start);
+        const entry = pontoIndex[occurrenceKey(occurrence.shift.id, dateKey)];
+        return !entry || !entry.entrada;
+      });
+
+    if (!next) return { mode: 'livre' };
+
+    return {
+      mode: 'proximo',
+      start: next.start,
+      shiftId: next.shift.id,
+      dateKey: localDateKey(next.start),
+      modeloId: next.shift.modelo_id || '',
+      modeloNome: next.shift.modelo_nome || '',
+    };
+  }, [openEntries, ownShifts, models, pontoIndex]);
+
+  const showFeedback = (text, error = false) => {
+    setFeedback({ text, error });
+    clearTimeout(feedbackTimer.current);
+    feedbackTimer.current = setTimeout(() => setFeedback(null), 2000);
+  };
+
+  const createRegistro = (occurrence, tipo, timestamp) =>
+    base44.entities.RegistroPonto.create({
+      shift_id: occurrence.shiftId,
+      ocorrencia_data: occurrence.dateKey,
+      usuario_id: userId,
+      usuario_nome: chatterNames[userId] || user?.full_name || '',
+      modelo_id: occurrence.modeloId || '',
+      modelo_nome: occurrence.modeloNome || '',
+      tipo,
+      timestamp,
+    });
+
+  const closeOccurrence = async (occurrence) => {
+    const timestamp = new Date().toISOString();
+    if (occurrence.pausaAbertaAt) await createRegistro(occurrence, 'retorno', timestamp);
+    await createRegistro(occurrence, 'saida', timestamp);
+    await base44.entities.Shift.update(occurrence.shiftId, {
+      status: 'concluido',
+      fim_real: timestamp,
+    });
+    return timestamp;
+  };
+
+  const punch = async (tipo) => {
+    if (!userId || saving) return;
+    const activeEntry = openEntries[0] || null;
+
+    if (tipo !== 'entrada' && !activeEntry) {
+      showFeedback('Registre a entrada primeiro', true);
+      return;
+    }
+
+    setSaving(tipo);
+    try {
+      if (tipo === 'entrada') {
+        for (const previous of openEntries) {
+          await closeOccurrence(previous);
+        }
+        const timestamp = new Date().toISOString();
+        await createRegistro(ponto, 'entrada', timestamp);
+        await base44.entities.Shift.update(ponto.shiftId, {
+          status: 'em_andamento',
+          inicio_real: timestamp,
+        });
+        showFeedback(`Entrada registrada às ${clockLabel(timestamp)}`);
+      } else if (tipo === 'pausa') {
+        const timestamp = new Date().toISOString();
+        await createRegistro(activeEntry, 'pausa', timestamp);
+        showFeedback(`Pausa registrada às ${clockLabel(timestamp)}`);
+      } else if (tipo === 'retorno') {
+        const timestamp = new Date().toISOString();
+        await createRegistro(activeEntry, 'retorno', timestamp);
+        showFeedback(`Retorno registrado às ${clockLabel(timestamp)}`);
+      } else if (tipo === 'saida') {
+        const timestamp = await closeOccurrence(activeEntry);
+        showFeedback(`Turno encerrado às ${clockLabel(timestamp)}`);
+      }
+      setTick((n) => n + 1);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  if (!open) return null;
+
+  const tabs = [
+    { id: 'agenda', label: 'Minha Agenda' },
+    ...visibleModels.map((model) => ({ id: model.id, label: model.nome })),
+  ];
+  const activeTabSafe = tabs.some((tab) => tab.id === activeTab) ? activeTab : 'agenda';
+
+  const gridShifts = (() => {
     const base = weekShifts.filter((shift) => {
       if (archivedModels.some((model) => model.id === shift.modelo_id)) return false;
       if (!shift.modelo_id) {
@@ -207,43 +348,13 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
       return true;
     });
 
-    if (activeTab === 'agenda') return base.filter((shift) => shift.usuario_id === userId);
-    const model = visibleModels.find((item) => item.id === activeTab);
+    if (activeTabSafe === 'agenda') return base.filter((shift) => shift.usuario_id === userId);
+    const model = visibleModels.find((item) => item.id === activeTabSafe);
     if (!model) return [];
     return base.filter(
       (shift) => shift.modelo_id === model.id || (!shift.modelo_id && shift.modelo_nome === model.nome)
     );
-  }, [weekShifts, activeTab, userId, visibleModels, archivedModels]);
-
-  const punchIn = async () => {
-    if (!nextShift) return;
-    setSaving('in');
-    try {
-      await base44.entities.Shift.update(nextShift.id, {
-        status: 'em_andamento',
-        inicio_real: new Date().toISOString(),
-      });
-      setTick((n) => n + 1);
-    } finally {
-      setSaving(null);
-    }
-  };
-
-  const punchOut = async () => {
-    if (!userId) return;
-    setSaving('out');
-    try {
-      await base44.entities.Shift.updateMany(
-        { usuario_id: userId, status: 'em_andamento' },
-        { $set: { status: 'concluido', fim_real: new Date().toISOString() } }
-      );
-      setTick((n) => n + 1);
-    } finally {
-      setSaving(null);
-    }
-  };
-
-  if (!open) return null;
+  })();
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(anchor, i));
   const weekLabel = `${shortDate(days[0])} – ${shortDate(days[6])}`;
@@ -274,16 +385,15 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
       <ShiftWidget
         user={user}
         displayName={chatterNames[userId]}
-        activeShift={activeShift}
-        nextShift={nextShift}
+        ponto={ponto}
         saving={saving}
-        onPunchIn={punchIn}
-        onPunchOut={punchOut}
+        feedback={feedback}
+        onPunch={punch}
       />
 
       <WeekToolbar
         tabs={tabs}
-        activeTab={activeTab}
+        activeTab={activeTabSafe}
         onTabChange={setActiveTab}
         weekLabel={weekLabel}
         onPrev={() => setAnchor((prev) => addDays(prev, -7))}
@@ -305,7 +415,13 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
             transformOrigin: 'top center',
           }}
         >
-          <WeekGrid days={days} shifts={gridShifts} userId={userId} chatterNames={chatterNames} />
+          <WeekGrid
+            days={days}
+            shifts={gridShifts}
+            userId={userId}
+            chatterNames={chatterNames}
+            pontoIndex={pontoIndex}
+          />
         </div>
       </div>
     </div>,

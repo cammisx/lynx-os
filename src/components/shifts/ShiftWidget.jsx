@@ -1,28 +1,11 @@
 import { useEffect, useState } from 'react';
-import { LogInIcon, LogOutIcon } from '@/components/icons';
+import PunchButton from '@/components/shifts/PunchButton';
+import { LogInIcon, PauseIcon, PlayIcon, StopIcon } from '@/components/icons';
+import { countdownLabel, durationLabel } from '@/lib/ponto';
 
 const firstWord = (value) => {
   const words = String(value || '').trim().split(/\s+/).filter(Boolean);
   return words[0] || 'chatter';
-};
-
-const elapsedLabel = (from) => {
-  const start = new Date(from).getTime();
-  if (!Number.isFinite(start)) return '0min';
-  const totalMin = Math.max(0, Math.floor((Date.now() - start) / 60000));
-  const hours = Math.floor(totalMin / 60);
-  const minutes = totalMin % 60;
-  return hours < 1 ? `${minutes}min` : `${hours}h ${minutes}min`;
-};
-
-const countdownLabel = (target) => {
-  const diff = new Date(target).getTime() - Date.now();
-  if (!Number.isFinite(diff) || diff <= 0) return 'agora';
-  const totalMin = Math.floor(diff / 60000);
-  const days = Math.floor(totalMin / 1440);
-  if (days >= 1) return `${days}d ${Math.floor((totalMin % 1440) / 60)}h`;
-  if (totalMin >= 60) return `${Math.floor(totalMin / 60)}h ${totalMin % 60}min`;
-  return `${totalMin}min`;
 };
 
 const LINE_STYLE = {
@@ -36,17 +19,9 @@ const LINE_STYLE = {
 
 const HIGHLIGHT = { display: 'inline', color: 'var(--c1)' };
 
-const PUNCH_STYLE = { display: 'flex', alignItems: 'center', gap: 6 };
+const HINT_STYLE = { fontSize: 10, color: 'var(--c2)', opacity: 0.7 };
 
-export default function ShiftWidget({
-  user,
-  displayName,
-  activeShift,
-  nextShift,
-  saving,
-  onPunchIn,
-  onPunchOut,
-}) {
+export default function ShiftWidget({ user, displayName, ponto, saving, feedback, onPunch }) {
   const [, setSecond] = useState(0);
 
   useEffect(() => {
@@ -54,61 +29,92 @@ export default function ShiftWidget({
     return () => clearInterval(id);
   }, []);
 
+  const now = Date.now();
   const nickname = firstWord(displayName || user?.full_name);
-  const nextIn = nextShift ? new Date(nextShift.inicio).getTime() - Date.now() : Infinity;
-  const canPunchIn = nextShift && nextIn <= 15 * 60000;
+  const modelName = ponto.modeloNome || 'sem modelo';
+  const busy = !!saving;
 
   let line = null;
-  let action = null;
+  let actions = null;
+  let hint = null;
 
-  if (activeShift) {
+  if (ponto.mode === 'ativo') {
+    const elapsed =
+      now - ponto.entradaAt - (ponto.pausasMs || 0) - (ponto.pausaAbertaAt ? now - ponto.pausaAbertaAt : 0);
     line = (
       <p style={LINE_STYLE}>
-        Você está em shift há{' '}
-        <span style={HIGHLIGHT}>{elapsedLabel(activeShift.inicio_real || activeShift.created_date)}</span> em{' '}
-        <span style={HIGHLIGHT}>{activeShift.modelo_nome || 'sem modelo'}</span>.
+        Você está em shift há <span style={HIGHLIGHT}>{durationLabel(elapsed)}</span> em{' '}
+        <span style={HIGHLIGHT}>{modelName}</span>.
       </p>
     );
-    action = (
-      <button
-        type="button"
-        className="clk-punch clk-punch-out"
-        disabled={!!saving}
-        onClick={onPunchOut}
-        style={PUNCH_STYLE}
-      >
-        <LogOutIcon size={13} />
-        {saving === 'out' ? 'Registrando…' : 'Registrar Saída'}
-      </button>
+    actions = (
+      <>
+        <PunchButton
+          icon={PauseIcon}
+          label="Pausa"
+          busy={saving === 'pausa'}
+          disabled={busy}
+          onClick={() => onPunch('pausa')}
+        />
+        <PunchButton
+          variant="danger"
+          icon={StopIcon}
+          label="Registrar Fim do Turno"
+          busy={saving === 'saida'}
+          disabled={busy}
+          onClick={() => onPunch('saida')}
+        />
+      </>
     );
-  } else if (nextShift) {
+  } else if (ponto.mode === 'pausa') {
+    line = (
+      <p style={LINE_STYLE}>
+        Em pausa há <span style={HIGHLIGHT}>{durationLabel(now - ponto.pausaAbertaAt)}</span> de{' '}
+        <span style={HIGHLIGHT}>{modelName}</span>.
+      </p>
+    );
+    actions = (
+      <>
+        <PunchButton
+          variant="retorno"
+          icon={PlayIcon}
+          label="Voltar da Pausa"
+          busy={saving === 'retorno'}
+          disabled={busy}
+          onClick={() => onPunch('retorno')}
+        />
+        <PunchButton
+          variant="danger"
+          icon={StopIcon}
+          label="Registrar Fim do Turno"
+          busy={saving === 'saida'}
+          disabled={busy}
+          onClick={() => onPunch('saida')}
+        />
+      </>
+    );
+  } else if (ponto.mode === 'proximo') {
+    const liberado = ponto.start - now <= 5 * 60000;
     line = (
       <p style={LINE_STYLE}>
         Olá, {nickname}! Seu próximo turno começa em{' '}
-        <span style={HIGHLIGHT}>{countdownLabel(nextShift.inicio)}</span> em{' '}
-        <span style={HIGHLIGHT}>{nextShift.modelo_nome || 'sem modelo'}</span>.
+        <span style={HIGHLIGHT}>{countdownLabel(ponto.start - now)}</span> em{' '}
+        <span style={HIGHLIGHT}>{modelName}</span>.
       </p>
     );
-    if (canPunchIn) {
-      action = (
-        <button
-          type="button"
-          className="clk-punch clk-punch-in"
-          disabled={!!saving}
-          onClick={onPunchIn}
-          style={PUNCH_STYLE}
-        >
-          <LogInIcon size={13} />
-          {saving === 'in' ? 'Registrando…' : 'Registrar Entrada'}
-        </button>
-      );
-    }
+    hint = liberado ? null : 'Libera 5 minutos antes do início';
+    actions = (
+      <PunchButton
+        icon={LogInIcon}
+        label="Registrar Entrada"
+        busy={saving === 'entrada'}
+        disabled={busy || !liberado}
+        pulse={liberado}
+        onClick={() => onPunch('entrada')}
+      />
+    );
   } else {
-    line = (
-      <p style={LINE_STYLE}>
-        Olá, {nickname}! Você não tem nenhum turno agendado este mês.
-      </p>
-    );
+    line = <p style={LINE_STYLE}>Olá, {nickname}! Você não tem nenhum turno agendado.</p>;
   }
 
   return (
@@ -126,9 +132,18 @@ export default function ShiftWidget({
       }}
     >
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {line}
+        {feedback ? (
+          <span
+            style={{ fontSize: 11, color: feedback.error ? '#ff6b6b' : 'var(--c1)' }}
+          >
+            {feedback.text}
+          </span>
+        ) : (
+          line
+        )}
+        {hint && !feedback && <span style={HINT_STYLE}>{hint}</span>}
       </div>
-      {action}
+      {actions && <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>{actions}</div>}
     </div>
   );
 }
