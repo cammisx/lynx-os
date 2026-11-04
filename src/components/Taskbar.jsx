@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import StartMenu from '@/components/StartMenu';
+import ClockPanel from '@/components/ClockPanel';
 
 export default function Taskbar() {
   const [now, setNow] = useState(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
+  const [clockOpen, setClockOpen] = useState(false);
+  const clockRef = useRef(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -50,13 +53,21 @@ export default function Taskbar() {
           </svg>
         </button>
 
-        <div className="taskbar-clock">
+        <div
+          ref={clockRef}
+          className={`taskbar-clock${clockOpen ? ' is-open' : ''}`}
+          role="button"
+          tabIndex={0}
+          aria-label="Abrir turnos"
+          onClick={() => setClockOpen((prev) => !prev)}
+        >
           <span className="clock-time">{time}</span>
           <span className="clock-date">{date}</span>
         </div>
       </div>
 
       <StartMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <ClockPanel open={clockOpen} onClose={() => setClockOpen(false)} anchorRef={clockRef} />
     </div>
   );
 }

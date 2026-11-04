@@ -1,0 +1,52 @@
+{
+  "name": "Shift",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string"
+    },
+    "usuario_nome": {
+      "type": "string"
+    },
+    "inicio": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fim": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "inicio_real": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fim_real": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "agendado",
+        "em_andamento",
+        "concluido",
+        "cancelado"
+      ],
+      "enumColors": [
+        "blue",
+        "yellow",
+        "green",
+        "red"
+      ],
+      "default": "agendado"
+    },
+    "pagina_nome": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "usuario_id",
+    "inicio",
+    "fim"
+  ]
+}

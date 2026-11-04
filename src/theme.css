@@ -20,6 +20,8 @@
   --c9: color-mix(in srgb, var(--c5) 55%, transparent);
   --c11: color-mix(in srgb, var(--c5) 40%, transparent);
   --c13: color-mix(in srgb, var(--c8) 75%, transparent);
+  --c16-bg: color-mix(in srgb, var(--c1) 40%, transparent);
+  --c16-border: color-mix(in srgb, var(--c1) 70%, transparent);
   --blur-glass: blur(16px);
   --blur-taskbar: blur(24px);
   --font-main: 'Roboto Mono', 'Courier New', monospace;
@@ -156,6 +158,38 @@ body {
   align-items: flex-end;
   line-height: 1.15;
   user-select: none;
+  padding: 2px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.taskbar-clock.is-open {
+  background-color: color-mix(in srgb, var(--c1) 16%, transparent);
+}
+
+.clk-nav-btn,
+.clk-week-label {
+  transition: background-color var(--transition-fast);
+}
+
+.clk-nav-btn:hover {
+  background-color: color-mix(in srgb, var(--c2) 12%, transparent);
+}
+
+.clk-week-label:hover {
+  background-color: color-mix(in srgb, var(--c2) 10%, transparent);
+}
+
+@keyframes clk-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .taskbar-clock .clock-time {
