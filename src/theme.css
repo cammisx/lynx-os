@@ -20,8 +20,10 @@
   --c9: color-mix(in srgb, var(--c5) 55%, transparent);
   --c11: color-mix(in srgb, var(--c5) 40%, transparent);
   --c13: color-mix(in srgb, var(--c8) 75%, transparent);
-  --c16-bg: color-mix(in srgb, var(--c1) 40%, transparent);
-  --c16-border: color-mix(in srgb, var(--c1) 70%, transparent);
+  --c16: #3B9EFF;
+  --c16-bg: rgba(59, 158, 255, 0.18);
+  --c16-glow: rgba(59, 158, 255, 0.35);
+  --c16-border: rgba(59, 158, 255, 0.5);
   --blur-glass: blur(16px);
   --blur-taskbar: blur(24px);
   --font-main: 'Roboto Mono', 'Courier New', monospace;
@@ -190,6 +192,52 @@ body {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+@keyframes clk-punch-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--c1) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--c1) 0%, transparent);
+  }
+}
+
+.clk-punch {
+  background-color: color-mix(in srgb, var(--c1) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c1) 45%, transparent);
+  border-radius: 8px;
+  padding: 7px 16px;
+  color: var(--c1);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-main);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition-fast);
+}
+
+.clk-punch:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--c1) 32%, transparent);
+}
+
+.clk-punch:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.clk-punch-out {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+
+.clk-punch-out:hover:not(:disabled) {
+  background-color: rgba(255, 107, 107, 0.16);
+}
+
+.clk-punch-in {
+  animation: clk-punch-pulse 1.8s ease-in-out infinite;
 }
 
 .taskbar-clock .clock-time {

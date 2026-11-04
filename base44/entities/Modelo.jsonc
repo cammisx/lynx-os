@@ -1,0 +1,26 @@
+{
+  "name": "Modelo",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "chatters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "usuario_id": {
+            "type": "string"
+          },
+          "usuario_nome": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}

@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import ShiftWidget from '@/components/shifts/ShiftWidget';
+import WeekToolbar from '@/components/shifts/WeekToolbar';
 import WeekGrid from '@/components/shifts/WeekGrid';
 
 const DAY_MS = 86400000;
+const REFRESH_MS = 15000;
 
 const startOfDay = (value) => {
   const date = new Date(value);
@@ -18,13 +21,19 @@ const addDays = (date, days) =>
 const shortDate = (date) =>
   date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
+const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
+
 export default function ClockPanel({ open, onClose, anchorRef }) {
   const { user } = useAuth();
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()));
-  const [shifts, setShifts] = useState([]);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [dateInput, setDateInput] = useState('');
+  const [weekShifts, setWeekShifts] = useState([]);
+  const [ownShifts, setOwnShifts] = useState([]);
+  const [models, setModels] = useState([]);
+  const [activeTab, setActiveTab] = useState('agenda');
+  const [saving, setSaving] = useState(null);
+  const [tick, setTick] = useState(0);
   const panelRef = useRef(null);
+  const userId = user?.id;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -39,6 +48,27 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
 
   useEffect(() => {
     if (!open) return undefined;
+    const id = setInterval(() => setTick((n) => n + 1), REFRESH_MS);
+    return () => clearInterval(id);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    let active = true;
+    base44.entities.Modelo.list()
+      .then((result) => {
+        if (active) setModels(asList(result));
+      })
+      .catch(() => {
+        if (active) setModels([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
     let active = true;
     const weekEnd = new Date(anchor.getTime() + 7 * DAY_MS);
     base44.entities.Shift.filter({
@@ -46,66 +76,103 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
       fim: { $gt: anchor.toISOString() },
     })
       .then((result) => {
-        if (!active) return;
-        const rows = Array.isArray(result) ? result : result?.items || [];
-        setShifts(rows);
+        if (active) setWeekShifts(asList(result));
       })
       .catch(() => {
-        if (active) setShifts([]);
+        if (active) setWeekShifts([]);
       });
     return () => {
       active = false;
     };
-  }, [open, anchor]);
+  }, [open, anchor, tick]);
+
+  useEffect(() => {
+    if (!open || !userId) return undefined;
+    let active = true;
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    base44.entities.Shift.filter(
+      { usuario_id: userId, fim: { $gte: monthStart.toISOString() } },
+      { sort: 'inicio', limit: 100 }
+    )
+      .then((result) => {
+        if (active) setOwnShifts(asList(result));
+      })
+      .catch(() => {
+        if (active) setOwnShifts([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [open, userId, tick]);
+
+  const visibleModels = useMemo(() => {
+    const isAdmin = user?.role === 'admin';
+    return models.filter(
+      (model) => isAdmin || (model.chatters || []).some((chatter) => chatter.usuario_id === userId)
+    );
+  }, [models, user, userId]);
+
+  const tabs = useMemo(
+    () => [{ id: 'agenda', label: 'Minha Agenda' }, ...visibleModels.map((model) => ({ id: model.id, label: model.nome }))],
+    [visibleModels]
+  );
+
+  const activeShift = useMemo(
+    () => ownShifts.find((shift) => shift.status === 'em_andamento') || null,
+    [ownShifts]
+  );
+
+  const nextShift = useMemo(() => {
+    const now = Date.now();
+    return (
+      ownShifts
+        .filter((shift) => shift.status === 'agendado' && new Date(shift.inicio).getTime() >= now)
+        .sort((a, b) => new Date(a.inicio).getTime() - new Date(b.inicio).getTime())[0] || null
+    );
+  }, [ownShifts]);
+
+  const gridShifts = useMemo(() => {
+    if (activeTab === 'agenda') return weekShifts.filter((shift) => shift.usuario_id === userId);
+    const model = visibleModels.find((item) => item.id === activeTab);
+    if (!model) return [];
+    return weekShifts.filter(
+      (shift) => shift.modelo_id === model.id || (!shift.modelo_id && shift.modelo_nome === model.nome)
+    );
+  }, [weekShifts, activeTab, userId, visibleModels]);
+
+  const punchIn = async () => {
+    if (!nextShift) return;
+    setSaving('in');
+    try {
+      await base44.entities.Shift.update(nextShift.id, {
+        status: 'em_andamento',
+        inicio_real: new Date().toISOString(),
+      });
+      setTick((n) => n + 1);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const punchOut = async () => {
+    if (!userId) return;
+    setSaving('out');
+    try {
+      await base44.entities.Shift.updateMany(
+        { usuario_id: userId, status: 'em_andamento' },
+        { $set: { status: 'concluido', fim_real: new Date().toISOString() } }
+      );
+      setTick((n) => n + 1);
+    } finally {
+      setSaving(null);
+    }
+  };
 
   if (!open) return null;
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(anchor, i));
   const weekLabel = `${shortDate(days[0])} – ${shortDate(days[6])}`;
-
-  const navStyle = {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    border: 'none',
-    background: 'transparent',
-    color: 'var(--c2)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    padding: 0,
-  };
-
-  const labelStyle = {
-    fontSize: 11,
-    fontWeight: 500,
-    color: 'var(--c3)',
-    padding: '4px 8px',
-    borderRadius: 6,
-    border: 'none',
-    background: 'transparent',
-    cursor: 'pointer',
-    fontFamily: 'var(--font-main)',
-  };
-
-  const menuButtonStyle = {
-    fontSize: 11,
-    fontWeight: 600,
-    borderRadius: 6,
-    padding: '4px 8px',
-    cursor: 'pointer',
-    fontFamily: 'var(--font-main)',
-  };
-
-  const dateValue = dateInput;
-  const goToDate = () => {
-    if (!dateValue) return;
-    const parsed = new Date(`${dateValue}T00:00:00`);
-    if (Number.isNaN(parsed.getTime())) return;
-    setAnchor(startOfDay(parsed));
-    setMenuOpen(false);
-  };
 
   return createPortal(
     <div
@@ -126,129 +193,45 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        animation: 'clk-panel-in 0.2s cubic-bezier(0.22, 1, 0.36, 1)',
         fontFamily: 'var(--font-main)',
+        animation: 'clk-panel-in 0.2s cubic-bezier(0.22, 1, 0.36, 1)',
       }}
     >
-      <div
-        style={{
-          height: 36,
-          padding: '0 12px 0 8px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          borderBottom: '1px solid color-mix(in srgb, var(--c2) 10%, transparent)',
-          position: 'relative',
-          flexShrink: 0,
+      <ShiftWidget
+        user={user}
+        activeShift={activeShift}
+        nextShift={nextShift}
+        saving={saving}
+        onPunchIn={punchIn}
+        onPunchOut={punchOut}
+      />
+
+      <WeekToolbar
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        weekLabel={weekLabel}
+        onPrev={() => setAnchor((prev) => addDays(prev, -7))}
+        onNext={() => setAnchor((prev) => addDays(prev, 7))}
+        onToday={() => setAnchor(startOfDay(new Date()))}
+        onPickDate={(value) => {
+          const parsed = new Date(`${value}T00:00:00`);
+          if (!Number.isNaN(parsed.getTime())) setAnchor(startOfDay(parsed));
         }}
-      >
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--c2)' }}>Turnos</span>
+      />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <button
-            type="button"
-            aria-label="Semana anterior"
-            className="clk-nav-btn"
-            style={navStyle}
-            onClick={() => setAnchor((prev) => addDays(prev, -7))}
-          >
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M10 3 5 8l5 5" />
-            </svg>
-          </button>
-
-          <button
-            type="button"
-            className="clk-week-label"
-            style={labelStyle}
-            onClick={() => setMenuOpen((prev) => !prev)}
-          >
-            {weekLabel}
-          </button>
-
-          <button
-            type="button"
-            aria-label="Próxima semana"
-            className="clk-nav-btn"
-            style={navStyle}
-            onClick={() => setAnchor((prev) => addDays(prev, 7))}
-          >
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 3l5 5-5 5" />
-            </svg>
-          </button>
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: '8px 8px 6px' }}>
+        <div
+          style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            transform: 'scale(0.95)',
+            transformOrigin: 'top center',
+          }}
+        >
+          <WeekGrid days={days} shifts={gridShifts} userId={userId} />
         </div>
-
-        {menuOpen && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 'calc(100% + 6px)',
-              right: 0,
-              background: 'color-mix(in srgb, var(--c8) 85%, transparent)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid color-mix(in srgb, var(--c2) 15%, transparent)',
-              borderRadius: 10,
-              padding: 10,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-              minWidth: 180,
-              zIndex: 9999,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setAnchor(startOfDay(new Date()));
-                setMenuOpen(false);
-              }}
-              style={{
-                ...menuButtonStyle,
-                background: 'color-mix(in srgb, var(--c1) 15%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--c1) 30%, transparent)',
-                color: 'var(--c1)',
-              }}
-            >
-              Hoje
-            </button>
-
-            <div style={{ height: 1, background: 'color-mix(in srgb, var(--c2) 15%, transparent)' }} />
-
-            <input
-              type="date"
-              value={dateInput}
-              onChange={(event) => setDateInput(event.target.value)}
-              style={{
-                background: 'color-mix(in srgb, var(--c8) 60%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
-                borderRadius: 6,
-                fontSize: 11,
-                color: 'var(--c3)',
-                padding: '4px 6px',
-                fontFamily: 'var(--font-main)',
-              }}
-            />
-
-            <button
-              type="button"
-              onClick={goToDate}
-              style={{
-                ...menuButtonStyle,
-                background: 'color-mix(in srgb, var(--c5) 20%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--c5) 40%, transparent)',
-                color: 'var(--c5)',
-              }}
-            >
-              Ir
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div style={{ flex: 1, minHeight: 0, padding: '8px 8px 6px', display: 'flex', flexDirection: 'column' }}>
-        <WeekGrid days={days} shifts={shifts} userId={user?.id} />
       </div>
     </div>,
     document.body

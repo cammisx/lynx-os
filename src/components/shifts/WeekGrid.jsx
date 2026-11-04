@@ -159,7 +159,7 @@ export default function WeekGrid({ days, shifts, userId }) {
                 const shift = block.shift;
                 const isOwn = shift.usuario_id && shift.usuario_id === userId;
                 const isLive = shift.status === 'em_andamento';
-                const baseColor = isOwn ? OWN_COLOR : colorFor(shift.usuario_id);
+                const baseColor = isLive ? 'var(--c16)' : isOwn ? OWN_COLOR : colorFor(shift.usuario_id);
 
                 const style = {
                   position: 'absolute',

@@ -8,6 +8,15 @@
     "usuario_nome": {
       "type": "string"
     },
+    "modelo_id": {
+      "type": "string"
+    },
+    "modelo_nome": {
+      "type": "string"
+    },
+    "pagina_nome": {
+      "type": "string"
+    },
     "inicio": {
       "type": "string",
       "format": "date-time"
@@ -39,9 +48,6 @@
         "red"
       ],
       "default": "agendado"
-    },
-    "pagina_nome": {
-      "type": "string"
     }
   },
   "required": [
