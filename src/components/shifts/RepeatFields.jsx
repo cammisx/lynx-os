@@ -1,17 +1,5 @@
 import { WEEKDAY_LABELS, daysLabel, sortDays } from '@/lib/shiftRepeat';
-
-const controlStyle = {
-  width: '100%',
-  boxSizing: 'border-box',
-  background: 'color-mix(in srgb, var(--c8) 60%, transparent)',
-  border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
-  borderRadius: 8,
-  color: 'var(--c3)',
-  fontSize: 12,
-  padding: '7px 9px',
-  fontFamily: 'var(--font-main)',
-  outline: 'none',
-};
+import DateTimePicker from '@/components/DateTimePicker';
 
 const labelStyle = {
   fontSize: 10,
@@ -67,13 +55,7 @@ export default function RepeatFields({ dias, repetirAte, onToggleDia, onRepetirA
 
       {marked.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          <span style={labelStyle}>Repetir até</span>
-          <input
-            type="date"
-            style={controlStyle}
-            value={repetirAte}
-            onChange={(event) => onRepetirAteChange(event.target.value)}
-          />
+          <DateTimePicker label="Repetir até" value={repetirAte} onChange={onRepetirAteChange} mode="date" />
           <span style={labelStyle}>Deixe vazio para repetir sem prazo</span>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import DateTimePicker, { formatDateKey } from '@/components/DateTimePicker';
 import RepeatFields from '@/components/shifts/RepeatFields';
 
 const controlStyle = {
@@ -21,15 +22,6 @@ const labelStyle = {
   opacity: 0.7,
 };
 
-const pad = (value) => String(value).padStart(2, '0');
-
-const toInput = (value) => {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-};
-
 const atHour = (date, hour) => {
   const base = new Date(date);
   base.setHours(hour, 0, 0, 0);
@@ -40,16 +32,16 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
   const [usuarioId, setUsuarioId] = useState(shift?.usuario_id || '');
   const [modeloId, setModeloId] = useState(shift?.modelo_id || '');
   const [inicio, setInicio] = useState(() =>
-    shift?.inicio ? toInput(shift.inicio) : toInput(atHour(defaultDate || new Date(), 8))
+    shift?.inicio ? new Date(shift.inicio) : atHour(defaultDate || new Date(), 8)
   );
   const [fim, setFim] = useState(() =>
-    shift?.fim ? toInput(shift.fim) : toInput(atHour(defaultDate || new Date(), 16))
+    shift?.fim ? new Date(shift.fim) : atHour(defaultDate || new Date(), 16)
   );
   const [dias, setDias] = useState(() =>
     Array.isArray(shift?.dias_semana) ? shift.dias_semana.map(Number) : []
   );
   const [repetirAte, setRepetirAte] = useState(() =>
-    shift?.repetir_ate ? String(shift.repetir_ate).slice(0, 10) : ''
+    shift?.repetir_ate ? new Date(`${String(shift.repetir_ate).slice(0, 10)}T00:00:00`) : null
   );
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -70,15 +62,21 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
       setError('Informe o início e o fim do turno.');
       return;
     }
-    const start = new Date(inicio);
-    const end = new Date(fim);
-    if (end.getTime() <= start.getTime()) {
+    if (fim.getTime() <= inicio.getTime()) {
       setError('O fim precisa ser depois do início.');
       return;
     }
 
     if (dias.length > 0 && repetirAte) {
-      if (!(new Date(`${repetirAte}T23:59:59`).getTime() > start.getTime())) {
+      const limit = new Date(
+        repetirAte.getFullYear(),
+        repetirAte.getMonth(),
+        repetirAte.getDate(),
+        23,
+        59,
+        59
+      );
+      if (!(limit.getTime() > inicio.getTime())) {
         setError('A data de repetição precisa ser depois do início.');
         return;
       }
@@ -93,11 +91,11 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
       usuario_nome: usuario?.full_name || usuario?.email || shift?.usuario_nome || '',
       modelo_id: modeloId,
       modelo_nome: modelo?.nome || '',
-      inicio: start.toISOString(),
-      fim: end.toISOString(),
+      inicio: inicio.toISOString(),
+      fim: fim.toISOString(),
       status: shift?.status || 'agendado',
       dias_semana: [...dias].sort((a, b) => a - b),
-      repetir_ate: dias.length > 0 && repetirAte ? repetirAte : null,
+      repetir_ate: dias.length > 0 && repetirAte ? formatDateKey(repetirAte) : null,
     };
 
     try {
@@ -144,23 +142,11 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
       </div>
 
       <div style={{ display: 'flex', gap: 8 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1, minWidth: 0 }}>
-          <span style={labelStyle}>Início</span>
-          <input
-            type="datetime-local"
-            style={controlStyle}
-            value={inicio}
-            onChange={(event) => setInicio(event.target.value)}
-          />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <DateTimePicker label="Início" value={inicio} onChange={setInicio} mode="datetime" />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1, minWidth: 0 }}>
-          <span style={labelStyle}>Fim</span>
-          <input
-            type="datetime-local"
-            style={controlStyle}
-            value={fim}
-            onChange={(event) => setFim(event.target.value)}
-          />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <DateTimePicker label="Fim" value={fim} onChange={setFim} mode="datetime" />
         </div>
       </div>
 

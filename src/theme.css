@@ -314,6 +314,28 @@ body {
   color: var(--c1);
 }
 
+.dtp-trigger:hover {
+  border-color: color-mix(in srgb, var(--c6) 50%, transparent);
+  background-color: color-mix(in srgb, var(--c8) 70%, transparent);
+}
+
+.dtp-nav:hover {
+  background-color: color-mix(in srgb, var(--c1) 22%, transparent);
+}
+
+.dtp-day:hover:not(:disabled):not(.is-selected) {
+  background-color: color-mix(in srgb, var(--c6) 18%, transparent) !important;
+}
+
+.dtp-hour:hover:not(.is-active) {
+  background-color: color-mix(in srgb, var(--c1) 14%, transparent) !important;
+  opacity: 1 !important;
+}
+
+.dtp-hours::-webkit-scrollbar {
+  display: none;
+}
+
 .taskbar-clock .clock-time {
   font-size: 13px;
   font-weight: 700;

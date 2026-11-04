@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import DateTimePicker, { formatDateKey } from '@/components/DateTimePicker';
 
 const arrowStyle = {
   width: 24,
@@ -34,11 +35,11 @@ export default function WeekToolbar({
   onPickDate,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [dateInput, setDateInput] = useState('');
+  const [dateValue, setDateValue] = useState(null);
 
   const applyDate = () => {
-    if (!dateInput) return;
-    onPickDate(dateInput);
+    if (!dateValue) return;
+    onPickDate(formatDateKey(dateValue));
     setMenuOpen(false);
   };
 
@@ -156,22 +157,15 @@ export default function WeekToolbar({
 
             <div style={{ height: 1, background: 'color-mix(in srgb, var(--c2) 15%, transparent)' }} />
 
-            <span style={{ fontSize: 10, color: 'var(--c2)', opacity: 0.6 }}>Ir para data</span>
-
-            <input
-              type="date"
-              value={dateInput}
-              onChange={(event) => setDateInput(event.target.value)}
-              style={{
-                background: 'color-mix(in srgb, var(--c8) 60%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
-                borderRadius: 6,
-                fontSize: 11,
-                color: 'var(--c3)',
-                padding: '4px 6px',
-                fontFamily: 'var(--font-main)',
-              }}
-            />
+            <div style={{ minWidth: 240 }}>
+              <DateTimePicker
+                label="Ir para data"
+                value={dateValue}
+                onChange={setDateValue}
+                mode="date"
+                align="right"
+              />
+            </div>
 
             <button
               type="button"
