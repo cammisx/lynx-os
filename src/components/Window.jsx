@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { CloseIcon } from '@/components/icons';
 
-export default function Window({ title, onClose, children, width = 620, height = 460 }) {
+export default function Window({ title, icon: Icon, onClose, children, width = 620, height = 460 }) {
   const [pos, setPos] = useState(() => ({
     x: Math.max(8, Math.round((window.innerWidth - width) / 2)),
     y: Math.max(8, Math.round((window.innerHeight - height) / 2)),
@@ -69,17 +70,20 @@ export default function Window({ title, onClose, children, width = 620, height =
           userSelect: 'none',
         }}
       >
-        <span
-          style={{
-            fontSize: 12,
-            fontWeight: 700,
-            color: 'var(--c3)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {title}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, color: 'var(--c1)' }}>
+          {Icon && <Icon size={14} />}
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: 'var(--c3)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {title}
+          </span>
         </span>
 
         <button
@@ -103,9 +107,7 @@ export default function Window({ title, onClose, children, width = 620, height =
             flexShrink: 0,
           }}
         >
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M3 3l10 10M13 3L3 13" />
-          </svg>
+          <CloseIcon size={12} />
         </button>
       </div>
 

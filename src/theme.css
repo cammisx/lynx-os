@@ -268,6 +268,31 @@ body {
   background-color: color-mix(in srgb, var(--c1) 6%, transparent);
 }
 
+.md-icon-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--c2) 18%, transparent);
+  background: none;
+  color: var(--c2);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.md-icon-btn:hover {
+  background-color: color-mix(in srgb, var(--c1) 12%, transparent);
+  color: var(--c1);
+}
+
+.md-icon-btn.md-icon-danger:hover {
+  background-color: color-mix(in srgb, #ff6b6b 12%, transparent);
+  color: #ff6b6b;
+}
+
 .taskbar-clock .clock-time {
   font-size: 13px;
   font-weight: 700;

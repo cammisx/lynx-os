@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
 import ShiftForm from '@/components/shifts/ShiftForm';
+import { CalendarIcon, PlusIcon, PencilIcon, TrashIcon } from '@/components/icons';
 import { emitShiftsChanged } from '@/lib/desktopEvents';
 
 const DAY_MS = 86400000;
@@ -75,18 +76,6 @@ const navButton = {
   cursor: 'pointer',
 };
 
-const rowButton = {
-  height: 24,
-  padding: '0 8px',
-  borderRadius: 6,
-  border: '1px solid color-mix(in srgb, var(--c2) 22%, transparent)',
-  color: 'var(--c2)',
-  fontSize: 9,
-  fontFamily: 'var(--font-main)',
-  cursor: 'pointer',
-  transition: 'background-color 150ms ease',
-};
-
 const weekLabelStyle = {
   fontSize: 11,
   fontWeight: 600,
@@ -153,7 +142,7 @@ export default function TurnosWindow({ onClose }) {
 
   return (
     <>
-      <Window title="🗓️ Turnos" onClose={onClose} width={720} height={520}>
+      <Window title="Turnos" icon={CalendarIcon} onClose={onClose} width={720} height={520}>
         {form ? (
           <ShiftForm
             users={users}
@@ -223,6 +212,9 @@ export default function TurnosWindow({ onClose }) {
                 onClick={() => setForm('new')}
                 style={{
                   marginLeft: 'auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
                   height: 26,
                   padding: '0 12px',
                   borderRadius: 7,
@@ -232,7 +224,8 @@ export default function TurnosWindow({ onClose }) {
                   cursor: 'pointer',
                 }}
               >
-                + Novo turno
+                <PlusIcon size={13} />
+                Novo turno
               </button>
             </div>
 
@@ -294,19 +287,21 @@ export default function TurnosWindow({ onClose }) {
                       </span>
                       <button
                         type="button"
-                        className="md-btn"
-                        style={rowButton}
+                        className="md-icon-btn"
+                        title="Editar"
+                        aria-label="Editar"
                         onClick={() => setForm(shift)}
                       >
-                        Editar
+                        <PencilIcon size={15} />
                       </button>
                       <button
                         type="button"
-                        className="md-btn"
-                        style={rowButton}
+                        className="md-icon-btn md-icon-danger"
+                        title="Excluir"
+                        aria-label="Excluir"
                         onClick={() => setPendingDelete(shift)}
                       >
-                        Excluir
+                        <TrashIcon size={15} />
                       </button>
                     </div>
                   </div>

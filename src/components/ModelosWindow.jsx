@@ -3,22 +3,10 @@ import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
 import ModeloForm from '@/components/ModeloForm';
+import { UsersIcon, PlusIcon, PencilIcon, TrashIcon } from '@/components/icons';
 import { emitModelsChanged } from '@/lib/desktopEvents';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
-
-const rowButton = {
-  height: 24,
-  minWidth: 24,
-  padding: '0 8px',
-  borderRadius: 6,
-  border: '1px solid color-mix(in srgb, var(--c2) 22%, transparent)',
-  color: 'var(--c2)',
-  fontSize: 9,
-  fontFamily: 'var(--font-main)',
-  cursor: 'pointer',
-  transition: 'background-color 150ms ease',
-};
 
 export default function ModelosWindow({ onClose }) {
   const [models, setModels] = useState([]);
@@ -54,7 +42,7 @@ export default function ModelosWindow({ onClose }) {
 
   return (
     <>
-      <Window title="🪟 Modelos" onClose={onClose} width={620} height={470}>
+      <Window title="Modelos" icon={UsersIcon} onClose={onClose} width={620} height={470}>
         {form ? (
           <ModeloForm
             users={users}
@@ -70,6 +58,9 @@ export default function ModelosWindow({ onClose }) {
                 className="md-primary"
                 onClick={() => setForm('new')}
                 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
                   borderRadius: 8,
                   padding: '7px 14px',
                   fontSize: 12,
@@ -78,7 +69,8 @@ export default function ModelosWindow({ onClose }) {
                   cursor: 'pointer',
                 }}
               >
-                + Nova modelo
+                <PlusIcon size={13} />
+                Nova modelo
               </button>
             </div>
 
@@ -113,16 +105,23 @@ export default function ModelosWindow({ onClose }) {
                   </div>
 
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    <button type="button" className="md-btn" style={rowButton} onClick={() => setForm(model)}>
-                      Editar
+                    <button
+                      type="button"
+                      className="md-icon-btn"
+                      title="Editar"
+                      aria-label="Editar"
+                      onClick={() => setForm(model)}
+                    >
+                      <PencilIcon size={15} />
                     </button>
                     <button
                       type="button"
-                      className="md-btn"
-                      style={rowButton}
+                      className="md-icon-btn md-icon-danger"
+                      title="Excluir"
+                      aria-label="Excluir"
                       onClick={() => setPendingDelete(model)}
                     >
-                      Excluir
+                      <TrashIcon size={15} />
                     </button>
                   </div>
                 </div>

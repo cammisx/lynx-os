@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { LogInIcon, LogOutIcon } from '@/components/icons';
 
 const firstWord = (value) => {
   const words = String(value || '').trim().split(/\s+/).filter(Boolean);
@@ -34,6 +35,8 @@ const LINE_STYLE = {
 };
 
 const HIGHLIGHT = { display: 'inline', color: 'var(--c1)' };
+
+const PUNCH_STYLE = { display: 'flex', alignItems: 'center', gap: 6 };
 
 export default function ShiftWidget({
   user,
@@ -71,8 +74,10 @@ export default function ShiftWidget({
         className="clk-punch clk-punch-out"
         disabled={!!saving}
         onClick={onPunchOut}
+        style={PUNCH_STYLE}
       >
-        {saving === 'out' ? 'Registrando…' : '⏹ Registrar Saída'}
+        <LogOutIcon size={13} />
+        {saving === 'out' ? 'Registrando…' : 'Registrar Saída'}
       </button>
     );
   } else if (nextShift) {
@@ -90,8 +95,10 @@ export default function ShiftWidget({
           className="clk-punch clk-punch-in"
           disabled={!!saving}
           onClick={onPunchIn}
+          style={PUNCH_STYLE}
         >
-          {saving === 'in' ? 'Registrando…' : '⏱ Registrar Entrada'}
+          <LogInIcon size={13} />
+          {saving === 'in' ? 'Registrando…' : 'Registrar Entrada'}
         </button>
       );
     }
