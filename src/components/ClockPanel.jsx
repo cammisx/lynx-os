@@ -96,7 +96,7 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
         fim: { $gt: anchor.toISOString() },
       }),
       base44.entities.Shift.filter({
-        repeticao: { $in: ['semanal', 'quinzenal'] },
+        dias_semana: { $exists: true },
         inicio: { $lt: weekEnd.toISOString() },
       }),
     ])

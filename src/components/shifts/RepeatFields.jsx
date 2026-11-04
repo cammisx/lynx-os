@@ -1,4 +1,4 @@
-import RepeatSelect from '@/components/shifts/RepeatSelect';
+import { WEEKDAY_LABELS, daysLabel, sortDays } from '@/lib/shiftRepeat';
 
 const controlStyle = {
   width: '100%',
@@ -19,9 +19,7 @@ const labelStyle = {
   opacity: 0.7,
 };
 
-const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-
-const chipStyle = (marked, disabled) => ({
+const chipStyle = (marked) => ({
   width: 34,
   height: 28,
   borderRadius: 7,
@@ -29,62 +27,45 @@ const chipStyle = (marked, disabled) => ({
   fontSize: 11,
   fontWeight: 700,
   padding: 0,
+  cursor: 'pointer',
   background: marked ? 'color-mix(in srgb, var(--c1) 20%, transparent)' : 'none',
   border: marked
     ? '1px solid color-mix(in srgb, var(--c1) 45%, transparent)'
     : '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
   color: marked ? 'var(--c1)' : 'var(--c2)',
-  opacity: disabled ? 0.4 : 1,
-  cursor: disabled ? 'default' : 'pointer',
 });
 
-export default function RepeatFields({
-  repeticao,
-  dias,
-  repetirAte,
-  onRepeticaoChange,
-  onToggleDia,
-  onRepetirAteChange,
-}) {
-  const active = repeticao !== 'unica';
+export default function RepeatFields({ dias, repetirAte, onToggleDia, onRepetirAteChange }) {
+  const marked = sortDays(dias);
 
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-        <span style={labelStyle}>Repetição</span>
-        <RepeatSelect value={repeticao} onChange={onRepeticaoChange} />
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
         <div style={{ display: 'flex', gap: 6 }}>
-          {WEEKDAYS.map((label, index) => {
-            const marked = dias.includes(index);
+          {WEEKDAY_LABELS.map((label, index) => {
+            const isMarked = marked.includes(index);
             return (
               <button
                 key={label}
                 type="button"
-                className={`rp-chip${marked ? ' is-marked' : ''}`}
-                aria-pressed={marked}
-                disabled={!active}
-                onClick={() => {
-                  if (!active) return;
-                  onToggleDia(index);
-                }}
-                style={chipStyle(marked, !active)}
+                className={`rp-chip${isMarked ? ' is-marked' : ''}`}
+                aria-pressed={isMarked}
+                onClick={() => onToggleDia(index)}
+                style={chipStyle(isMarked)}
               >
                 {label}
               </button>
             );
           })}
         </div>
-        {!active && (
-          <span style={{ fontSize: 10, color: 'var(--c2)', opacity: 0.7 }}>
-            O turno acontece só na data de início
-          </span>
-        )}
+        <span style={{ fontSize: 10, color: 'var(--c2)', opacity: 0.7 }}>
+          {marked.length
+            ? `Repete toda semana: ${daysLabel(marked)}`
+            : 'Turno único, acontece só na data de início'}
+        </span>
       </div>
 
-      {active && (
+      {marked.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           <span style={labelStyle}>Repetir até</span>
           <input
@@ -93,6 +74,7 @@ export default function RepeatFields({
             value={repetirAte}
             onChange={(event) => onRepetirAteChange(event.target.value)}
           />
+          <span style={labelStyle}>Deixe vazio para repetir sem prazo</span>
         </div>
       )}
     </>
