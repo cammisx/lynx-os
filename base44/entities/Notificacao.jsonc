@@ -1,0 +1,56 @@
+{
+  "name": "Notificacao",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string"
+    },
+    "titulo": {
+      "type": "string"
+    },
+    "mensagem": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "turno_esquecido"
+      ],
+      "enumColors": [
+        "yellow"
+      ],
+      "default": "turno_esquecido"
+    },
+    "shift_id": {
+      "type": "string"
+    },
+    "ocorrencia_data": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "resolvida"
+      ],
+      "enumColors": [
+        "yellow",
+        "green"
+      ],
+      "default": "pendente"
+    },
+    "resposta": {
+      "type": "string"
+    },
+    "criado_por_automacao": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "usuario_id",
+    "titulo",
+    "mensagem",
+    "tipo"
+  ]
+}

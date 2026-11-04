@@ -39,6 +39,13 @@
     "timestamp": {
       "type": "string",
       "format": "date-time"
+    },
+    "automatico": {
+      "type": "boolean",
+      "default": false
+    },
+    "justificativa": {
+      "type": "string"
     }
   },
   "required": [

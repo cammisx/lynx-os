@@ -1,12 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import StartMenu from '@/components/StartMenu';
 import ClockPanel from '@/components/ClockPanel';
+import NotificationsPanel from '@/components/notifications/NotificationsPanel';
+import JustificativaModal from '@/components/notifications/JustificativaModal';
+import useNotifications from '@/hooks/useNotifications';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Taskbar({ onOpenApp }) {
+  const { user } = useAuth();
+  const { items, readIds, markRead, reload } = useNotifications(user?.id);
   const [now, setNow] = useState(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
   const [clockOpen, setClockOpen] = useState(false);
+  const [bellOpen, setBellOpen] = useState(false);
+  const [justificativa, setJustificativa] = useState(null);
   const clockRef = useRef(null);
+  const bellRef = useRef(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -25,6 +34,24 @@ export default function Taskbar({ onOpenApp }) {
     month: '2-digit',
   });
 
+  const pendentes = items.filter(
+    (notification) => notification.status === 'pendente' && !readIds.has(notification.id)
+  ).length;
+
+  const openJustificativa = (notification) => {
+    markRead(notification.id);
+    setBellOpen(false);
+    setJustificativa(notification);
+  };
+
+  const toggleBell = () => {
+    if (!bellOpen) {
+      reload();
+      setClockOpen(false);
+    }
+    setBellOpen(!bellOpen);
+  };
+
   return (
     <div className="taskbar">
       <div
@@ -36,7 +63,14 @@ export default function Taskbar({ onOpenApp }) {
       />
 
       <div className="taskbar-right">
-        <button type="button" className="taskbar-bell" aria-label="Notificações">
+        <button
+          ref={bellRef}
+          type="button"
+          className="taskbar-bell"
+          aria-label="Notificações"
+          onClick={toggleBell}
+          style={{ position: 'relative' }}
+        >
           <svg
             width="18"
             height="18"
@@ -51,6 +85,20 @@ export default function Taskbar({ onOpenApp }) {
             <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.7 21a2 2 0 0 1-3.4 0" />
           </svg>
+          {pendentes > 0 && (
+            <span
+              style={{
+                position: 'absolute',
+                top: 3,
+                right: 3,
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: 'var(--c1)',
+                animation: 'clk-punch-pulse 1.8s ease-in-out infinite',
+              }}
+            />
+          )}
         </button>
 
         <div
@@ -59,7 +107,10 @@ export default function Taskbar({ onOpenApp }) {
           role="button"
           tabIndex={0}
           aria-label="Abrir turnos"
-          onClick={() => setClockOpen((prev) => !prev)}
+          onClick={() => {
+            setClockOpen((prev) => !prev);
+            setBellOpen(false);
+          }}
         >
           <span className="clock-time">{time}</span>
           <span className="clock-date">{date}</span>
@@ -74,7 +125,31 @@ export default function Taskbar({ onOpenApp }) {
           if (onOpenApp) onOpenApp(app);
         }}
       />
-      <ClockPanel open={clockOpen} onClose={() => setClockOpen(false)} anchorRef={clockRef} />
+      <ClockPanel
+        open={clockOpen}
+        onClose={() => setClockOpen(false)}
+        anchorRef={clockRef}
+        notificacoes={items}
+        onOpenJustificativa={openJustificativa}
+      />
+
+      {bellOpen && (
+        <NotificationsPanel
+          items={items}
+          readIds={readIds}
+          anchorRef={bellRef}
+          onOpen={openJustificativa}
+          onClose={() => setBellOpen(false)}
+        />
+      )}
+
+      {justificativa && (
+        <JustificativaModal
+          notification={justificativa}
+          onClose={() => setJustificativa(null)}
+          onSaved={reload}
+        />
+      )}
     </div>
   );
 }

@@ -32,7 +32,7 @@ const shortDate = (date) =>
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
-export default function ClockPanel({ open, onClose, anchorRef }) {
+export default function ClockPanel({ open, onClose, anchorRef, notificacoes = [], onOpenJustificativa }) {
   const { user } = useAuth();
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()));
   const [weekShifts, setWeekShifts] = useState([]);
@@ -262,6 +262,14 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
     };
   }, [openEntries, ownShifts, models, pontoIndex]);
 
+  const justificativaPendente = useMemo(
+    () =>
+      notificacoes.find(
+        (notification) => notification.tipo === 'turno_esquecido' && notification.status === 'pendente'
+      ) || null,
+    [notificacoes]
+  );
+
   const showFeedback = (text, error = false) => {
     setFeedback({ text, error });
     clearTimeout(feedbackTimer.current);
@@ -389,6 +397,8 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
         saving={saving}
         feedback={feedback}
         onPunch={punch}
+        justificativaPendente={justificativaPendente}
+        onOpenJustificativa={onOpenJustificativa}
       />
 
       <WeekToolbar

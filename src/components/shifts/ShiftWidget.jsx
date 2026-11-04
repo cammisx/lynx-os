@@ -21,7 +21,16 @@ const HIGHLIGHT = { display: 'inline', color: 'var(--c1)' };
 
 const HINT_STYLE = { fontSize: 10, color: 'var(--c2)', opacity: 0.7 };
 
-export default function ShiftWidget({ user, displayName, ponto, saving, feedback, onPunch }) {
+export default function ShiftWidget({
+  user,
+  displayName,
+  ponto,
+  saving,
+  feedback,
+  onPunch,
+  justificativaPendente,
+  onOpenJustificativa,
+}) {
   const [, setSecond] = useState(0);
 
   useEffect(() => {
@@ -132,6 +141,25 @@ export default function ShiftWidget({ user, displayName, ponto, saving, feedback
       }}
     >
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {justificativaPendente && ponto.mode !== 'ativo' && ponto.mode !== 'pausa' && (
+          <button
+            type="button"
+            onClick={() => onOpenJustificativa(justificativaPendente)}
+            style={{
+              alignSelf: 'flex-start',
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+              color: '#ff6b6b',
+              fontSize: 11,
+              fontFamily: 'var(--font-main)',
+              textAlign: 'left',
+              cursor: 'pointer',
+            }}
+          >
+            Você tem uma saída pendente de justificativa.
+          </button>
+        )}
         {feedback ? (
           <span
             style={{ fontSize: 11, color: feedback.error ? '#ff6b6b' : 'var(--c1)' }}
