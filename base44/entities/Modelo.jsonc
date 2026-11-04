@@ -15,6 +15,9 @@
           },
           "usuario_nome": {
             "type": "string"
+          },
+          "identificador": {
+            "type": "string"
           }
         }
       }

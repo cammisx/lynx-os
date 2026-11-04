@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ShiftTooltip from '@/components/shifts/ShiftTooltip';
+import { expandShift } from '@/lib/shiftRepeat';
 
 const DAY_MS = 86400000;
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -53,22 +54,27 @@ const assignLanes = (items) => {
   return result;
 };
 
-const buildBlocks = (days, shifts) =>
-  days.map((day) => {
+const buildBlocks = (days, shifts) => {
+  const windowStart = days[0].getTime();
+  const windowEnd = days[days.length - 1].getTime() + DAY_MS;
+  const occurrences = shifts.flatMap((shift) => expandShift(shift, windowStart, windowEnd));
+
+  return days.map((day) => {
     const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
     const dayEnd = dayStart + DAY_MS;
     const items = [];
+    const seen = new Set();
 
-    shifts.forEach((shift) => {
-      const start = new Date(shift.inicio).getTime();
-      const end = new Date(shift.fim).getTime();
-      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
-      const from = Math.max(start, dayStart);
-      const to = Math.min(end, dayEnd);
+    occurrences.forEach((occurrence) => {
+      const from = Math.max(occurrence.start, dayStart);
+      const to = Math.min(occurrence.end, dayEnd);
       if (to <= from) return;
+      const key = `${occurrence.shift.id}-${dayStart}`;
+      if (seen.has(key)) return;
+      seen.add(key);
       items.push({
-        key: `${shift.id}-${dayStart}`,
-        shift,
+        key,
+        shift: occurrence.shift,
         start: from,
         end: to,
         top: ((from - dayStart) / DAY_MS) * 100,
@@ -78,6 +84,7 @@ const buildBlocks = (days, shifts) =>
 
     return assignLanes(items);
   });
+};
 
 export default function WeekGrid({ days, shifts, userId }) {
   const [hover, setHover] = useState(null);

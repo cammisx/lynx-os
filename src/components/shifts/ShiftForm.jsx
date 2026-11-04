@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import RepeatFields from '@/components/shifts/RepeatFields';
 
 const controlStyle = {
   width: '100%',
@@ -35,13 +36,6 @@ const atHour = (date, hour) => {
   return base;
 };
 
-const STATUS_OPTIONS = [
-  { value: 'agendado', label: 'agendado' },
-  { value: 'em_andamento', label: 'em andamento' },
-  { value: 'concluido', label: 'concluído' },
-  { value: 'cancelado', label: 'cancelado' },
-];
-
 export default function ShiftForm({ users, models, shift, defaultDate, onCancel, onSaved }) {
   const [usuarioId, setUsuarioId] = useState(shift?.usuario_id || '');
   const [modeloId, setModeloId] = useState(shift?.modelo_id || '');
@@ -51,9 +45,34 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
   const [fim, setFim] = useState(() =>
     shift?.fim ? toInput(shift.fim) : toInput(atHour(defaultDate || new Date(), 16))
   );
-  const [status, setStatus] = useState(shift?.status || 'agendado');
+  const [repeticao, setRepeticao] = useState(shift?.repeticao || 'nenhuma');
+  const [dias, setDias] = useState(() => {
+    if (Array.isArray(shift?.dias_semana) && shift.dias_semana.length > 0) {
+      return shift.dias_semana.map(Number);
+    }
+    const base = inicio ? new Date(inicio) : new Date();
+    return Number.isNaN(base.getTime()) ? [] : [base.getDay()];
+  });
+  const [repetirAte, setRepetirAte] = useState(() =>
+    shift?.repetir_ate ? String(shift.repetir_ate).slice(0, 10) : ''
+  );
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const toggleDia = (day) => {
+    setDias((prev) =>
+      prev.includes(day) ? prev.filter((item) => item !== day) : [...prev, day].sort((a, b) => a - b)
+    );
+  };
+
+  const changeInicio = (value) => {
+    const previousDay = inicio ? new Date(inicio).getDay() : null;
+    setInicio(value);
+    const next = new Date(value);
+    if (Number.isNaN(next.getTime())) return;
+    const nextDay = next.getDay();
+    setDias((prev) => (prev.length === 1 && prev[0] === previousDay ? [nextDay] : prev));
+  };
 
   const save = async () => {
     if (saving) return;
@@ -72,6 +91,18 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
       return;
     }
 
+    const active = repeticao !== 'nenhuma';
+    if (active) {
+      if (dias.length === 0) {
+        setError('Marque pelo menos um dia da semana.');
+        return;
+      }
+      if (repetirAte && !(new Date(`${repetirAte}T23:59:59`).getTime() > start.getTime())) {
+        setError('A data de repetição precisa ser depois do início.');
+        return;
+      }
+    }
+
     setError('');
     setSaving(true);
     const usuario = users.find((item) => item.id === usuarioId);
@@ -83,7 +114,10 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
       modelo_nome: modelo?.nome || '',
       inicio: start.toISOString(),
       fim: end.toISOString(),
-      status,
+      status: shift?.status || 'agendado',
+      repeticao: active ? repeticao : 'nenhuma',
+      dias_semana: active ? [...dias].sort((a, b) => a - b) : [],
+      repetir_ate: active && repetirAte ? repetirAte : null,
     };
 
     try {
@@ -136,7 +170,7 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
             type="datetime-local"
             style={controlStyle}
             value={inicio}
-            onChange={(event) => setInicio(event.target.value)}
+            onChange={(event) => changeInicio(event.target.value)}
           />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flex: 1, minWidth: 0 }}>
@@ -150,20 +184,14 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-        <span style={labelStyle}>Status</span>
-        <select
-          style={controlStyle}
-          value={status}
-          onChange={(event) => setStatus(event.target.value)}
-        >
-          {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <RepeatFields
+        repeticao={repeticao}
+        dias={dias}
+        repetirAte={repetirAte}
+        onRepeticaoChange={setRepeticao}
+        onToggleDia={toggleDia}
+        onRepetirAteChange={setRepetirAte}
+      />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
         {error && <span style={{ fontSize: 11, color: '#ff6b6b' }}>{error}</span>}

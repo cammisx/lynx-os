@@ -90,12 +90,22 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
     if (!open) return undefined;
     let active = true;
     const weekEnd = new Date(anchor.getTime() + 7 * DAY_MS);
-    base44.entities.Shift.filter({
-      inicio: { $lt: weekEnd.toISOString() },
-      fim: { $gt: anchor.toISOString() },
-    })
-      .then((result) => {
-        if (active) setWeekShifts(asList(result));
+    Promise.all([
+      base44.entities.Shift.filter({
+        inicio: { $lt: weekEnd.toISOString() },
+        fim: { $gt: anchor.toISOString() },
+      }),
+      base44.entities.Shift.filter({
+        repeticao: { $in: ['semanal', 'quinzenal'] },
+        inicio: { $lt: weekEnd.toISOString() },
+      }),
+    ])
+      .then(([weekResult, repeatResult]) => {
+        if (!active) return;
+        const merged = new Map();
+        asList(weekResult).forEach((shift) => merged.set(shift.id, shift));
+        asList(repeatResult).forEach((shift) => merged.set(shift.id, shift));
+        setWeekShifts([...merged.values()]);
       })
       .catch(() => {
         if (active) setWeekShifts([]);

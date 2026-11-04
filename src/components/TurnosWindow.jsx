@@ -238,6 +238,12 @@ export default function TurnosWindow({ onClose }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {shifts.map((shift) => {
                 const color = STATUS_COLOR[shift.status] || 'var(--c2)';
+                const repeatLabel =
+                  shift.repeticao === 'semanal'
+                    ? 'Repete semanal'
+                    : shift.repeticao === 'quinzenal'
+                      ? 'Repete quinzenal'
+                      : '';
                 return (
                   <div
                     key={shift.id}
@@ -268,6 +274,9 @@ export default function TurnosWindow({ onClose }) {
                       <span style={{ fontSize: 11, color: 'var(--c2)' }}>
                         {shift.modelo_nome || 'Sem modelo'} · {formatMoment(shift.inicio)} –{' '}
                         {formatMoment(shift.fim)}
+                        {repeatLabel && (
+                          <span style={{ fontSize: 10, color: 'var(--c2)' }}> · {repeatLabel}</span>
+                        )}
                       </span>
                     </div>
 

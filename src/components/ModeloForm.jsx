@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import ChatterRow from '@/components/models/ChatterRow';
 
 const inputStyle = {
   width: '100%',
@@ -20,6 +21,12 @@ export default function ModeloForm({ users, model, onCancel, onSaved }) {
     () => new Set((model?.chatters || []).map((chatter) => chatter.usuario_id))
   );
   const [saving, setSaving] = useState(false);
+  const [ids, setIds] = useState(() =>
+    Object.fromEntries(
+      (model?.chatters || []).map((chatter) => [chatter.usuario_id, chatter.identificador || ''])
+    )
+  );
+  const [errors, setErrors] = useState({});
 
   const toggle = (id) => {
     setSelected((prev) => {
@@ -30,17 +37,45 @@ export default function ModeloForm({ users, model, onCancel, onSaved }) {
     });
   };
 
+  const setIdentificador = (id, value) => {
+    const digits = value.replace(/\D/g, '').slice(0, 2);
+    setIds((prev) => ({ ...prev, [id]: digits }));
+    setErrors((prev) => (prev[id] ? { ...prev, [id]: '' } : prev));
+  };
+
   const save = async () => {
     const cleanName = nome.trim();
     if (!cleanName || saving) return;
+
+    const chosen = users.filter((user) => selected.has(user.id));
+    const nextErrors = {};
+    const counts = {};
+
+    chosen.forEach((user) => {
+      const value = ids[user.id] || '';
+      counts[value] = (counts[value] || 0) + 1;
+      if (!/^\d{2}$/.test(value)) nextErrors[user.id] = 'Informe 2 dígitos';
+    });
+    chosen.forEach((user) => {
+      const value = ids[user.id] || '';
+      if (!nextErrors[user.id] && counts[value] > 1) {
+        nextErrors[user.id] = 'ID repetido nesta modelo';
+      }
+    });
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+    setErrors({});
+
     setSaving(true);
     try {
-      const chatters = users
-        .filter((user) => selected.has(user.id))
-        .map((user) => ({
-          usuario_id: user.id,
-          usuario_nome: user.full_name || user.email || '',
-        }));
+      const chatters = chosen.map((user) => ({
+        usuario_id: user.id,
+        usuario_nome: user.full_name || user.email || '',
+        identificador: ids[user.id] || '',
+      }));
       if (model) {
         await base44.entities.Modelo.update(model.id, { nome: cleanName, chatters });
       } else {
@@ -84,28 +119,15 @@ export default function ModeloForm({ users, model, onCancel, onSaved }) {
             </span>
           )}
           {users.map((user) => (
-            <label
+            <ChatterRow
               key={user.id}
-              className="md-row"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '5px 6px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                fontSize: 12,
-                color: 'var(--c3)',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={selected.has(user.id)}
-                onChange={() => toggle(user.id)}
-                style={{ accentColor: 'var(--c1)', cursor: 'pointer' }}
-              />
-              {user.full_name || user.email}
-            </label>
+              user={user}
+              checked={selected.has(user.id)}
+              identificador={ids[user.id] || ''}
+              error={errors[user.id]}
+              onToggle={() => toggle(user.id)}
+              onIdentificadorChange={(value) => setIdentificador(user.id, value)}
+            />
           ))}
         </div>
       </div>

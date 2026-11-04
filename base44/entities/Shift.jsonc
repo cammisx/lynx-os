@@ -48,6 +48,30 @@
         "red"
       ],
       "default": "agendado"
+    },
+    "repeticao": {
+      "type": "string",
+      "enum": [
+        "nenhuma",
+        "semanal",
+        "quinzenal"
+      ],
+      "enumColors": [
+        "gray",
+        "blue",
+        "purple"
+      ],
+      "default": "nenhuma"
+    },
+    "dias_semana": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "repetir_ate": {
+      "type": "string",
+      "format": "date"
     }
   },
   "required": [
