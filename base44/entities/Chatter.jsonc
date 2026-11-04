@@ -1,0 +1,26 @@
+{
+  "name": "Chatter",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string"
+    },
+    "usuario_email": {
+      "type": "string"
+    },
+    "nome_exibicao": {
+      "type": "string"
+    },
+    "comissao": {
+      "type": "number",
+      "default": 0
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "usuario_id"
+  ]
+}

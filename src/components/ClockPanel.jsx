@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { MODELS_CHANGED, SHIFTS_CHANGED } from '@/lib/desktopEvents';
+import { CHATTERS_CHANGED, MODELS_CHANGED, SHIFTS_CHANGED } from '@/lib/desktopEvents';
+import { buildChatterNames } from '@/lib/chatterNames';
 import ShiftWidget from '@/components/shifts/ShiftWidget';
 import WeekToolbar from '@/components/shifts/WeekToolbar';
 import WeekGrid from '@/components/shifts/WeekGrid';
@@ -30,10 +31,12 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
   const [weekShifts, setWeekShifts] = useState([]);
   const [ownShifts, setOwnShifts] = useState([]);
   const [models, setModels] = useState([]);
+  const [chatters, setChatters] = useState([]);
   const [activeTab, setActiveTab] = useState('agenda');
   const [saving, setSaving] = useState(null);
   const [tick, setTick] = useState(0);
   const [modelsVersion, setModelsVersion] = useState(0);
+  const [chattersVersion, setChattersVersion] = useState(0);
   const panelRef = useRef(null);
   const userId = user?.id;
 
@@ -60,8 +63,16 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
       setModelsVersion((n) => n + 1);
       setTick((n) => n + 1);
     };
+    const handleChattersChanged = () => {
+      setChattersVersion((n) => n + 1);
+      setTick((n) => n + 1);
+    };
     window.addEventListener(MODELS_CHANGED, handleModelsChanged);
-    return () => window.removeEventListener(MODELS_CHANGED, handleModelsChanged);
+    window.addEventListener(CHATTERS_CHANGED, handleChattersChanged);
+    return () => {
+      window.removeEventListener(MODELS_CHANGED, handleModelsChanged);
+      window.removeEventListener(CHATTERS_CHANGED, handleChattersChanged);
+    };
   }, [open]);
 
   useEffect(() => {
@@ -85,6 +96,21 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
       active = false;
     };
   }, [open, modelsVersion]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    let active = true;
+    base44.entities.Chatter.list()
+      .then((result) => {
+        if (active) setChatters(asList(result));
+      })
+      .catch(() => {
+        if (active) setChatters([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [open, chattersVersion]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -134,6 +160,8 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
       active = false;
     };
   }, [open, userId, tick]);
+
+  const chatterNames = useMemo(() => buildChatterNames(chatters), [chatters]);
 
   const visibleModels = useMemo(() => {
     const isAdmin = user?.role === 'admin';
@@ -228,6 +256,7 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
     >
       <ShiftWidget
         user={user}
+        displayName={chatterNames[userId]}
         activeShift={activeShift}
         nextShift={nextShift}
         saving={saving}
@@ -259,7 +288,7 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
             transformOrigin: 'top center',
           }}
         >
-          <WeekGrid days={days} shifts={gridShifts} userId={userId} />
+          <WeekGrid days={days} shifts={gridShifts} userId={userId} chatterNames={chatterNames} />
         </div>
       </div>
     </div>,

@@ -86,7 +86,7 @@ const buildBlocks = (days, shifts) => {
   });
 };
 
-export default function WeekGrid({ days, shifts, userId }) {
+export default function WeekGrid({ days, shifts, userId, chatterNames = {} }) {
   const [hover, setHover] = useState(null);
   const blocksByDay = buildBlocks(days, shifts);
   const totalBlocks = blocksByDay.reduce((sum, list) => sum + list.length, 0);
@@ -235,7 +235,12 @@ export default function WeekGrid({ days, shifts, userId }) {
         )}
       </div>
 
-      <ShiftTooltip shift={hover?.shift} x={hover?.x} y={hover?.y} />
+      <ShiftTooltip
+        shift={hover?.shift}
+        name={hover?.shift ? chatterNames[hover.shift.usuario_id] : ''}
+        x={hover?.x}
+        y={hover?.y}
+      />
     </>
   );
 }

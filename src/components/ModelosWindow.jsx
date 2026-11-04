@@ -10,17 +10,17 @@ const asList = (result) => (Array.isArray(result) ? result : result?.items || []
 
 export default function ModelosWindow({ onClose }) {
   const [models, setModels] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [chatters, setChatters] = useState([]);
   const [form, setForm] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
 
   const load = async () => {
-    const [modelResult, userResult] = await Promise.all([
+    const [modelResult, chatterResult] = await Promise.all([
       base44.entities.Modelo.list(),
-      base44.entities.User.list(),
+      base44.entities.Chatter.list(),
     ]);
     setModels(asList(modelResult));
-    setUsers(asList(userResult));
+    setChatters(asList(chatterResult));
   };
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function ModelosWindow({ onClose }) {
       <Window title="Modelos" icon={UsersIcon} onClose={onClose} width={620} height={470}>
         {form ? (
           <ModeloForm
-            users={users}
+            chatters={chatters}
             model={form === 'new' ? null : form}
             onCancel={() => setForm(null)}
             onSaved={afterChange}

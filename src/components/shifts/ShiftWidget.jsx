@@ -40,6 +40,7 @@ const PUNCH_STYLE = { display: 'flex', alignItems: 'center', gap: 6 };
 
 export default function ShiftWidget({
   user,
+  displayName,
   activeShift,
   nextShift,
   saving,
@@ -53,7 +54,7 @@ export default function ShiftWidget({
     return () => clearInterval(id);
   }, []);
 
-  const nickname = firstWord(user?.full_name);
+  const nickname = firstWord(displayName || user?.full_name);
   const nextIn = nextShift ? new Date(nextShift.inicio).getTime() - Date.now() : Infinity;
   const canPunchIn = nextShift && nextIn <= 15 * 60000;
 

@@ -16,7 +16,11 @@ const MONTHS = [
 ];
 
 const WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
-const HOURS = Array.from({ length: 24 }, (_, index) => index);
+const SLOTS = Array.from({ length: 48 }, (_, index) => index);
+
+const slotOf = (date) => date.getHours() * 2 + (date.getMinutes() >= 30 ? 1 : 0);
+
+const slotLabel = (slot) => `${pad(Math.floor(slot / 2))}:${pad((slot % 2) * 30)}`;
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -172,12 +176,12 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
     };
   }, [open]);
 
-  const activeHour = value ? value.getHours() : null;
+  const activeSlot = value ? slotOf(value) : null;
 
   useEffect(() => {
     if (!open || !hoursRef.current) return;
-    const hour = activeHour === null ? new Date().getHours() : activeHour;
-    const target = hoursRef.current.querySelector(`[data-hour="${hour}"]`);
+    const slot = activeSlot === null ? slotOf(new Date()) : activeSlot;
+    const target = hoursRef.current.querySelector(`[data-slot="${slot}"]`);
     if (!target) return;
     hoursRef.current.scrollTop =
       target.offsetTop - hoursRef.current.clientHeight / 2 + target.offsetHeight / 2;
@@ -220,9 +224,17 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
     if (mode === 'date') setOpen(false);
   };
 
-  const pickHour = (hour) => {
+  const pickSlot = (slot) => {
     const base = value || focusDate;
-    const next = new Date(base.getFullYear(), base.getMonth(), base.getDate(), hour, 0, 0, 0);
+    const next = new Date(
+      base.getFullYear(),
+      base.getMonth(),
+      base.getDate(),
+      Math.floor(slot / 2),
+      (slot % 2) * 30,
+      0,
+      0
+    );
     onChange(next);
     setOpen(false);
   };
@@ -374,16 +386,16 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
                 fontFamily: 'var(--font-main)',
               }}
             >
-              {HOURS.map((hour) => (
+              {SLOTS.map((slot) => (
                 <button
-                  key={hour}
+                  key={slot}
                   type="button"
-                  data-hour={hour}
-                  className={`dtp-hour${activeHour === hour ? ' is-active' : ''}`}
-                  onClick={() => pickHour(hour)}
-                  style={hourStyle(activeHour === hour)}
+                  data-slot={slot}
+                  className={`dtp-hour${activeSlot === slot ? ' is-active' : ''}`}
+                  onClick={() => pickSlot(slot)}
+                  style={hourStyle(activeSlot === slot)}
                 >
-                  {pad(hour)}:00
+                  {slotLabel(slot)}
                 </button>
               ))}
             </div>

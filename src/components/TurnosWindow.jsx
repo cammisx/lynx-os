@@ -6,6 +6,7 @@ import ShiftForm from '@/components/shifts/ShiftForm';
 import { CalendarIcon, PlusIcon, PencilIcon, TrashIcon } from '@/components/icons';
 import { emitShiftsChanged } from '@/lib/desktopEvents';
 import { daysLabel, sortDays } from '@/lib/shiftRepeat';
+import { buildChatterNames, chatterName } from '@/lib/chatterNames';
 
 const DAY_MS = 86400000;
 
@@ -91,18 +92,21 @@ export default function TurnosWindow({ onClose }) {
   const [shifts, setShifts] = useState([]);
   const [models, setModels] = useState([]);
   const [users, setUsers] = useState([]);
+  const [chatters, setChatters] = useState([]);
   const [form, setForm] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
 
   const weekStartMs = anchor.getTime();
 
   const loadMeta = async () => {
-    const [modelResult, userResult] = await Promise.all([
+    const [modelResult, userResult, chatterResult] = await Promise.all([
       base44.entities.Modelo.list(),
       base44.entities.User.list(),
+      base44.entities.Chatter.list(),
     ]);
     setModels(asList(modelResult));
     setUsers(asList(userResult));
+    setChatters(asList(chatterResult));
   };
 
   const loadShifts = async () => {
@@ -138,6 +142,7 @@ export default function TurnosWindow({ onClose }) {
     emitShiftsChanged();
   };
 
+  const chatterNames = buildChatterNames(chatters);
   const days = Array.from({ length: 7 }, (_, i) => addDays(anchor, i));
   const range = `${shortDate(days[0])} – ${shortDate(days[6])}`;
 
@@ -268,7 +273,7 @@ export default function TurnosWindow({ onClose }) {
                           textOverflow: 'ellipsis',
                         }}
                       >
-                        {shift.usuario_nome || 'Sem chatter'}
+                        {chatterName(chatterNames, shift.usuario_id, shift.usuario_nome) || 'Sem chatter'}
                       </span>
                       <span style={{ fontSize: 11, color: 'var(--c2)' }}>
                         {shift.modelo_nome || 'Sem modelo'} · {formatMoment(shift.inicio)} –{' '}

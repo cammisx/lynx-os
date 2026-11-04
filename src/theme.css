@@ -336,6 +336,15 @@ body {
   display: none;
 }
 
+.gs-option {
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.gs-option:hover {
+  background-color: color-mix(in srgb, var(--c1) 15%, transparent) !important;
+  color: var(--c1) !important;
+}
+
 .taskbar-clock .clock-time {
   font-size: 13px;
   font-weight: 700;

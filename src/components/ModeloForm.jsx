@@ -15,7 +15,7 @@ const inputStyle = {
   outline: 'none',
 };
 
-export default function ModeloForm({ users, model, onCancel, onSaved }) {
+export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
   const [nome, setNome] = useState(model?.nome || '');
   const [selected, setSelected] = useState(
     () => new Set((model?.chatters || []).map((chatter) => chatter.usuario_id))
@@ -47,19 +47,19 @@ export default function ModeloForm({ users, model, onCancel, onSaved }) {
     const cleanName = nome.trim();
     if (!cleanName || saving) return;
 
-    const chosen = users.filter((user) => selected.has(user.id));
+    const chosen = chatters.filter((chatter) => selected.has(chatter.usuario_id));
     const nextErrors = {};
     const counts = {};
 
-    chosen.forEach((user) => {
-      const value = ids[user.id] || '';
+    chosen.forEach((chatter) => {
+      const value = ids[chatter.usuario_id] || '';
       counts[value] = (counts[value] || 0) + 1;
-      if (!/^\d{2}$/.test(value)) nextErrors[user.id] = 'Informe 2 dígitos';
+      if (!/^\d{2}$/.test(value)) nextErrors[chatter.usuario_id] = 'Informe 2 dígitos';
     });
-    chosen.forEach((user) => {
-      const value = ids[user.id] || '';
-      if (!nextErrors[user.id] && counts[value] > 1) {
-        nextErrors[user.id] = 'ID repetido nesta modelo';
+    chosen.forEach((chatter) => {
+      const value = ids[chatter.usuario_id] || '';
+      if (!nextErrors[chatter.usuario_id] && counts[value] > 1) {
+        nextErrors[chatter.usuario_id] = 'ID repetido nesta modelo';
       }
     });
 
@@ -71,15 +71,15 @@ export default function ModeloForm({ users, model, onCancel, onSaved }) {
 
     setSaving(true);
     try {
-      const chatters = chosen.map((user) => ({
-        usuario_id: user.id,
-        usuario_nome: user.full_name || user.email || '',
-        identificador: ids[user.id] || '',
+      const members = chosen.map((chatter) => ({
+        usuario_id: chatter.usuario_id,
+        usuario_nome: chatter.nome_exibicao || chatter.usuario_email || '',
+        identificador: ids[chatter.usuario_id] || '',
       }));
       if (model) {
-        await base44.entities.Modelo.update(model.id, { nome: cleanName, chatters });
+        await base44.entities.Modelo.update(model.id, { nome: cleanName, chatters: members });
       } else {
-        await base44.entities.Modelo.create({ nome: cleanName, chatters });
+        await base44.entities.Modelo.create({ nome: cleanName, chatters: members });
       }
       await onSaved();
     } finally {
@@ -113,20 +113,20 @@ export default function ModeloForm({ users, model, onCancel, onSaved }) {
             padding: 6,
           }}
         >
-          {users.length === 0 && (
+          {chatters.length === 0 && (
             <span style={{ fontSize: 11, color: 'var(--c2)', opacity: 0.6, padding: 4 }}>
-              Nenhum usuário encontrado.
+              Nenhum chatter cadastrado ainda.
             </span>
           )}
-          {users.map((user) => (
+          {chatters.map((chatter) => (
             <ChatterRow
-              key={user.id}
-              user={user}
-              checked={selected.has(user.id)}
-              identificador={ids[user.id] || ''}
-              error={errors[user.id]}
-              onToggle={() => toggle(user.id)}
-              onIdentificadorChange={(value) => setIdentificador(user.id, value)}
+              key={chatter.usuario_id}
+              nome={chatter.nome_exibicao || chatter.usuario_email}
+              checked={selected.has(chatter.usuario_id)}
+              identificador={ids[chatter.usuario_id] || ''}
+              error={errors[chatter.usuario_id]}
+              onToggle={() => toggle(chatter.usuario_id)}
+              onIdentificadorChange={(value) => setIdentificador(chatter.usuario_id, value)}
             />
           ))}
         </div>

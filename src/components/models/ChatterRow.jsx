@@ -13,7 +13,7 @@ const idInputStyle = {
   outline: 'none',
 };
 
-export default function ChatterRow({ user, checked, identificador, error, onToggle, onIdentificadorChange }) {
+export default function ChatterRow({ nome, checked, identificador, error, onToggle, onIdentificadorChange }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <div
@@ -52,7 +52,7 @@ export default function ChatterRow({ user, checked, identificador, error, onTogg
               textOverflow: 'ellipsis',
             }}
           >
-            {user.full_name || user.email}
+            {nome}
           </span>
         </label>
 
