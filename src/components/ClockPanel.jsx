@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { MODELS_CHANGED } from '@/lib/desktopEvents';
+import { MODELS_CHANGED, SHIFTS_CHANGED } from '@/lib/desktopEvents';
 import ShiftWidget from '@/components/shifts/ShiftWidget';
 import WeekToolbar from '@/components/shifts/WeekToolbar';
 import WeekGrid from '@/components/shifts/WeekGrid';
@@ -62,6 +62,13 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
     };
     window.addEventListener(MODELS_CHANGED, handleModelsChanged);
     return () => window.removeEventListener(MODELS_CHANGED, handleModelsChanged);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const handleShiftsChanged = () => setTick((n) => n + 1);
+    window.addEventListener(SHIFTS_CHANGED, handleShiftsChanged);
+    return () => window.removeEventListener(SHIFTS_CHANGED, handleShiftsChanged);
   }, [open]);
 
   useEffect(() => {
