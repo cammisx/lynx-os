@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import StartMenu from '@/components/StartMenu';
 
 export default function Taskbar() {
   const [now, setNow] = useState(() => new Date());
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -22,7 +24,13 @@ export default function Taskbar() {
 
   return (
     <div className="taskbar">
-      <div className="taskbar-start" role="button" tabIndex={0} aria-label="Iniciar" />
+      <div
+        className={`taskbar-start${menuOpen ? ' is-active' : ''}`}
+        role="button"
+        tabIndex={0}
+        aria-label="Iniciar"
+        onClick={() => setMenuOpen((prev) => !prev)}
+      />
 
       <div className="taskbar-right">
         <button type="button" className="taskbar-bell" aria-label="Notificações">
@@ -47,6 +55,8 @@ export default function Taskbar() {
           <span className="clock-date">{date}</span>
         </div>
       </div>
+
+      <StartMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
     </div>
   );
 }

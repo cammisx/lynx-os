@@ -89,6 +89,32 @@ body {
   transition: background-color var(--transition-fast);
 }
 
+.start-power:hover {
+  background-color: color-mix(in srgb, var(--c1) 12%, transparent);
+}
+
+@keyframes sm-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes sm-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+}
+
 .taskbar-start:hover {
   background-color: color-mix(in srgb, var(--c1) 18%, transparent);
 }
