@@ -1,0 +1,193 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap');
+
+[data-theme="silk"] {
+  --c1: #F0943A;
+  --c5: #C8387A;
+  --c6: #E8604A;
+  --c8: #1A0510;
+  --c14: #9B3FA8;
+  --ink: 255, 255, 255;
+  --ink-hex: #ffffff;
+}
+
+:root,
+[data-theme] {
+  --c3: color-mix(in srgb, var(--ink-hex) 100%, transparent);
+  --c2: color-mix(in srgb, var(--ink-hex) 60%, transparent);
+  --c12: color-mix(in srgb, var(--ink-hex) 35%, transparent);
+  --c4: color-mix(in srgb, var(--c5) 18%, transparent);
+  --c7: color-mix(in srgb, var(--c5) 6%, transparent);
+  --c9: color-mix(in srgb, var(--c5) 55%, transparent);
+  --c11: color-mix(in srgb, var(--c5) 40%, transparent);
+  --c13: color-mix(in srgb, var(--c8) 75%, transparent);
+  --blur-glass: blur(16px);
+  --blur-taskbar: blur(24px);
+  --font-main: 'Roboto Mono', 'Courier New', monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --transition-fast: 150ms ease;
+  --transition-md: 300ms ease;
+  --white-hi-strong: rgba(255, 255, 255, 0.55);
+  --white-hi-mid: rgba(255, 255, 255, 0.35);
+  --white-hi-soft: rgba(255, 255, 255, 0.10);
+  --overlay-light: rgba(0, 0, 0, 0.18);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body.is-desktop-shell {
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+/* ---------- Taskbar ---------- */
+.taskbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(100vh * 1.5 / 24);
+  width: 100%;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 9000;
+  background-image:
+    linear-gradient(to bottom, var(--c4) 0%, transparent 18%),
+    linear-gradient(to top, var(--c5) 30%, transparent 40%),
+    linear-gradient(to right, var(--c6) 40%, var(--c5) 35%, var(--c1) 30%);
+  border-top: 1.5px solid
+    color-mix(in srgb, white 25%, color-mix(in srgb, var(--c1) 35%, transparent));
+  backdrop-filter: var(--blur-taskbar);
+  -webkit-backdrop-filter: var(--blur-taskbar);
+  box-shadow:
+    0 -2px 24px color-mix(in srgb, var(--c1) 25%, transparent),
+    inset 0 1px 0 var(--white-hi-soft);
+}
+
+.taskbar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 5%;
+  right: 5%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--c5), transparent);
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.taskbar-start {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: calc(100vw / 12);
+  border-right: 1px solid color-mix(in srgb, white 12%, transparent);
+  background-color: transparent;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.taskbar-start:hover {
+  background-color: color-mix(in srgb, var(--c1) 18%, transparent);
+}
+
+.taskbar-start:active,
+.taskbar-start.is-active {
+  background-color: color-mix(in srgb, var(--c1) 25%, transparent);
+}
+
+.taskbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+}
+
+.taskbar-bell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--c3);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.taskbar-bell:hover {
+  background-color: color-mix(in srgb, var(--c1) 12%, transparent);
+}
+
+.taskbar-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+  user-select: none;
+}
+
+.taskbar-clock .clock-time {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c3);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.taskbar-clock .clock-date {
+  font-size: 11px;
+  color: var(--c2);
+  font-variant-numeric: tabular-nums;
+}
+
+[data-mode="light"] .taskbar {
+  background-image:
+    linear-gradient(to bottom, color-mix(in srgb, var(--c5) 10%, transparent) 0%, transparent 18%),
+    linear-gradient(to top, color-mix(in srgb, var(--c5) 12%, transparent) 30%, transparent 40%),
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--c6) 16%, transparent) 40%,
+      color-mix(in srgb, var(--c5) 14%, transparent) 35%,
+      color-mix(in srgb, var(--c1) 12%, transparent) 30%
+    );
+  border-top-color: rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 -2px 24px color-mix(in srgb, var(--c1) 18%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+[data-mode="light"] .taskbar-start {
+  border-right-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-mode="light"] .taskbar-bell,
+[data-mode="light"] .taskbar-clock .clock-time {
+  color: #1A0510;
+}
+
+[data-mode="light"] .taskbar-clock .clock-date {
+  color: rgba(26, 5, 16, 0.6);
+}
