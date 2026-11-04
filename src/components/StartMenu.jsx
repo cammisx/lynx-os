@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/lib/AuthContext';
-import IconTile from '@/components/icons/IconTile';
 import { UsersIcon, CalendarIcon } from '@/components/icons';
 
 const ANIM_MS = 180;
@@ -129,7 +128,7 @@ export default function StartMenu({ open, onClose, onOpenApp }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 12,
+                  gap: 10,
                   width: '100%',
                   padding: '8px 10px',
                   borderRadius: 8,
@@ -140,9 +139,7 @@ export default function StartMenu({ open, onClose, onOpenApp }) {
                   transition: 'background-color 150ms ease',
                 }}
               >
-                <IconTile>
-                  <app.Icon size={15} />
-                </IconTile>
+                <app.Icon size={18} />
                 <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--c3)' }}>{app.title}</span>
                   <span style={{ fontSize: 11, color: 'var(--c2)', opacity: 0.7 }}>{app.desc}</span>

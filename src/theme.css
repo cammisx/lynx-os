@@ -245,6 +245,10 @@ body {
   background-color: transparent;
 }
 
+.sm-item {
+  color: var(--c1);
+}
+
 .sm-item:hover {
   background-color: color-mix(in srgb, var(--c1) 12%, transparent);
 }
