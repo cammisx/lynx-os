@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import StartMenu from '@/components/StartMenu';
 import ClockPanel from '@/components/ClockPanel';
 
-export default function Taskbar() {
+export default function Taskbar({ onOpenApp }) {
   const [now, setNow] = useState(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
   const [clockOpen, setClockOpen] = useState(false);
@@ -66,7 +66,14 @@ export default function Taskbar() {
         </div>
       </div>
 
-      <StartMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <StartMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onOpenApp={(app) => {
+          setMenuOpen(false);
+          if (onOpenApp) onOpenApp(app);
+        }}
+      />
       <ClockPanel open={clockOpen} onClose={() => setClockOpen(false)} anchorRef={clockRef} />
     </div>
   );

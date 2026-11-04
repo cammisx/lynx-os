@@ -4,7 +4,12 @@ import { useAuth } from '@/lib/AuthContext';
 
 const ANIM_MS = 180;
 
-export default function StartMenu({ open, onClose }) {
+const APPS = [
+  { id: 'modelos', icon: '🪟', title: 'Modelos', desc: 'Gerenciar modelos e chatters' },
+  { id: 'turnos', icon: '🗓️', title: 'Turnos', desc: 'Escala e turnos da equipe' },
+];
+
+export default function StartMenu({ open, onClose, onOpenApp }) {
   const { user, logout } = useAuth();
   const [mounted, setMounted] = useState(open);
   const [closing, setClosing] = useState(false);
@@ -30,6 +35,7 @@ export default function StartMenu({ open, onClose }) {
   const words = source.split(/\s+/).filter(Boolean);
   const initials = words.slice(0, 2).map((word) => word[0]).join('').toUpperCase() || '?';
   const displayName = user?.full_name || user?.nickname || user?.email || 'Conta';
+  const isAdmin = user?.role === 'admin';
 
   const panelStyle = {
     position: 'fixed',
@@ -107,7 +113,39 @@ export default function StartMenu({ open, onClose }) {
         style={{ position: 'fixed', inset: 0, zIndex: 1099, background: 'transparent' }}
       />
       <div style={panelStyle}>
-        <div style={bodyStyle} />
+        <div style={bodyStyle}>
+          {isAdmin &&
+            APPS.map((app) => (
+              <button
+                key={app.id}
+                type="button"
+                className="sm-item"
+                onClick={() => {
+                  onClose();
+                  if (onOpenApp) onOpenApp(app.id);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  width: '100%',
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  border: 'none',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-main)',
+                  transition: 'background-color 150ms ease',
+                }}
+              >
+                <span style={{ fontSize: 16, lineHeight: 1 }}>{app.icon}</span>
+                <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--c3)' }}>{app.title}</span>
+                  <span style={{ fontSize: 11, color: 'var(--c2)', opacity: 0.7 }}>{app.desc}</span>
+                </span>
+              </button>
+            ))}
+        </div>
         <div style={footerStyle}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
             <div style={avatarStyle}>{initials}</div>

@@ -1,9 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import '@/theme.css';
 import DesktopBackground from '@/components/DesktopBackground';
 import Taskbar from '@/components/Taskbar';
+import Window from '@/components/Window';
+import ModelosWindow from '@/components/ModelosWindow';
 
 export default function Dashboard() {
+  const [openApp, setOpenApp] = useState(null);
+
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-theme', 'silk');
@@ -23,7 +27,17 @@ export default function Dashboard() {
       }}
     >
       <DesktopBackground />
-      <Taskbar />
+      <Taskbar onOpenApp={setOpenApp} />
+
+      {openApp === 'modelos' && <ModelosWindow onClose={() => setOpenApp(null)} />}
+
+      {openApp === 'turnos' && (
+        <Window title="🗓️ Turnos" onClose={() => setOpenApp(null)} width={520} height={380}>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--c2)', fontFamily: 'var(--font-main)' }}>
+            em breve
+          </p>
+        </Window>
+      )}
     </div>
   );
 }

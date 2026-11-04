@@ -240,6 +240,34 @@ body {
   animation: clk-punch-pulse 1.8s ease-in-out infinite;
 }
 
+.sm-item,
+.md-btn {
+  background-color: transparent;
+}
+
+.sm-item:hover {
+  background-color: color-mix(in srgb, var(--c1) 12%, transparent);
+}
+
+.md-btn:hover {
+  background-color: color-mix(in srgb, var(--c1) 12%, transparent);
+}
+
+.md-primary {
+  background-color: color-mix(in srgb, var(--c1) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c1) 45%, transparent);
+  color: var(--c1);
+  transition: background-color 150ms ease;
+}
+
+.md-primary:hover {
+  background-color: color-mix(in srgb, var(--c1) 32%, transparent);
+}
+
+.md-row:hover {
+  background-color: color-mix(in srgb, var(--c1) 6%, transparent);
+}
+
 .taskbar-clock .clock-time {
   font-size: 13px;
   font-weight: 700;

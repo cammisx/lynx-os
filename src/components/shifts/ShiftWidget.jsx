@@ -24,7 +24,16 @@ const countdownLabel = (target) => {
   return `${totalMin}min`;
 };
 
-const ACCENT = { color: 'var(--c1)' };
+const LINE_STYLE = {
+  margin: 0,
+  fontSize: 13,
+  fontWeight: 600,
+  lineHeight: 1.4,
+  color: 'var(--c3)',
+  maxWidth: '100%',
+};
+
+const HIGHLIGHT = { display: 'inline', color: 'var(--c1)' };
 
 export default function ShiftWidget({
   user,
@@ -50,11 +59,11 @@ export default function ShiftWidget({
 
   if (activeShift) {
     line = (
-      <>
+      <p style={LINE_STYLE}>
         Você está em shift há{' '}
-        <span style={ACCENT}>{elapsedLabel(activeShift.inicio_real || activeShift.created_date)}</span> em{' '}
-        <span style={ACCENT}>{activeShift.modelo_nome || 'sem modelo'}</span>.
-      </>
+        <span style={HIGHLIGHT}>{elapsedLabel(activeShift.inicio_real || activeShift.created_date)}</span> em{' '}
+        <span style={HIGHLIGHT}>{activeShift.modelo_nome || 'sem modelo'}</span>.
+      </p>
     );
     action = (
       <button
@@ -68,11 +77,11 @@ export default function ShiftWidget({
     );
   } else if (nextShift) {
     line = (
-      <>
+      <p style={LINE_STYLE}>
         Olá, {nickname}! Seu próximo turno começa em{' '}
-        <span style={ACCENT}>{countdownLabel(nextShift.inicio)}</span> em{' '}
-        <span style={ACCENT}>{nextShift.modelo_nome || 'sem modelo'}</span>.
-      </>
+        <span style={HIGHLIGHT}>{countdownLabel(nextShift.inicio)}</span> em{' '}
+        <span style={HIGHLIGHT}>{nextShift.modelo_nome || 'sem modelo'}</span>.
+      </p>
     );
     if (canPunchIn) {
       action = (
@@ -88,9 +97,9 @@ export default function ShiftWidget({
     }
   } else {
     line = (
-      <>
+      <p style={LINE_STYLE}>
         Olá, {nickname}! Você não tem nenhum turno agendado este mês.
-      </>
+      </p>
     );
   }
 
@@ -106,13 +115,11 @@ export default function ShiftWidget({
         justifyContent: 'space-between',
         gap: 16,
         fontFamily: 'var(--font-main)',
-        fontSize: 13,
-        fontWeight: 600,
-        color: 'var(--c3)',
-        lineHeight: 1.4,
       }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>{line}</div>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {line}
+      </div>
       {action}
     </div>
   );

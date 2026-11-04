@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { MODELS_CHANGED } from '@/lib/desktopEvents';
 import ShiftWidget from '@/components/shifts/ShiftWidget';
 import WeekToolbar from '@/components/shifts/WeekToolbar';
 import WeekGrid from '@/components/shifts/WeekGrid';
@@ -32,6 +33,7 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
   const [activeTab, setActiveTab] = useState('agenda');
   const [saving, setSaving] = useState(null);
   const [tick, setTick] = useState(0);
+  const [modelsVersion, setModelsVersion] = useState(0);
   const panelRef = useRef(null);
   const userId = user?.id;
 
@@ -54,6 +56,16 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
 
   useEffect(() => {
     if (!open) return undefined;
+    const handleModelsChanged = () => {
+      setModelsVersion((n) => n + 1);
+      setTick((n) => n + 1);
+    };
+    window.addEventListener(MODELS_CHANGED, handleModelsChanged);
+    return () => window.removeEventListener(MODELS_CHANGED, handleModelsChanged);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
     let active = true;
     base44.entities.Modelo.list()
       .then((result) => {
@@ -65,7 +77,7 @@ export default function ClockPanel({ open, onClose, anchorRef }) {
     return () => {
       active = false;
     };
-  }, [open]);
+  }, [open, modelsVersion]);
 
   useEffect(() => {
     if (!open) return undefined;
