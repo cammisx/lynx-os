@@ -340,6 +340,10 @@ body {
   display: none;
 }
 
+.gs-field:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--c1) 40%, transparent);
+}
+
 .gs-option {
   transition: background-color 0.12s, color 0.12s;
 }

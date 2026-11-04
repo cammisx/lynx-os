@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
 import ShiftForm from '@/components/shifts/ShiftForm';
+import GlassSelect from '@/components/GlassSelect';
 import { CalendarIcon, PlusIcon, PencilIcon, TrashIcon } from '@/components/icons';
 import { emitShiftsChanged } from '@/lib/desktopEvents';
 import { daysLabel, sortDays } from '@/lib/shiftRepeat';
@@ -49,19 +50,6 @@ const STATUS_LABEL = {
   em_andamento: 'em andamento',
   concluido: 'concluído',
   cancelado: 'cancelado',
-};
-
-const selectStyle = {
-  height: 26,
-  padding: '0 8px',
-  borderRadius: 7,
-  border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
-  background: 'color-mix(in srgb, var(--c8) 60%, transparent)',
-  color: 'var(--c3)',
-  fontSize: 11,
-  fontFamily: 'var(--font-main)',
-  outline: 'none',
-  cursor: 'pointer',
 };
 
 const navButton = {
@@ -144,6 +132,17 @@ export default function TurnosWindow({ onClose }) {
   };
 
   const chatterNames = buildChatterNames(chatters);
+  const usersById = {};
+  users.forEach((user) => {
+    usersById[user.id] = user;
+  });
+  const displayShiftName = (shift) =>
+    chatterName(
+      chatterNames,
+      shift.usuario_id,
+      usersById[shift.usuario_id]?.full_name || shift.usuario_nome
+    ) || 'Sem chatter';
+
   const archivedModels = models.filter((model) => model.arquivada);
   const isArchivedShift = (shift) => {
     if (archivedModels.some((model) => model.id === shift.modelo_id)) return true;
@@ -166,6 +165,7 @@ export default function TurnosWindow({ onClose }) {
           <ShiftForm
             users={users}
             models={models}
+            chatters={chatters}
             shift={form === 'new' ? null : form}
             defaultDate={anchor}
             onCancel={() => setForm(null)}
@@ -183,22 +183,20 @@ export default function TurnosWindow({ onClose }) {
                 borderBottom: '1px solid color-mix(in srgb, var(--c2) 10%, transparent)',
               }}
             >
-              <select
-                style={selectStyle}
-                value={modelFilter}
-                onChange={(event) => setModelFilter(event.target.value)}
-                aria-label="Filtrar por modelo"
-              >
-                <option value="todas">Todas</option>
-                {models
-                  .filter((model) => !model.arquivada)
-                  .map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.nome}
-                    </option>
-                  ))}
-                <option value="arquivadas">Arquivadas</option>
-              </select>
+              <div style={{ width: 132 }}>
+                <GlassSelect
+                  value={modelFilter}
+                  onChange={setModelFilter}
+                  height={26}
+                  options={[
+                    { value: 'todas', label: 'Todas' },
+                    ...models
+                      .filter((model) => !model.arquivada)
+                      .map((model) => ({ value: model.id, label: model.nome })),
+                    { value: 'arquivadas', label: 'Arquivadas' },
+                  ]}
+                />
+              </div>
 
               <button
                 type="button"
@@ -308,7 +306,7 @@ export default function TurnosWindow({ onClose }) {
                           textOverflow: 'ellipsis',
                         }}
                       >
-                        {chatterName(chatterNames, shift.usuario_id, shift.usuario_nome) || 'Sem chatter'}
+                        {displayShiftName(shift)}
                       </span>
                       <span style={{ fontSize: 11, color: 'var(--c2)' }}>
                         {shift.modelo_nome || 'Sem modelo'} · {formatMoment(shift.inicio)} –{' '}
@@ -388,7 +386,7 @@ export default function TurnosWindow({ onClose }) {
               }}
             >
               <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--c3)' }}>
-                Excluir o turno de {pendingDelete.usuario_nome || 'sem chatter'}?
+                Excluir o turno de {displayShiftName(pendingDelete)}?
               </p>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                 <button

@@ -1,20 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import GlassSelect from '@/components/GlassSelect';
 import DateTimePicker, { formatDateKey } from '@/components/DateTimePicker';
 import RepeatFields from '@/components/shifts/RepeatFields';
-
-const controlStyle = {
-  width: '100%',
-  boxSizing: 'border-box',
-  background: 'color-mix(in srgb, var(--c8) 60%, transparent)',
-  border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
-  borderRadius: 8,
-  color: 'var(--c3)',
-  fontSize: 12,
-  padding: '7px 9px',
-  fontFamily: 'var(--font-main)',
-  outline: 'none',
-};
+import { buildChatterNames } from '@/lib/chatterNames';
 
 const labelStyle = {
   fontSize: 10,
@@ -28,13 +17,13 @@ const atHour = (date, hour) => {
   return base;
 };
 
-export default function ShiftForm({ users, models, shift, defaultDate, onCancel, onSaved }) {
+export default function ShiftForm({ users, models, chatters, shift, defaultDate, onCancel, onSaved }) {
   const shiftModel = shift?.modelo_id ? models.find((item) => item.id === shift.modelo_id) : null;
   const archivedModel = shiftModel?.arquivada ? shiftModel : null;
   const activeModels = models.filter((model) => !model.arquivada);
 
-  const [usuarioId, setUsuarioId] = useState(shift?.usuario_id || '');
   const [modeloId, setModeloId] = useState(archivedModel ? '' : shift?.modelo_id || '');
+  const [usuarioId, setUsuarioId] = useState(shift?.usuario_id || '');
   const [inicio, setInicio] = useState(() =>
     shift?.inicio ? new Date(shift.inicio) : atHour(defaultDate || new Date(), 8)
   );
@@ -50,6 +39,53 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const chatterNames = useMemo(() => buildChatterNames(chatters), [chatters]);
+
+  const usersById = useMemo(() => {
+    const map = {};
+    users.forEach((user) => {
+      map[user.id] = user;
+    });
+    return map;
+  }, [users]);
+
+  const selectedModel = activeModels.find((model) => model.id === modeloId) || null;
+  const modelChatters = selectedModel?.chatters || [];
+
+  const chatterOptions = useMemo(() => {
+    const list = modelChatters.map((member) => {
+      const user = usersById[member.usuario_id];
+      const identificador = member.identificador || '';
+      return {
+        value: member.usuario_id,
+        label: chatterNames[member.usuario_id] || user?.full_name || member.usuario_nome || 'Sem nome',
+        prefix: identificador,
+        hint: identificador ? '' : user?.email || '',
+      };
+    });
+
+    if (usuarioId && usuarioId === shift?.usuario_id && !list.some((item) => item.value === usuarioId)) {
+      const user = usersById[usuarioId];
+      list.unshift({
+        value: usuarioId,
+        label: chatterNames[usuarioId] || user?.full_name || shift?.usuario_nome || 'Sem nome',
+        prefix: '',
+        hint: user?.email || '',
+      });
+    }
+
+    return list;
+  }, [modelChatters, usersById, chatterNames, usuarioId, shift]);
+
+  const modelOptions = activeModels.map((model) => ({ value: model.id, label: model.nome }));
+
+  const changeModelo = (id) => {
+    setModeloId(id);
+    const model = models.find((item) => item.id === id);
+    const belongs = (model?.chatters || []).some((member) => member.usuario_id === usuarioId);
+    if (!belongs) setUsuarioId('');
+  };
+
   const toggleDia = (day) => {
     setDias((prev) =>
       prev.includes(day) ? prev.filter((item) => item !== day) : [...prev, day].sort((a, b) => a - b)
@@ -58,8 +94,12 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
 
   const save = async () => {
     if (saving) return;
-    if (!usuarioId || !modeloId) {
-      setError('Chatter e modelo são obrigatórios.');
+    if (!modeloId) {
+      setError('Escolha uma modelo.');
+      return;
+    }
+    if (!usuarioId) {
+      setError('Selecione o chatter.');
       return;
     }
     if (!inicio || !fim) {
@@ -88,11 +128,12 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
 
     setError('');
     setSaving(true);
-    const usuario = users.find((item) => item.id === usuarioId);
+    const usuario = usersById[usuarioId];
     const modelo = models.find((item) => item.id === modeloId);
     const payload = {
       usuario_id: usuarioId,
-      usuario_nome: usuario?.full_name || usuario?.email || shift?.usuario_nome || '',
+      usuario_nome:
+        chatterNames[usuarioId] || usuario?.full_name || shift?.usuario_nome || '',
       modelo_id: modeloId,
       modelo_nome: modelo?.nome || '',
       inicio: inicio.toISOString(),
@@ -114,39 +155,43 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontFamily: 'var(--font-main)' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-        <span style={labelStyle}>Chatter</span>
-        <select
-          style={controlStyle}
-          value={usuarioId}
-          onChange={(event) => setUsuarioId(event.target.value)}
-        >
-          <option value="">Selecione…</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.full_name || user.email}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
         <span style={labelStyle}>Modelo</span>
-        <select
-          style={controlStyle}
+        <GlassSelect
           value={modeloId}
-          onChange={(event) => setModeloId(event.target.value)}
-        >
-          <option value="">Selecione…</option>
-          {activeModels.map((model) => (
-            <option key={model.id} value={model.id}>
-              {model.nome}
-            </option>
-          ))}
-        </select>
+          options={modelOptions}
+          onChange={changeModelo}
+          placeholder="Selecione…"
+          emptyText="Nenhuma modelo disponível."
+        />
         {archivedModel && !modeloId && (
           <span style={{ fontSize: 11, color: '#ff6b6b' }}>
             A modelo deste turno está arquivada, escolha outra
           </span>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <span style={labelStyle}>Chatter</span>
+        {!modeloId ? (
+          <GlassSelect
+            value=""
+            options={[]}
+            onChange={() => {}}
+            placeholder="Escolha uma modelo primeiro"
+            disabled
+          />
+        ) : modelChatters.length === 0 ? (
+          <span style={{ fontSize: 11, color: 'var(--c2)', opacity: 0.7 }}>
+            Nenhum chatter atribuído a esta modelo. Atribua em Modelos.
+          </span>
+        ) : (
+          <GlassSelect
+            value={usuarioId}
+            options={chatterOptions}
+            onChange={setUsuarioId}
+            placeholder="Selecione…"
+            emptyText="Nenhum chatter atribuído a esta modelo."
+          />
         )}
       </div>
 

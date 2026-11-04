@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { emitModelsChanged } from '@/lib/desktopEvents';
+
+const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
 const inputStyle = {
   width: '100%',
@@ -60,6 +63,29 @@ export default function ChatterForm({ user, chatter, onCancel, onSaved }) {
     try {
       if (chatter) await base44.entities.Chatter.update(chatter.id, payload);
       else await base44.entities.Chatter.create(payload);
+
+      const models = asList(await base44.entities.Modelo.list());
+      const affected = models.filter((model) =>
+        (model.chatters || []).some(
+          (member) =>
+            member.usuario_id === payload.usuario_id && member.usuario_nome !== cleanName
+        )
+      );
+      if (affected.length > 0) {
+        await Promise.all(
+          affected.map((model) =>
+            base44.entities.Modelo.update(model.id, {
+              chatters: model.chatters.map((member) =>
+                member.usuario_id === payload.usuario_id
+                  ? { ...member, usuario_nome: cleanName }
+                  : member
+              ),
+            })
+          )
+        );
+        emitModelsChanged();
+      }
+
       await onSaved();
     } finally {
       setSaving(false);
