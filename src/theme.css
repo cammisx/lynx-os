@@ -297,6 +297,23 @@ body {
   color: #ff6b6b;
 }
 
+.rp-chip {
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.rp-chip:not(.is-marked):hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--c2) 10%, transparent);
+}
+
+.rp-option {
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.rp-option:hover {
+  background-color: color-mix(in srgb, var(--c1) 15%, transparent) !important;
+  color: var(--c1);
+}
+
 .taskbar-clock .clock-time {
   font-size: 13px;
   font-weight: 700;

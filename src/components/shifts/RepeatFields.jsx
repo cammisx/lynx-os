@@ -1,3 +1,5 @@
+import RepeatSelect from '@/components/shifts/RepeatSelect';
+
 const controlStyle = {
   width: '100%',
   boxSizing: 'border-box',
@@ -17,15 +19,9 @@ const labelStyle = {
   opacity: 0.7,
 };
 
-const REPEAT_OPTIONS = [
-  { value: 'nenhuma', label: 'Não repete' },
-  { value: 'semanal', label: 'Semanal' },
-  { value: 'quinzenal', label: 'Quinzenal' },
-];
-
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-const chipStyle = (active) => ({
+const chipStyle = (marked, disabled) => ({
   width: 34,
   height: 28,
   borderRadius: 7,
@@ -33,12 +29,13 @@ const chipStyle = (active) => ({
   fontSize: 11,
   fontWeight: 700,
   padding: 0,
-  cursor: 'pointer',
-  background: active ? 'color-mix(in srgb, var(--c1) 20%, transparent)' : 'none',
-  border: active
+  background: marked ? 'color-mix(in srgb, var(--c1) 20%, transparent)' : 'none',
+  border: marked
     ? '1px solid color-mix(in srgb, var(--c1) 45%, transparent)'
     : '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
-  color: active ? 'var(--c1)' : 'var(--c2)',
+  color: marked ? 'var(--c1)' : 'var(--c2)',
+  opacity: disabled ? 0.4 : 1,
+  cursor: disabled ? 'default' : 'pointer',
 });
 
 export default function RepeatFields({
@@ -49,46 +46,43 @@ export default function RepeatFields({
   onToggleDia,
   onRepetirAteChange,
 }) {
-  const active = repeticao !== 'nenhuma';
+  const active = repeticao !== 'unica';
 
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
         <span style={labelStyle}>Repetição</span>
-        <select
-          style={controlStyle}
-          value={repeticao}
-          onChange={(event) => onRepeticaoChange(event.target.value)}
-        >
-          {REPEAT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <RepeatSelect value={repeticao} onChange={onRepeticaoChange} />
       </div>
 
-      {active && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          <span style={labelStyle}>Dias da semana</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {WEEKDAYS.map((label, index) => {
-              const marked = dias.includes(index);
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  aria-pressed={marked}
-                  onClick={() => onToggleDia(index)}
-                  style={chipStyle(marked)}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {WEEKDAYS.map((label, index) => {
+            const marked = dias.includes(index);
+            return (
+              <button
+                key={label}
+                type="button"
+                className={`rp-chip${marked ? ' is-marked' : ''}`}
+                aria-pressed={marked}
+                disabled={!active}
+                onClick={() => {
+                  if (!active) return;
+                  onToggleDia(index);
+                }}
+                style={chipStyle(marked, !active)}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
-      )}
+        {!active && (
+          <span style={{ fontSize: 10, color: 'var(--c2)', opacity: 0.7 }}>
+            O turno acontece só na data de início
+          </span>
+        )}
+      </div>
 
       {active && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>

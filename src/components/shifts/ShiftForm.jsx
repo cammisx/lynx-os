@@ -45,7 +45,12 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
   const [fim, setFim] = useState(() =>
     shift?.fim ? toInput(shift.fim) : toInput(atHour(defaultDate || new Date(), 16))
   );
-  const [repeticao, setRepeticao] = useState(shift?.repeticao || 'nenhuma');
+  const [repeticao, setRepeticao] = useState(() => {
+    if (!shift) return 'semanal';
+    if (shift.repeticao === 'quinzenal') return 'quinzenal';
+    if (shift.repeticao === 'semanal') return 'semanal';
+    return 'unica';
+  });
   const [dias, setDias] = useState(() => {
     if (Array.isArray(shift?.dias_semana) && shift.dias_semana.length > 0) {
       return shift.dias_semana.map(Number);
@@ -91,10 +96,10 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
       return;
     }
 
-    const active = repeticao !== 'nenhuma';
+    const active = repeticao !== 'unica';
     if (active) {
       if (dias.length === 0) {
-        setError('Marque pelo menos um dia da semana.');
+        setError('Marque pelo menos um dia');
         return;
       }
       if (repetirAte && !(new Date(`${repetirAte}T23:59:59`).getTime() > start.getTime())) {
@@ -116,7 +121,7 @@ export default function ShiftForm({ users, models, shift, defaultDate, onCancel,
       fim: end.toISOString(),
       status: shift?.status || 'agendado',
       repeticao: active ? repeticao : 'nenhuma',
-      dias_semana: active ? [...dias].sort((a, b) => a - b) : [],
+      dias_semana: [...dias].sort((a, b) => a - b),
       repetir_ate: active && repetirAte ? repetirAte : null,
     };
 
