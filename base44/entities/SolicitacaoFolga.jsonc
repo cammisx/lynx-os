@@ -1,0 +1,51 @@
+{
+  "name": "SolicitacaoFolga",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string"
+    },
+    "usuario_nome": {
+      "type": "string"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "turnos_no_dia": {
+      "type": "number"
+    },
+    "motivo": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "aprovada",
+        "recusada"
+      ],
+      "enumColors": [
+        "yellow",
+        "green",
+        "red"
+      ],
+      "default": "pendente"
+    },
+    "revisado_por": {
+      "type": "string"
+    },
+    "revisado_em": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "motivo_recusa": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "usuario_id",
+    "data",
+    "motivo"
+  ]
+}

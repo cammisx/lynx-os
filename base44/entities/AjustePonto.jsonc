@@ -1,0 +1,72 @@
+{
+  "name": "AjustePonto",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string"
+    },
+    "usuario_nome": {
+      "type": "string"
+    },
+    "shift_id": {
+      "type": "string"
+    },
+    "modelo_id": {
+      "type": "string"
+    },
+    "modelo_nome": {
+      "type": "string"
+    },
+    "ocorrencia_data": {
+      "type": "string"
+    },
+    "entrada_atual": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "saida_atual": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "entrada_solicitada": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "saida_solicitada": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "motivo": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "aprovado",
+        "recusado"
+      ],
+      "enumColors": [
+        "yellow",
+        "green",
+        "red"
+      ],
+      "default": "pendente"
+    },
+    "revisado_por": {
+      "type": "string"
+    },
+    "revisado_em": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "motivo_recusa": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "usuario_id",
+    "shift_id",
+    "motivo"
+  ]
+}

@@ -18,14 +18,18 @@
         "novo_shift",
         "turno_recusado",
         "turno_pendente",
-        "venda_pendente"
+        "venda_pendente",
+        "folga_pendente",
+        "ajuste_ponto_pendente"
       ],
       "enumColors": [
         "yellow",
         "blue",
         "red",
         "orange",
-        "purple"
+        "purple",
+        "teal",
+        "pink"
       ],
       "default": "turno_esquecido"
     },
@@ -33,6 +37,12 @@
       "type": "string"
     },
     "venda_id": {
+      "type": "string"
+    },
+    "folga_id": {
+      "type": "string"
+    },
+    "ajuste_ponto_id": {
       "type": "string"
     },
     "ocorrencia_data": {

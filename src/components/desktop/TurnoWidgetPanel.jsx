@@ -1,7 +1,16 @@
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import PunchButton from '@/components/shifts/PunchButton';
-import { CloseIcon, GiftIcon, LogInIcon, PauseIcon, PlayIcon, StopIcon } from '@/components/icons';
+import {
+  CloseIcon,
+  CoffeeIcon,
+  GiftIcon,
+  LogInIcon,
+  PauseIcon,
+  PlayIcon,
+  SlidersIcon,
+  StopIcon,
+} from '@/components/icons';
 import TurnoIcon from '@/components/icons/TurnoIcon';
 import { countdownLabel, durationLabel } from '@/lib/ponto';
 import { TASKBAR_SAFE, WIDGET_TILE } from './widgetLayout';
@@ -11,6 +20,24 @@ const HEIGHT = 300;
 const TASKBAR = TASKBAR_SAFE;
 const MARGIN = 8;
 const LIBERA_ENTRADA_MS = 5 * 60000;
+
+const BOTAO_SECUNDARIO = {
+  flex: 1,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 5,
+  height: 28,
+  padding: '0 6px',
+  borderRadius: 8,
+  border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
+  background: 'color-mix(in srgb, white 5%, transparent)',
+  color: 'var(--c2)',
+  fontSize: 11,
+  fontFamily: 'var(--font-main)',
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+};
 
 const DESTAQUE = { color: 'var(--c1)', fontWeight: 700 };
 
@@ -57,7 +84,7 @@ export default function TurnoWidgetPanel({
   onOpenJustificativa,
   onClose,
   onMove,
-  onRegistrarVenda,
+  onAbrirSolicitacao,
 }) {
   const [pos, setPos] = useState(() => {
     if (typeof widget.painel_x === 'number' && typeof widget.painel_y === 'number') {
@@ -325,27 +352,30 @@ export default function TurnoWidgetPanel({
         >
           <button
             type="button"
-            onClick={onRegistrarVenda}
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              height: 28,
-              padding: '0 10px',
-              borderRadius: 8,
-              border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
-              background: 'color-mix(in srgb, white 5%, transparent)',
-              color: 'var(--c2)',
-              fontSize: 11,
-              fontFamily: 'var(--font-main)',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
+            onClick={() => onAbrirSolicitacao('venda')}
+            title="Registrar mimo ou venda internacional"
+            style={BOTAO_SECUNDARIO}
           >
             <GiftIcon size={13} />
-            Mimo / venda internacional
+            Mimo
+          </button>
+          <button
+            type="button"
+            onClick={() => onAbrirSolicitacao('folga')}
+            title="Solicitar folga"
+            style={BOTAO_SECUNDARIO}
+          >
+            <CoffeeIcon size={13} />
+            Folga
+          </button>
+          <button
+            type="button"
+            onClick={() => onAbrirSolicitacao('ajuste')}
+            title="Ajuste de ponto"
+            style={BOTAO_SECUNDARIO}
+          >
+            <SlidersIcon size={13} />
+            Ponto
           </button>
         </div>
       </div>
