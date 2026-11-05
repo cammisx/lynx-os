@@ -1,13 +1,12 @@
-import { useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CloseIcon, LogInIcon } from '@/components/icons';
 import PaginasIcon from '@/components/icons/PaginasIcon';
 import { countdownLabel, durationLabel } from '@/lib/ponto';
-import { TASKBAR_SAFE, WIDGET_TILE } from './widgetLayout';
+import { WIDGET_TILE } from './widgetLayout';
 
 const WIDTH = 356;
 const ALTURA_ESTIMADA = 420;
-const TASKBAR = TASKBAR_SAFE;
 const MARGIN = 8;
 
 const AVISO_MS = 60 * 60000;
@@ -57,13 +56,25 @@ const hora = (valor) => {
   });
 };
 
-const limitar = (left, top) => ({
-  left: Math.min(Math.max(MARGIN, left), Math.max(MARGIN, window.innerWidth - WIDTH - MARGIN)),
-  top: Math.min(
-    Math.max(MARGIN, top),
-    Math.max(MARGIN, window.innerHeight - TASKBAR - ALTURA_ESTIMADA)
-  ),
-});
+// A taskbar ocupa 1.5/24 da altura da tela (mesma medida do CSS do .taskbar).
+const alturaDaTaskbar = () => (window.innerHeight * 1.5) / 24;
+
+// O limite de baixo usa a altura real do painel: o chute fixo de 420 travava o
+// widget muito acima da taskbar sempre que a lista de páginas era curta.
+const limitar = (left, top, altura = ALTURA_ESTIMADA) => {
+  const alturaDisponivel = Math.max(160, window.innerHeight - alturaDaTaskbar() - MARGIN * 2);
+  const alturaEfetiva = Math.min(altura, alturaDisponivel);
+  return {
+    left: Math.min(Math.max(MARGIN, left), Math.max(MARGIN, window.innerWidth - WIDTH - MARGIN)),
+    top: Math.max(
+      MARGIN,
+      Math.min(
+        Math.max(MARGIN, top),
+        window.innerHeight - alturaDaTaskbar() - MARGIN - alturaEfetiva
+      )
+    ),
+  };
+};
 
 export const posicaoPainel = (icone) => {
   const abreParaEsquerda = icone.icone_x + WIDGET_TILE + WIDTH + 12 > window.innerWidth;
@@ -119,6 +130,8 @@ export default function PaginasWidgetPanel({
   const drag = useRef(null);
   const posRef = useRef(pos);
   posRef.current = pos;
+  const painelRef = useRef(null);
+  const alturaDoPainel = () => painelRef.current?.offsetHeight || ALTURA_ESTIMADA;
 
   const livres = paginas.filter((pagina) => pagina.estado === 'livre').length;
   const agora = Date.now();
@@ -137,7 +150,7 @@ export default function PaginasWidgetPanel({
       const data = drag.current;
       if (!data) return;
       data.moveu = true;
-      setPos(limitar(moveEvent.clientX - data.dx, moveEvent.clientY - data.dy));
+      setPos(limitar(moveEvent.clientX - data.dx, moveEvent.clientY - data.dy, alturaDoPainel()));
     };
 
     const handleUp = () => {
@@ -153,6 +166,17 @@ export default function PaginasWidgetPanel({
     document.addEventListener('mouseup', handleUp);
   };
 
+  useLayoutEffect(() => {
+    setPos((atual) => limitar(atual.left, atual.top, alturaDoPainel()));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const reencaixar = () => setPos((atual) => limitar(atual.left, atual.top, alturaDoPainel()));
+    window.addEventListener('resize', reencaixar);
+    return () => window.removeEventListener('resize', reencaixar);
+  }, []);
+
   const tentarEntrar = async (pagina) => {
     setAviso(null);
     const resultado = await entrar(pagina.modelo_id);
@@ -166,12 +190,13 @@ export default function PaginasWidgetPanel({
 
   return createPortal(
     <div
+      ref={painelRef}
       style={{
         position: 'fixed',
         left: pos.left,
         top: pos.top,
         width: WIDTH,
-        maxHeight: `calc(100vh - ${TASKBAR + 2 * MARGIN}px)`,
+        maxHeight: `calc(100vh - 100vh * 1.5 / 24 - ${MARGIN * 2}px)`,
         display: 'flex',
         flexDirection: 'column',
         borderRadius: 14,
