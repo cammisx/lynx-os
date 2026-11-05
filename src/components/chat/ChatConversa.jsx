@@ -373,10 +373,11 @@ export default function ChatConversa({ onVoltar }) {
                         src={mensagem.anexo_url}
                         alt={mensagem.anexo_nome || 'imagem'}
                         onClick={() => setImagemAberta(mensagem.anexo_url)}
+                        title="Clique para ampliar"
                         style={{
                           display: 'block',
-                          maxWidth: 210,
-                          maxHeight: 210,
+                          maxWidth: 220,
+                          maxHeight: 220,
                           borderRadius: 7,
                           cursor: 'zoom-in',
                           marginBottom: mensagem.texto ? 5 : 0,
@@ -389,50 +390,68 @@ export default function ChatConversa({ onVoltar }) {
                         href={mensagem.anexo_url}
                         target="_blank"
                         rel="noreferrer"
-                        download={mensagem.anexo_nome || undefined}
+                        title={`Abrir ${mensagem.anexo_nome || 'arquivo'}`}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 7,
-                          padding: '4px 2px',
+                          gap: 9,
+                          minWidth: 190,
+                          padding: '5px 3px',
                           textDecoration: 'none',
                           color: 'var(--c3)',
                         }}
                       >
                         <span
                           style={{
-                            width: 26,
-                            height: 26,
+                            width: 30,
+                            height: 30,
                             flexShrink: 0,
-                            borderRadius: 7,
+                            borderRadius: 8,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             color: 'var(--c1)',
-                            background: 'color-mix(in srgb, var(--c1) 16%, transparent)',
+                            background: 'color-mix(in srgb, var(--c1) 18%, transparent)',
+                            border: '1px solid color-mix(in srgb, var(--c1) 26%, transparent)',
                           }}
                         >
-                          <FileIcon size={14} />
+                          <FileIcon size={15} />
                         </span>
-                        <span style={{ minWidth: 0 }}>
+                        <span style={{ minWidth: 0, flex: 1 }}>
                           <span
                             style={{
                               display: 'block',
                               fontSize: 10.5,
-                              maxWidth: 150,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
+                              lineHeight: 1.35,
+                              color: 'var(--c3)',
+                              wordBreak: 'break-word',
                             }}
                           >
                             {mensagem.anexo_nome || 'arquivo'}
                           </span>
-                          <span style={{ display: 'block', fontSize: 8.5, color: 'var(--c12)' }}>
-                            {tamanhoLegivel(mensagem.anexo_tamanho) || 'baixar'}
+                          <span
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              fontSize: 8.5,
+                              letterSpacing: '0.04em',
+                              color: 'var(--c1)',
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            {tamanhoLegivel(mensagem.anexo_tamanho)}
+                            {mensagem.anexo_tamanho ? ' · ' : ''}abrir
+                            <DownloadIcon size={9} />
                           </span>
                         </span>
-                        <DownloadIcon size={12} />
                       </a>
+                    )}
+
+                    {!temAnexo && (mensagem.tipo === 'arquivo' || mensagem.tipo === 'imagem') && (
+                      <span style={{ fontSize: 10.5, color: 'var(--c2)' }}>
+                        anexo indisponível
+                      </span>
                     )}
 
                     {apagada ? 'mensagem apagada' : mensagem.texto}
