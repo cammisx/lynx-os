@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import DateTimePicker from '@/components/DateTimePicker';
+import GlassSelect from '@/components/GlassSelect';
 import { CloseIcon, CoffeeIcon } from '@/components/icons';
 import { expandShift } from '@/lib/shiftRepeat';
 import { isRecusado } from '@/lib/aceite';
@@ -327,38 +328,20 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
             gap: 11,
             overflowY: 'auto',
           }}
+          className="glass-scroll"
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <span style={rotulo}>Turno</span>
-            <select
-              value={selecionada}
-              onChange={(event) => setSelecionada(event.target.value)}
-              style={{
-                height: 32,
-                borderRadius: 8,
-                background: 'color-mix(in srgb, var(--c8) 60%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
-                color: 'var(--c3)',
-                fontSize: 12,
-                padding: '0 8px',
-                fontFamily: 'var(--font-main)',
-                outline: 'none',
-              }}
-            >
-              {ocorrencias.length === 0 && (
-                <option value="">
-                  {carregando ? 'Carregando…' : 'Você não tem turnos futuros'}
-                </option>
-              )}
-              {ocorrencias.map((item) => (
-                <option key={item.chave} value={item.chave}>
-                  {`${diaCurto(item.start)} · ${horaDe(item.start)}–${horaDe(item.end)}${
-                    item.modeloNome ? ` · ${item.modeloNome}` : ''
-                  }`}
-                </option>
-              ))}
-            </select>
-          </div>
+          <GlassSelect
+            label="Turno"
+            value={selecionada}
+            onChange={setSelecionada}
+            placeholder={carregando ? 'Carregando…' : 'Você não tem turnos futuros'}
+            options={ocorrencias.map((item) => ({
+              value: item.chave,
+              label: `${diaCurto(item.start)} · ${horaDe(item.start)}–${horaDe(item.end)}${
+                item.modeloNome ? ` · ${item.modeloNome}` : ''
+              }`,
+            }))}
+          />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <span style={rotulo}>O que você precisa</span>

@@ -337,6 +337,32 @@ body {
   opacity: 1 !important;
 }
 
+.glass-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--c1) 45%, transparent) transparent;
+}
+
+.glass-scroll::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+}
+
+.glass-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.glass-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--c1) 38%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.glass-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--c1) 62%, transparent);
+  background-clip: padding-box;
+}
+
 .dtp-hours {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--c1) 45%, transparent) transparent;

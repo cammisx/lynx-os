@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { CloseIcon, ImageIcon } from '@/components/icons';
+import GlassSelect from '@/components/GlassSelect';
 import parsePrivacy from '@/lib/privacyParser';
 import { emitNotificationsChanged } from '@/lib/desktopEvents';
 import notificarAdminsSolicitacao from '@/lib/solicitacoes';
@@ -270,6 +271,7 @@ export default function RegistrarVendaModal({ usuario, modeloPadraoId = '', onCl
         </div>
 
         <div
+          className="glass-scroll"
           style={{
             padding: 14,
             display: 'flex',
@@ -331,31 +333,13 @@ export default function RegistrarVendaModal({ usuario, modeloPadraoId = '', onCl
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <span style={rotulo}>Modelo</span>
-            <select
-              value={modeloId}
-              onChange={(event) => setModeloId(event.target.value)}
-              style={{
-                height: 32,
-                borderRadius: 8,
-                background: 'color-mix(in srgb, var(--c8) 60%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
-                color: 'var(--c3)',
-                fontSize: 12,
-                padding: '0 8px',
-                fontFamily: 'var(--font-main)',
-                outline: 'none',
-              }}
-            >
-              {modelos.length === 0 && <option value="">Nenhuma modelo ativa</option>}
-              {modelos.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.nome}
-                </option>
-              ))}
-            </select>
-          </div>
+          <GlassSelect
+            label="Modelo"
+            value={modeloId}
+            onChange={setModeloId}
+            placeholder={modelos.length ? 'Escolher modelo' : 'Nenhuma modelo ativa'}
+            options={modelos.map((model) => ({ value: model.id, label: model.nome }))}
+          />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <span style={rotulo}>Print (obrigatório)</span>

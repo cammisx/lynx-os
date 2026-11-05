@@ -214,7 +214,10 @@ export default function VendaPendenteModal({ notification, onClose, onSaved }) {
           </button>
         </div>
 
-        <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
+        <div
+          className="glass-scroll"
+          style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}
+        >
           {carregando && <span style={{ fontSize: 11, color: 'var(--c2)' }}>Carregando venda…</span>}
 
           {!carregando && !vendas.length && (
