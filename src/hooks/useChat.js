@@ -10,9 +10,9 @@ import {
   mensagemVisivel,
   naoLidasDoCanal,
   ordemDosCanais,
+  paraData,
 } from '@/lib/chat';
 import { avaliarMensagensChat, lerFocoDoChat, tocarSomChat } from '@/lib/sons';
-import { paraData } from '@/lib/datas';
 
 /** Mensagens consideradas para contagem e histórico curto. */
 const JANELA_MS = 14 * 86400000;

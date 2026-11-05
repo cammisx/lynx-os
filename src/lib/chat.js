@@ -103,6 +103,21 @@ export const iniciais = (nome) => {
   return `${partes[0][0]}${partes[partes.length - 1][0]}`.toUpperCase();
 };
 
+/**
+ * O backend devolve created_date sem timezone e o valor está em UTC.
+ * String sem fuso é lida pelo navegador como hora local, o que joga a data
+ * 3h para frente em São Paulo. Aqui a leitura é sempre a mesma.
+ */
+export const paraData = (valor) => {
+  if (valor instanceof Date) return valor;
+  if (valor === null || valor === undefined || valor === '') return new Date(NaN);
+  if (typeof valor === 'number') return new Date(valor);
+  const texto = String(valor).trim();
+  if (!texto) return new Date(NaN);
+  const comFuso = /Z$|[+-]\d{2}:\d{2}$/.test(texto);
+  return new Date(comFuso ? texto : `${texto.replace(' ', 'T')}Z`);
+};
+
 /** Mensagem oculta para mim não conta em nada: nem lista, nem badge. */
 export const mensagemVisivel = (mensagem, usuarioId) =>
   Boolean(mensagem) && !(mensagem.oculta_para || []).includes(usuarioId);
