@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { isNaoLida } from '@/lib/notificacoes';
 import { isSolicitacaoSemDono } from '@/lib/solicitacoes';
 import { NOTIFICATIONS_CHANGED } from '@/lib/desktopEvents';
-import { tocarNotificacao } from '@/lib/sons';
+import { avaliarNotificacoesNovas, tocarNotificacao } from '@/lib/sons';
 
 const REFRESH_MS = 60000;
 
@@ -11,7 +11,6 @@ const asList = (result) => (Array.isArray(result) ? result : result?.items || []
 
 export default function useNotifications(userId, isAdmin = false) {
   const [items, setItems] = useState([]);
-  const vistosRef = useRef(null);
 
   const load = useCallback(async () => {
     if (!userId) return;
@@ -38,14 +37,8 @@ export default function useNotifications(userId, isAdmin = false) {
       }
 
       // Avisa com o som escolhido quando aparece notificação nova não lida.
-      const naoLidasAgora = lista.filter(isNaoLida);
-      if (vistosRef.current === null) {
-        vistosRef.current = new Set(naoLidasAgora.map((item) => item.id));
-      } else {
-        const novos = naoLidasAgora.filter((item) => !vistosRef.current.has(item.id));
-        naoLidasAgora.forEach((item) => vistosRef.current.add(item.id));
-        if (novos.length > 0) tocarNotificacao();
-      }
+      const naoLidasAgora = lista.filter(isNaoLida).map((item) => item.id);
+      if (avaliarNotificacoesNovas(naoLidasAgora)) tocarNotificacao();
 
       setItems(lista);
     } catch (error) {

@@ -79,8 +79,34 @@ export const definirPreferenciaSom = (dados = {}) => {
 
 export const lerPreferenciaSom = () => preferencia;
 
+/**
+ * O shell tem mais de uma tela lendo notificações (barra de tarefas e widgets),
+ * então o controle de "já avisei" fica aqui, compartilhado, e não em cada hook.
+ */
+const avisadas = new Set();
+let avisosIniciados = false;
+let ultimoToque = 0;
+
+const INTERVALO_MINIMO = 1200;
+
+/** Marca os ids como conhecidos e diz se algum deles é novidade de verdade. */
+export const avaliarNotificacoesNovas = (ids = []) => {
+  const lista = ids.filter(Boolean);
+  const novos = lista.filter((id) => !avisadas.has(id));
+  lista.forEach((id) => avisadas.add(id));
+
+  if (!avisosIniciados) {
+    avisosIniciados = true;
+    return false;
+  }
+  return novos.length > 0;
+};
+
 /** Toca o som escolhido pelo usuário, respeitando o desligar e o volume. */
 export const tocarNotificacao = () => {
   if (!preferencia.ativo) return;
+  const agora = Date.now();
+  if (agora - ultimoToque < INTERVALO_MINIMO) return;
+  ultimoToque = agora;
   tocarSom(preferencia.som, preferencia.volume);
 };
