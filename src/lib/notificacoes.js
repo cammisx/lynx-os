@@ -1,4 +1,5 @@
 import { emitNotificationsChanged } from '@/lib/desktopEvents';
+import { nomeDaPessoa } from '@/lib/pessoas';
 import notificarAdminsSolicitacao, { listarAdmins } from '@/lib/solicitacoes';
 import { nextOccurrence } from '@/lib/aceite';
 /** Não lida = ainda não abriu e não está resolvida. */
@@ -101,7 +102,7 @@ export const notificarPonto = async (
   base44,
   { tipo, usuario, modeloNome = '', modeloId = '', shiftId = '', ocorrenciaData = '', timestamp, avulso = false }
 ) => {
-  const nome = usuario?.full_name || usuario?.email || 'Alguém';
+  const nome = usuario ? nomeDaPessoa(usuario) : 'Alguém';
   const quando = timestamp ? new Date(timestamp) : new Date();
   const hora = Number.isNaN(quando.getTime())
     ? ''

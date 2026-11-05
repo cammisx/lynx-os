@@ -1,4 +1,5 @@
 import { emitShiftsChanged } from '@/lib/desktopEvents';
+import { nomeDaPessoa } from '@/lib/pessoas';
 
 const iso = (data) => (data ? new Date(data).toISOString() : '');
 const mesmoHorario = (registro, data) =>
@@ -9,7 +10,7 @@ const criarRegistro = (base44, ocorrencia, usuario, tipo, quando) =>
     shift_id: ocorrencia.shiftId,
     ocorrencia_data: ocorrencia.dateKey,
     usuario_id: usuario?.id || '',
-    usuario_nome: usuario?.full_name || usuario?.email || '',
+    usuario_nome: usuario ? nomeDaPessoa(usuario) : '',
     modelo_id: ocorrencia.modeloId || '',
     modelo_nome: ocorrencia.modeloNome || '',
     tipo,

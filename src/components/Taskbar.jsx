@@ -13,6 +13,7 @@ import usePreferenciaSom from '@/hooks/usePreferenciaSom';
 import ChatIcon from '@/components/icons/ChatIcon';
 import { useChatPanel } from '@/components/chat/ChatProvider';
 import { useAuth } from '@/lib/AuthContext';
+import { nomeDaPessoa } from '@/lib/pessoas';
 
 export default function Taskbar({ onOpenApp }) {
   const { user } = useAuth();
@@ -251,7 +252,7 @@ export default function Taskbar({ onOpenApp }) {
       {confirmacao && (
         <ConfirmarTurnoModal
           notification={confirmacao}
-          chatterNome={user?.full_name || ''}
+          chatterNome={user ? nomeDaPessoa(user) : ''}
           onClose={() => setConfirmacao(null)}
           onSaved={reload}
         />

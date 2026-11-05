@@ -39,7 +39,7 @@ export default function ShiftWidget({
   }, []);
 
   const now = Date.now();
-  const nickname = firstWord(displayName || user?.full_name);
+  const nickname = firstWord(displayName || user?.nome_exibicao || user?.full_name);
   const modelName = ponto.modeloNome || 'sem modelo';
   const busy = !!saving;
 

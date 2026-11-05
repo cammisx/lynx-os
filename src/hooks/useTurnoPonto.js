@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { buildChatterNames } from '@/lib/chatterNames';
 import { encerrarEspontaneos } from '@/lib/paginas';
 import { MODELS_CHANGED, SHIFTS_CHANGED } from '@/lib/desktopEvents';
+import { nomeDaPessoa } from '@/lib/pessoas';
 import { expandShift } from '@/lib/shiftRepeat';
 import { isRecusado } from '@/lib/aceite';
 import { buildPontoIndex, clockLabel, localDateKey, occurrenceKey } from '@/lib/ponto';
@@ -239,7 +240,7 @@ export default function useTurnoPonto() {
       shift_id: occurrence.shiftId,
       ocorrencia_data: occurrence.dateKey,
       usuario_id: userId,
-      usuario_nome: chatterNames[userId] || user?.full_name || '',
+      usuario_nome: chatterNames[userId] || (user ? nomeDaPessoa(user) : ''),
       modelo_id: occurrence.modeloId || '',
       modelo_nome: occurrence.modeloNome || '',
       tipo,
@@ -253,7 +254,7 @@ export default function useTurnoPonto() {
       tipo,
       usuario: {
         id: userId,
-        full_name: chatterNames[userId] || user?.full_name || '',
+        nome: chatterNames[userId] || (user ? nomeDaPessoa(user) : ''),
         email: user?.email || '',
       },
       modeloNome: occurrence.modeloNome || '',

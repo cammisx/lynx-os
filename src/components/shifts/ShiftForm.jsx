@@ -59,7 +59,12 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
       const identificador = member.identificador || '';
       return {
         value: member.usuario_id,
-        label: chatterNames[member.usuario_id] || user?.full_name || member.usuario_nome || 'Sem nome',
+        label:
+          user?.nome_exibicao ||
+          chatterNames[member.usuario_id] ||
+          user?.full_name ||
+          member.usuario_nome ||
+          'Sem nome',
         prefix: identificador,
         hint: identificador ? '' : user?.email || '',
       };
@@ -69,7 +74,12 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
       const user = usersById[usuarioId];
       list.unshift({
         value: usuarioId,
-        label: chatterNames[usuarioId] || user?.full_name || shift?.usuario_nome || 'Sem nome',
+        label:
+          user?.nome_exibicao ||
+          chatterNames[usuarioId] ||
+          user?.full_name ||
+          shift?.usuario_nome ||
+          'Sem nome',
         prefix: '',
         hint: user?.email || '',
       });
@@ -134,7 +144,11 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
     const payload = {
       usuario_id: usuarioId,
       usuario_nome:
-        chatterNames[usuarioId] || usuario?.full_name || shift?.usuario_nome || '',
+        usuario?.nome_exibicao ||
+        chatterNames[usuarioId] ||
+        usuario?.full_name ||
+        shift?.usuario_nome ||
+        '',
       modelo_id: modeloId,
       modelo_nome: modelo?.nome || '',
       inicio: inicio.toISOString(),

@@ -73,7 +73,7 @@ export default function ModelosWindow({ onClose }) {
     const names = buildChatterNames(chatters);
     return users.map((user) => ({
       usuario_id: user.id,
-      nome: names[user.id] || user.full_name || user.email || '',
+      nome: user.nome_exibicao || names[user.id] || user.full_name || user.email || '',
       isAdmin: user.role === 'admin',
     }));
   }, [users, chatters]);

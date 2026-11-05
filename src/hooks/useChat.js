@@ -17,6 +17,8 @@ import {
   previewDaMensagem,
 } from '@/lib/chat';
 import { avaliarMensagensChat, lerFocoDoChat, tocarSomChat } from '@/lib/sons';
+import { cargoDaPessoa, fotoDaPessoa, nomeDaPessoa } from '@/lib/pessoas';
+import { CHATTERS_CHANGED, MODELS_CHANGED } from '@/lib/desktopEvents';
 
 /** Mensagens consideradas para contagem e histórico curto. */
 const JANELA_MS = 14 * 86400000;
@@ -73,25 +75,58 @@ export default function useChat() {
       listar(base44.entities.Chatter.list()),
     ]);
     const mapa = new Map();
+    const chatterPorUsuario = new Map();
+    chatters.forEach((chatter) => {
+      if (chatter?.usuario_id) chatterPorUsuario.set(chatter.usuario_id, chatter);
+    });
+
     usuarios.forEach((usuario) => {
       mapa.set(usuario.id, {
         id: usuario.id,
         email: usuario.email || '',
-        cargo: usuario.role === 'admin' ? 'admin' : 'chatter',
-        // O nome escolhido no perfil vale aqui também.
-        nome: usuario.nome_exibicao || usuario.full_name || usuario.email || 'Sem nome',
+        cargo: cargoDaPessoa(usuario),
+        // Nome e foto do perfil valem aqui e em qualquer lugar do app.
+        nome: nomeDaPessoa(usuario, chatterPorUsuario.get(usuario.id)),
+        foto_url: fotoDaPessoa(usuario),
       });
     });
-    chatters.forEach((chatter) => {
-      if (!chatter?.usuario_id) return;
-      const atual = mapa.get(chatter.usuario_id) || { id: chatter.usuario_id, cargo: 'chatter' };
-      mapa.set(chatter.usuario_id, {
-        ...atual,
-        nome: chatter.nome_exibicao || atual.nome || atual.email || 'Sem nome',
+
+    // Quem aparece só no Chatter (cadastro antigo) ainda entra na lista.
+    chatterPorUsuario.forEach((chatter, usuarioId) => {
+      if (mapa.has(usuarioId)) return;
+      mapa.set(usuarioId, {
+        id: usuarioId,
+        email: chatter.usuario_email || '',
+        cargo: 'chatter',
+        nome: nomeDaPessoa(null, chatter),
+        foto_url: '',
       });
     });
+
     return [...mapa.values()];
   }, []);
+
+  /* Nome ou foto trocados em qualquer janela aparecem no chat na hora. */
+  useEffect(() => {
+    if (!euId) return undefined;
+    let ativo = true;
+    const atualizar = () => {
+      carregarPessoas()
+        .then((lista) => {
+          if (ativo) setPessoas(lista);
+        })
+        .catch((falha) => {
+          console.warn('[Chat] não consegui atualizar as pessoas', falha);
+        });
+    };
+    window.addEventListener(CHATTERS_CHANGED, atualizar);
+    window.addEventListener(MODELS_CHANGED, atualizar);
+    return () => {
+      ativo = false;
+      window.removeEventListener(CHATTERS_CHANGED, atualizar);
+      window.removeEventListener(MODELS_CHANGED, atualizar);
+    };
+  }, [euId, carregarPessoas]);
 
   /** Só busca mensagens dos canais que esta pessoa pode ver. */
   const carregarMensagens = useCallback(async (canaisPermitidos = []) => {
@@ -519,8 +554,8 @@ export default function useChat() {
         const criada = await base44.entities.ChatMensagem.create({
           canal_id: canalId,
           autor_id: euId,
-          autor_nome: eu?.nome || user?.full_name || 'Eu',
-          autor_cargo: ehAdmin(user) ? 'admin' : 'chatter',
+          autor_nome: nomeDaPessoa(user) || eu?.nome || 'Eu',
+          autor_cargo: cargoDaPessoa(user),
           tipo: anexo?.url ? (anexo.audio ? 'audio' : anexo.imagem ? 'imagem' : 'arquivo') : 'texto',
           texto: limpo,
           anexo_url: anexo?.url || undefined,
@@ -542,7 +577,7 @@ export default function useChat() {
         base44.entities.ChatCanal.update(canalId, {
           ultima_mensagem_em: agora(),
           ultima_mensagem_preview: limpo ? limpo.slice(0, 80) : previewDaMensagem(criada),
-          ultima_mensagem_autor: eu?.nome || user?.full_name || '',
+          ultima_mensagem_autor: eu?.nome || nomeDaPessoa(user) || '',
         }).catch(() => {});
         return criada;
       } catch (falha) {

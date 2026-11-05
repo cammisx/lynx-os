@@ -33,3 +33,17 @@ export const iniciaisDe = (nome) => {
   const palavras = String(nome || '').trim().split(/\s+/).filter(Boolean);
   return palavras.slice(0, 2).map((palavra) => palavra[0]).join('').toUpperCase() || '?';
 };
+
+/** Nome oficial de uma pessoa: perfil do User manda; Chatter e conta são reserva. */
+export const nomeDaPessoa = (user, chatter) =>
+  String(
+    user?.nome_exibicao ||
+      chatter?.nome_exibicao ||
+      user?.full_name ||
+      user?.email ||
+      'Sem nome'
+  ).trim();
+
+export const fotoDaPessoa = (user) => user?.foto_url || '';
+
+export const cargoDaPessoa = (user) => (user?.role === 'admin' ? 'admin' : 'chatter');

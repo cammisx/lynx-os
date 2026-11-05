@@ -1,4 +1,5 @@
 import { emitNotificationsChanged } from '@/lib/desktopEvents';
+import { nomeDaPessoa } from '@/lib/pessoas';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
@@ -100,7 +101,7 @@ export async function avisarHorarioDisponivel(
 export async function criarCobertura(base44, { notification, usuario, inicio, fim }) {
   const turno = await base44.entities.Shift.create({
     usuario_id: usuario?.id || '',
-    usuario_nome: usuario?.full_name || usuario?.email || '',
+    usuario_nome: usuario ? nomeDaPessoa(usuario) : '',
     modelo_id: notification?.modelo_id || '',
     modelo_nome: notification?.modelo_nome || '',
     inicio: new Date(inicio).toISOString(),

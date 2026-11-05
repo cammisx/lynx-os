@@ -9,6 +9,8 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { base44 } from '@/api/base44Client';
 import { aplicarTema, temaPorId } from '@/lib/temas';
 import { PERFIL_PADRAO, iniciaisDe, mesclarPerfil, nomeDe } from '@/lib/perfilLogica';
+import { espelharNomeNoChatter, propagarNomeNasModelos } from '@/lib/pessoas';
+import { emitChattersChanged } from '@/lib/desktopEvents';
 
 export { iniciaisDe, nomeDe };
 
@@ -57,11 +59,21 @@ export const carregarPerfil = (user) => {
   return atual;
 };
 
+/** Nome trocado por outra janela (admin na lista de chatters) aparece aqui também. */
+export const refletirNomeDeUsuario = (usuarioId, nome) => {
+  if (!usuarioId || usuarioId !== carregadoPara || !nome) return;
+  if (atual.nomeExibicao === nome) return;
+  atual = { ...atual, nomeExibicao: nome };
+  gravarLocal(usuarioId, atual);
+  avisar();
+};
+
 /**
  * Salva o que mudou. Aplica o tema na hora e devolve `remoto: false` quando o
  * banco recusou (campos do perfil ainda não publicados).
  */
 export const salvarPerfil = async (user, parcial = {}) => {
+  const nomeAntes = atual.nomeExibicao;
   atual = { ...atual, ...parcial };
   aplicarTema(atual.tema);
   if (user?.id) gravarLocal(user.id, atual);
@@ -78,7 +90,22 @@ export const salvarPerfil = async (user, parcial = {}) => {
     });
     /* Campo que não existe no schema volta sem estar na resposta: nesse caso
        o perfil só ficou guardado aqui. */
-    return { remoto: Boolean(salvo && 'nome_exibicao' in salvo) };
+    const remoto = Boolean(salvo && 'nome_exibicao' in salvo);
+
+    /* O nome é o mesmo do resto do app: quando ele muda, leva para a cópia que
+       o desktop, o painel do relógio e os relatórios já leem. Trocar só o tema
+       não custa essas leituras. */
+    if (atual.nomeExibicao && atual.nomeExibicao !== nomeAntes) {
+      await espelharNomeNoChatter({
+        usuarioId: user.id,
+        nome: atual.nomeExibicao,
+        email: user.email,
+      });
+      await propagarNomeNasModelos({ usuarioId: user.id, nome: atual.nomeExibicao });
+      emitChattersChanged();
+    }
+
+    return { remoto };
   } catch (erro) {
     console.warn('[Perfil] salvo só neste navegador:', erro?.message || erro);
     return { remoto: false };

@@ -53,7 +53,8 @@ export default function ChattersWindow({ onClose }) {
         return {
           user,
           chatter,
-          displayName: chatter?.nome_exibicao || user.full_name || user.email || 'Sem nome',
+          displayName:
+            user.nome_exibicao || chatter?.nome_exibicao || user.full_name || user.email || 'Sem nome',
         };
       })
       .sort((a, b) => a.displayName.localeCompare(b.displayName, 'pt-BR'));
@@ -126,7 +127,8 @@ export default function ChattersWindow({ onClose }) {
             >
               <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--c3)' }}>
                 Remover a comissão de{' '}
-                {pendingDelete.chatter?.nome_exibicao ||
+                {pendingDelete.user?.nome_exibicao ||
+                  pendingDelete.chatter?.nome_exibicao ||
                   pendingDelete.user?.full_name ||
                   pendingDelete.user?.email}
                 ?

@@ -73,6 +73,16 @@ export default function ChatConversa({ onVoltar }) {
 
   const nome = nomeDoCanal(canalAtivo, { usuario: user, pessoas, modelos });
 
+  /* Nome e foto vêm do perfil atual: trocar o nome no sistema atualiza também
+     as mensagens que já estavam na tela. */
+  const pessoaPorId = useMemo(() => {
+    const mapa = new Map();
+    (Array.isArray(pessoas) ? pessoas : []).forEach((pessoa) => {
+      if (pessoa?.id) mapa.set(pessoa.id, pessoa);
+    });
+    return mapa;
+  }, [pessoas]);
+
   useEffect(() => {
     if (fimRef.current) fimRef.current.scrollIntoView({ block: 'end' });
   }, [mensagens.length, canalAtivo?.id]);
@@ -328,37 +338,55 @@ export default function ChatConversa({ onVoltar }) {
           const temAnexo = Boolean(mensagem.anexo_url) && !apagada;
           const ehImagem = mensagem.tipo === 'imagem' && temAnexo;
           const ehAudio = Boolean(mensagem.audio_url);
+          const autor = pessoaPorId.get(mensagem.autor_id);
+          const autorNome = autor?.nome || mensagem.autor_nome;
+          const autorFoto = autor?.foto_url || '';
 
           return (
             <div
               key={bloco.chave}
               style={{ display: 'flex', gap: 6, justifyContent: minha ? 'flex-end' : 'flex-start' }}
             >
-              {!minha && (
-                <span
-                  style={{
-                    width: 22,
-                    height: 22,
-                    flexShrink: 0,
-                    borderRadius: 11,
-                    marginTop: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 8.5,
-                    fontWeight: 700,
-                    color: 'var(--c8)',
-                    background: corDaPessoa(mensagem.autor_id),
-                  }}
-                >
-                  {iniciais(mensagem.autor_nome)}
-                </span>
-              )}
+              {!minha &&
+                (autorFoto ? (
+                  <img
+                    src={autorFoto}
+                    alt=""
+                    style={{
+                      width: 22,
+                      height: 22,
+                      flexShrink: 0,
+                      borderRadius: 11,
+                      marginTop: 2,
+                      objectFit: 'cover',
+                      border: '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
+                    }}
+                  />
+                ) : (
+                  <span
+                    style={{
+                      width: 22,
+                      height: 22,
+                      flexShrink: 0,
+                      borderRadius: 11,
+                      marginTop: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 8.5,
+                      fontWeight: 700,
+                      color: 'var(--c8)',
+                      background: corDaPessoa(mensagem.autor_id),
+                    }}
+                  >
+                    {iniciais(autorNome)}
+                  </span>
+                ))}
 
               <div style={{ maxWidth: '78%', minWidth: 0, position: 'relative' }}>
                 {mostrarAutor && (
                   <div style={{ fontSize: 9, color: 'var(--c2)', margin: '0 0 2px 3px' }}>
-                    {mensagem.autor_nome}
+                    {autorNome}
                     {mensagem.autor_cargo === 'admin' ? ' · admin' : ''}
                   </div>
                 )}

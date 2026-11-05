@@ -156,7 +156,9 @@ export default function TurnosWindow({ onClose }) {
     chatterName(
       chatterNames,
       shift.usuario_id,
-      usersById[shift.usuario_id]?.full_name || shift.usuario_nome
+      usersById[shift.usuario_id]?.nome_exibicao ||
+        usersById[shift.usuario_id]?.full_name ||
+        shift.usuario_nome
     ) || 'Sem chatter';
 
   const archivedModels = models.filter((model) => model.arquivada);

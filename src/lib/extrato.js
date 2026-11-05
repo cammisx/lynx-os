@@ -13,6 +13,7 @@
  */
 
 import parsePrivacy from '@/lib/privacyParser';
+import { nomeDaPessoa } from '@/lib/pessoas';
 
 const TIPO_MIMO = /mimo|internacional|gift|presente|gorjeta|tip\b/i;
 
@@ -284,7 +285,7 @@ export const paraVendaMimo = (linha, { modelo, chatterNome, lote, admin }) => ({
   usuario_nome:
     linha.situacao === 'sem_dono'
       ? 'Sem chatter'
-      : chatterNome || admin?.full_name || admin?.email || '',
+      : chatterNome || (admin ? nomeDaPessoa(admin) : ''),
   modelo_id: modelo?.id || linha.modelo_id,
   modelo_nome: modelo?.nome || linha.modelo_nome,
   plataforma: 'privacy',

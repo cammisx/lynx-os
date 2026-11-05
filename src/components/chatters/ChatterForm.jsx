@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { emitModelsChanged } from '@/lib/desktopEvents';
-
-const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
+import { emitChattersChanged, emitModelsChanged } from '@/lib/desktopEvents';
+import { propagarNomeNasModelos } from '@/lib/pessoas';
+import { refletirNomeDeUsuario } from '@/lib/perfilUsuario';
 
 const inputStyle = {
   width: '100%',
@@ -27,8 +27,9 @@ const cleanCommission = (value) => {
 };
 
 export default function ChatterForm({ user, chatter, onCancel, onSaved }) {
+  // O nome oficial é o do usuário; o do chatter é só o que já existia antes.
   const [nome, setNome] = useState(
-    chatter?.nome_exibicao || user?.full_name || user?.email || ''
+    user?.nome_exibicao || chatter?.nome_exibicao || user?.full_name || user?.email || ''
   );
   const [comissao, setComissao] = useState(
     chatter && chatter.comissao !== undefined && chatter.comissao !== null ? String(chatter.comissao) : ''
@@ -61,30 +62,28 @@ export default function ChatterForm({ user, chatter, onCancel, onSaved }) {
     };
 
     try {
+      /* O nome é o mesmo em todo o app: grava no usuário primeiro, que é o
+         campo lido pelo chat, pelo desktop e pelas configurações. */
+      try {
+        await base44.entities.User.update(user.id, { nome_exibicao: cleanName });
+      } catch (erro) {
+        setError('Não consegui salvar o nome no usuário. Confira sua permissão de admin.');
+        setSaving(false);
+        return;
+      }
+
       if (chatter) await base44.entities.Chatter.update(chatter.id, payload);
       else await base44.entities.Chatter.create(payload);
 
-      const models = asList(await base44.entities.Modelo.list());
-      const affected = models.filter((model) =>
-        (model.chatters || []).some(
-          (member) =>
-            member.usuario_id === payload.usuario_id && member.usuario_nome !== cleanName
-        )
-      );
-      if (affected.length > 0) {
-        await Promise.all(
-          affected.map((model) =>
-            base44.entities.Modelo.update(model.id, {
-              chatters: model.chatters.map((member) =>
-                member.usuario_id === payload.usuario_id
-                  ? { ...member, usuario_nome: cleanName }
-                  : member
-              ),
-            })
-          )
-        );
-        emitModelsChanged();
-      }
+      const mudaram = await propagarNomeNasModelos({
+        usuarioId: payload.usuario_id,
+        nome: cleanName,
+      });
+      if (mudaram > 0) emitModelsChanged();
+
+      // Se esse usuário é o dono desta tela, o nome muda na hora por aqui.
+      refletirNomeDeUsuario(user.id, cleanName);
+      emitChattersChanged();
 
       await onSaved();
     } finally {

@@ -1,4 +1,5 @@
 import { emitNotificationsChanged } from '@/lib/desktopEvents';
+import { nomeDaPessoa } from '@/lib/pessoas';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
@@ -44,7 +45,7 @@ export default async function notificarAdminsSolicitacao(
     lida: false,
     criado_por_automacao: false,
     solicitante_id: solicitante?.id || '',
-    solicitante_nome: solicitante?.full_name || solicitante?.email || '',
+    solicitante_nome: solicitante ? nomeDaPessoa(solicitante) : '',
     ...extra,
   };
 
