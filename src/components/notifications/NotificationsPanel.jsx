@@ -248,21 +248,15 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose, 
                     transition: 'border-color 0.15s, background-color 0.15s',
                   }}
                 >
-                  <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ display: 'block', fontWeight: escolhido ? 700 : 500 }}>
-                      {opcao.nome}
-                    </span>
-                    <span
-                      style={{
-                        display: 'block',
-                        fontSize: 10,
-                        color: 'var(--c2)',
-                        marginTop: 1,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {opcao.descricao}
-                    </span>
+                  <span
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      fontWeight: escolhido ? 700 : 500,
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    {opcao.nome}
                   </span>
                   {escolhido && <CheckIcon size={12} />}
                 </button>

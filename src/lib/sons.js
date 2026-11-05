@@ -5,30 +5,26 @@
 export const SONS = [
   {
     id: 'suave',
-    nome: 'Toque suave',
+    nome: 'POP',
     arquivo: '/sons/notificacao-suave.mp3',
-    descricao: 'Pop curto de mensagem, bem discreto.',
     licenca: 'CC0',
   },
   {
     id: 'alerta',
-    nome: 'Alerta de status',
+    nome: 'SAMURAI',
     arquivo: '/sons/alerta-concluido.mp3',
-    descricao: 'Sino sintetizado com um whoosh curto.',
     licenca: 'CC BY 4.0 · Headphaze',
   },
   {
     id: 'scifi',
-    nome: 'Mensagem sci-fi',
+    nome: 'ALIEN',
     arquivo: '/sons/sci-fi-mensagem.mp3',
-    descricao: 'Bipe de interface futurista.',
     licenca: 'CC BY 4.0 · F.M.Audio',
   },
   {
     id: 'mensagem',
-    nome: 'Olha a mensagem',
+    nome: 'ZAP',
     arquivo: '/sons/olha-a-mensagem.mp3',
-    descricao: 'A voz do meme, pra quem gosta de susto.',
     licenca: 'Sem licença declarada',
   },
 ];
