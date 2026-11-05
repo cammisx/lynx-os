@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { buildChatterNames } from '@/lib/chatterNames';
+import { encerrarEspontaneos } from '@/lib/paginas';
 import { MODELS_CHANGED, SHIFTS_CHANGED } from '@/lib/desktopEvents';
 import { expandShift } from '@/lib/shiftRepeat';
 import { isRecusado } from '@/lib/aceite';
@@ -255,6 +256,11 @@ export default function useTurnoPonto() {
         await base44.entities.Shift.update(ponto.shiftId, {
           status: 'em_andamento',
           inicio_real: timestamp,
+        });
+        // Quem entra no turno programado tira do ar o espontâneo que estava na página.
+        encerrarEspontaneos({
+          modeloId: ponto.modeloId,
+          shiftId: ponto.shiftId,
         });
         showFeedback(`Entrada registrada às ${clockLabel(timestamp)}`);
       } else if (tipo === 'pausa') {

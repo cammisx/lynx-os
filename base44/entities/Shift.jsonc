@@ -56,6 +56,10 @@
     "motivo_recusa": {
       "type": "string"
     },
+    "avulso": {
+      "type": "boolean",
+      "default": false
+    },
     "status": {
       "type": "string",
       "enum": [

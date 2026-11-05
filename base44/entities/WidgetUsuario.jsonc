@@ -8,10 +8,12 @@
     "tipo": {
       "type": "string",
       "enum": [
-        "turno"
+        "turno",
+        "paginas"
       ],
       "enumColors": [
-        "orange"
+        "orange",
+        "purple"
       ],
       "default": "turno"
     },
