@@ -122,6 +122,17 @@ export function ArchiveIcon({ size = 16, className }) {
   );
 }
 
+export function BookIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2v13a1.8 1.8 0 0 0-1.8-1.8H5.5A1.5 1.5 0 0 1 4 15.7z" />
+      <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H14a2 2 0 0 0-2 2v13a1.8 1.8 0 0 1 1.8-1.8h4.7A1.5 1.5 0 0 0 20 15.7z" />
+      <path d="M6.5 8h3" />
+      <path d="M6.5 11.5h3" />
+    </Svg>
+  );
+}
+
 export function MoreIcon({ size = 16, className }) {
   return (
     <Svg size={size} className={className}>

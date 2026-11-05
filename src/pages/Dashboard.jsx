@@ -8,6 +8,7 @@ import ModelosWindow from '@/components/ModelosWindow';
 import TurnosWindow from '@/components/TurnosWindow';
 import FinanceiroWindow from '@/components/FinanceiroWindow';
 import ConfiguracoesWindow from '@/components/ConfiguracoesWindow';
+import PlaybookWindow from '@/components/PlaybookWindow';
 import { useAuth } from '@/lib/AuthContext';
 import { usePerfil } from '@/lib/perfilUsuario';
 import { TEMA_PADRAO, aplicarTema } from '@/lib/temas';
@@ -69,6 +70,8 @@ export default function Dashboard() {
       {openApp === 'financeiro' && <FinanceiroWindow onClose={() => setOpenApp(null)} />}
 
       {openApp === 'config' && <ConfiguracoesWindow onClose={() => setOpenApp(null)} />}
+
+      {openApp === 'playbook' && <PlaybookWindow onClose={() => setOpenApp(null)} />}
     </div>
   );
 }
