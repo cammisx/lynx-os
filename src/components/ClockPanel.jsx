@@ -213,6 +213,7 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
             userId={userId}
             chatterNames={chatterNames}
             pontoIndex={pontoIndex}
+            agendaPessoal={activeTabSafe === 'agenda'}
           />
         </div>
       </div>

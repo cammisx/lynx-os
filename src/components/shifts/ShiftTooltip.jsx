@@ -26,7 +26,7 @@ const Row = ({ label, value }) => (
   </div>
 );
 
-export default function ShiftTooltip({ shift, ponto, name, x, y }) {
+export default function ShiftTooltip({ shift, ponto, name, label = 'Chatter', x, y }) {
   if (!shift) return null;
 
   const isLive = shift.status === 'em_andamento';
@@ -61,7 +61,7 @@ export default function ShiftTooltip({ shift, ponto, name, x, y }) {
         fontFamily: 'var(--font-main)',
       }}
     >
-      <Row label="Chatter" value={name || shift.usuario_nome || '—'} />
+      <Row label={label} value={name || shift.usuario_nome || '—'} />
       <Row label="Início" value={timeOf(shift.inicio)} />
       {!isLive && <Row label="Fim" value={timeOf(shift.fim)} />}
       {ponto?.entrada && <Row label="Ponto de entrada" value={timeOf(ponto.entrada)} />}
