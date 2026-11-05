@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { isNaoLida } from '@/lib/notificacoes';
+import { isSolicitacaoSemDono } from '@/lib/solicitacoes';
 import { NOTIFICATIONS_CHANGED } from '@/lib/desktopEvents';
 
 const REFRESH_MS = 60000;
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
-export default function useNotifications(userId) {
+export default function useNotifications(userId, isAdmin = false) {
   const [items, setItems] = useState([]);
 
   const load = useCallback(async () => {
@@ -17,11 +18,28 @@ export default function useNotifications(userId) {
         { usuario_id: userId },
         { sort: '-created_date', limit: 30 }
       );
-      setItems(asList(result));
+      let lista = asList(result);
+
+      // Solicitações criadas por chatter ficam sem dono e aparecem para o admin.
+      if (isAdmin) {
+        try {
+          const abertas = await base44.entities.Notificacao.filter(
+            { status: 'pendente' },
+            { sort: '-created_date', limit: 50 }
+          );
+          const semDono = asList(abertas).filter(isSolicitacaoSemDono);
+          const vistos = new Set(lista.map((item) => item.id));
+          lista = [...lista, ...semDono.filter((item) => !vistos.has(item.id))];
+        } catch (error) {
+          // sem acesso às solicitações abertas, segue com as próprias
+        }
+      }
+
+      setItems(lista);
     } catch (error) {
       setItems([]);
     }
-  }, [userId]);
+  }, [userId, isAdmin]);
 
   useEffect(() => {
     if (!userId) return undefined;

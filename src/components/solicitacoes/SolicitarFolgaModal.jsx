@@ -223,6 +223,7 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
           shift_id: ocorrencia.shiftId,
           ocorrencia_data: ocorrencia.dateKey,
         },
+        solicitante: usuario,
       });
 
       if (onSaved) await onSaved();

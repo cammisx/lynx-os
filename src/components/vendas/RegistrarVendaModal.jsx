@@ -174,6 +174,7 @@ export default function RegistrarVendaModal({ usuario, modeloPadraoId = '', onCl
           venda_id: criadas[0]?.id || '',
           venda_ids: criadas.map((venda) => venda.id).filter(Boolean).join(','),
         },
+        solicitante: usuario,
       });
 
       emitNotificationsChanged();

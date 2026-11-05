@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/AuthContext';
 
 export default function Taskbar({ onOpenApp }) {
   const { user } = useAuth();
-  const { items, naoLidas, markRead, reload } = useNotifications(user?.id);
+  const { items, naoLidas, markRead, reload } = useNotifications(user?.id, user?.role === 'admin');
   const [now, setNow] = useState(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
   const [clockOpen, setClockOpen] = useState(false);

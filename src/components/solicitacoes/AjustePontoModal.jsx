@@ -190,6 +190,7 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
         } (${diaCurto(ocorrencia.start)}): ${pedacos.join(' e ') || 'sem horário novo'}. Motivo: ${motivo.trim()}`,
         tipo: 'ajuste_ponto_pendente',
         extra: { ajuste_ponto_id: criado?.id || '', shift_id: ocorrencia.shiftId, ocorrencia_data: ocorrencia.dateKey },
+        solicitante: usuario,
       });
 
       if (onSaved) await onSaved();
