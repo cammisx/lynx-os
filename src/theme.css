@@ -157,8 +157,8 @@ body {
 
 /* O icone do chat e maior que o do sino: area propria para nao transbordar. */
 .taskbar-chat {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
 }
 
 .taskbar-clock {
