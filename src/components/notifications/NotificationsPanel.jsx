@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CloseIcon } from '@/components/icons';
+import { CheckIcon, CloseIcon, GearIcon, VolumeIcon } from '@/components/icons';
 import NotificationRow from '@/components/notifications/NotificationRow';
 import { isNaoLida } from '@/lib/notificacoes';
+import { SONS } from '@/lib/sons';
 
-export default function NotificationsPanel({ items, anchorRef, onOpen, onClose }) {
+export default function NotificationsPanel({ items, anchorRef, onOpen, onClose, preferencia }) {
   const panelRef = useRef(null);
   const [filtro, setFiltro] = useState('nao_lidas');
+  const [config, setConfig] = useState(false);
+
+  const som = preferencia?.pref || { som: 'suave', ativo: true, volume: 60 };
 
   const naoLidas = useMemo(() => items.filter(isNaoLida), [items]);
   const visiveis = filtro === 'nao_lidas' ? naoLidas : items;
@@ -62,11 +66,36 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose }
           borderBottom: '1px solid color-mix(in srgb, var(--c2) 10%, transparent)',
         }}
       >
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--c3)' }}>Notificações</span>
-        <button
-          type="button"
-          aria-label="Fechar notificações"
-          onClick={onClose}
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--c3)' }}>
+          {config ? 'Som de notificação' : 'Notificações'}
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <button
+            type="button"
+            aria-label={config ? 'Voltar para as notificações' : 'Configurar som de notificação'}
+            title="Som de notificação"
+            onClick={() => setConfig((atual) => !atual)}
+            className="clk-nav-btn"
+            style={{
+              width: 24,
+              height: 24,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+              border: 'none',
+              borderRadius: 6,
+              background: config ? 'color-mix(in srgb, var(--c1) 18%, transparent)' : 'transparent',
+              color: config ? 'var(--c1)' : 'var(--c2)',
+              cursor: 'pointer',
+            }}
+          >
+            <GearIcon size={12} />
+          </button>
+          <button
+            type="button"
+            aria-label="Fechar notificações"
+            onClick={onClose}
           className="clk-nav-btn"
           style={{
             width: 24,
@@ -82,10 +111,12 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose }
             cursor: 'pointer',
           }}
         >
-          <CloseIcon size={12} />
-        </button>
+            <CloseIcon size={12} />
+          </button>
+        </span>
       </div>
 
+      {!config && (
       <div
         style={{
           display: 'flex',
@@ -129,7 +160,141 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose }
           );
         })}
       </div>
+      )}
 
+      {config ? (
+        <div
+          className="glass-scroll"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            padding: 12,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <span style={{ fontSize: 11, color: 'var(--c3)' }}>Tocar som nas notificações</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={som.ativo}
+              aria-label="Ligar ou desligar o som"
+              onClick={() => preferencia?.alternarSom?.(!som.ativo)}
+              style={{
+                width: 34,
+                height: 18,
+                flexShrink: 0,
+                padding: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: som.ativo ? 'flex-end' : 'flex-start',
+                borderRadius: 999,
+                border: `1px solid ${
+                  som.ativo
+                    ? 'color-mix(in srgb, var(--c1) 55%, transparent)'
+                    : 'color-mix(in srgb, var(--c2) 26%, transparent)'
+                }`,
+                background: som.ativo
+                  ? 'color-mix(in srgb, var(--c1) 30%, transparent)'
+                  : 'color-mix(in srgb, var(--c8) 55%, transparent)',
+                cursor: 'pointer',
+                transition: 'background-color 0.15s, border-color 0.15s',
+              }}
+            >
+              <span
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  background: som.ativo ? 'var(--c1)' : 'color-mix(in srgb, var(--c2) 70%, transparent)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.35)',
+                }}
+              />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {SONS.map((opcao) => {
+              const escolhido = som.som === opcao.id;
+              return (
+                <button
+                  key={opcao.id}
+                  type="button"
+                  onClick={() => preferencia?.escolherSom?.(opcao.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    width: '100%',
+                    padding: '7px 9px',
+                    textAlign: 'left',
+                    borderRadius: 8,
+                    border: `1px solid ${
+                      escolhido
+                        ? 'color-mix(in srgb, var(--c1) 55%, transparent)'
+                        : 'color-mix(in srgb, var(--c2) 16%, transparent)'
+                    }`,
+                    background: escolhido
+                      ? 'color-mix(in srgb, var(--c1) 14%, transparent)'
+                      : 'color-mix(in srgb, var(--c8) 45%, transparent)',
+                    color: escolhido ? 'var(--c1)' : 'var(--c3)',
+                    fontFamily: 'var(--font-main)',
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    opacity: som.ativo ? 1 : 0.55,
+                    transition: 'border-color 0.15s, background-color 0.15s',
+                  }}
+                >
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'block', fontWeight: escolhido ? 700 : 500 }}>
+                      {opcao.nome}
+                    </span>
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: 10,
+                        color: 'var(--c2)',
+                        marginTop: 1,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {opcao.descricao}
+                    </span>
+                  </span>
+                  {escolhido && <CheckIcon size={12} />}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: som.ativo ? 1 : 0.55 }}>
+            <span style={{ display: 'flex', color: 'var(--c2)', flexShrink: 0 }}>
+              <VolumeIcon size={13} />
+            </span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={som.volume}
+              aria-label="Volume do som"
+              onChange={(event) => preferencia?.mudarVolume?.(Number(event.target.value))}
+              className="glass-range"
+              style={{ '--glass-range-value': `${som.volume}%` }}
+            />
+            <span style={{ fontSize: 10, color: 'var(--c2)', width: 28, textAlign: 'right' }}>
+              {som.volume}%
+            </span>
+          </div>
+
+          <span style={{ fontSize: 9.5, color: 'var(--c2)', opacity: 0.7, lineHeight: 1.4 }}>
+            A escolha fica salva na sua conta.
+          </span>
+        </div>
+      ) : (
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {visiveis.length === 0 ? (
           <div
@@ -154,6 +319,7 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose }
           ))
         )}
       </div>
+      )}
     </div>,
     document.body
   );

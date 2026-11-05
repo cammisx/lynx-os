@@ -70,3 +70,21 @@ export const tocarSom = (id, volume = 0.6) => {
 export const preaquecerSons = () => {
   SONS.forEach((som) => elemento(som));
 };
+
+/**
+ * Preferência em memória, sincronizada pelo hook usePreferenciaSom.
+ * Fica aqui para qualquer parte do shell tocar o som sem precisar de contexto.
+ */
+let preferencia = { som: SOM_PADRAO, ativo: true, volume: 0.6 };
+
+export const definirPreferenciaSom = (dados = {}) => {
+  preferencia = { ...preferencia, ...dados };
+};
+
+export const lerPreferenciaSom = () => preferencia;
+
+/** Toca o som escolhido pelo usuário, respeitando o desligar e o volume. */
+export const tocarNotificacao = () => {
+  if (!preferencia.ativo) return;
+  tocarSom(preferencia.som, preferencia.volume);
+};

@@ -9,11 +9,13 @@ import VendaPendenteModal from '@/components/vendas/VendaPendenteModal';
 import FolgaPendenteModal from '@/components/solicitacoes/FolgaPendenteModal';
 import HorarioDisponivelModal from '@/components/solicitacoes/HorarioDisponivelModal';
 import useNotifications from '@/hooks/useNotifications';
+import usePreferenciaSom from '@/hooks/usePreferenciaSom';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function Taskbar({ onOpenApp }) {
   const { user } = useAuth();
   const { items, naoLidas, markRead, reload } = useNotifications(user?.id, user?.role === 'admin');
+  const preferenciaSom = usePreferenciaSom();
   const [now, setNow] = useState(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
   const [clockOpen, setClockOpen] = useState(false);
@@ -184,6 +186,7 @@ export default function Taskbar({ onOpenApp }) {
           anchorRef={bellRef}
           onOpen={openNotification}
           onClose={() => setBellOpen(false)}
+          preferencia={preferenciaSom}
         />
       )}
 

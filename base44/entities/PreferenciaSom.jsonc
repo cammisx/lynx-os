@@ -1,0 +1,36 @@
+{
+  "name": "PreferenciaSom",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string"
+    },
+    "som": {
+      "type": "string",
+      "enum": [
+        "suave",
+        "alerta",
+        "scifi",
+        "mensagem"
+      ],
+      "enumColors": [
+        "blue",
+        "purple",
+        "teal",
+        "orange"
+      ],
+      "default": "suave"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true
+    },
+    "volume": {
+      "type": "number",
+      "default": 60
+    }
+  },
+  "required": [
+    "usuario_id"
+  ]
+}
