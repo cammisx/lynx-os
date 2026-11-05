@@ -50,14 +50,19 @@ export const chattersDaModelo = (modelo) =>
  */
 export const canalVisivel = (canal, usuario, modelos = []) => {
   if (!canal || !usuario) return false;
+  /* Canal arquivado sai da lista para todo mundo, inclusive para o admin.
+     Nada é apagado: o histórico continua guardado. */
+  if (canal.arquivado) return false;
   if (canal.tipo === CANAL_GERAL) return true;
   if (canal.tipo === CANAL_MODELO) {
     const modelo = (modelos || []).find((item) => item.id === canal.modelo_id);
+    /* Canal de modelo que não existe mais (modelo excluída) não aparece nem
+       para o admin: ele fica arquivado, esperando a modelo voltar. */
+    if (!modelo) return false;
     /* Modelo arquivada sai da lista do chat, inclusive para o admin. Se ela
        for desarquivada, a conversa volta com o histórico. */
     if (modelo?.arquivada) return false;
     if (ehAdmin(usuario)) return true;
-    if (!modelo) return false;
     return chattersDaModelo(modelo).includes(usuario.id);
   }
   return (canal.participantes || []).includes(usuario.id);

@@ -53,11 +53,15 @@ export default function useChat() {
   const [mensagens, setMensagens] = useState([]);
   const [pessoas, setPessoas] = useState([]);
   const [modelos, setModelos] = useState([]);
+  /* Se a lista de modelos veio de verdade. Sem isso, lista vazia por falha de
+     permissão seria confundida com "nenhuma modelo existe". */
+  const [modelosConferidos, setModelosConferidos] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
   const [canalAtivoId, setCanalAtivoId] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const canaisVisiveisRef = useRef([]);
+  const modelosConferidosRef = useRef(false);
   const membrosRef = useRef([]);
   const modelosRef = useRef([]);
 
@@ -262,34 +266,84 @@ export default function useChat() {
 
   /* Lista os canais de novo sem mexer em pessoas e membros: é o que roda no
      intervalo e faz a conversa criada por outra pessoa aparecer aqui. */
+  /**
+   * Canal de modelo que não existe mais (a modelo foi excluída) não pode
+   * aparecer na lista. Em vez de apagar e perder o histórico, ele fica
+   * arquivado: sai da lista e volta se a modelo voltar com o mesmo id.
+   *
+   * Só arquiva quando quem está olhando é admin: um chatter pode receber a
+   * lista de modelos incompleta, e arquivar por engano esconderia conversa
+   * de modelo que existe.
+   */
+  const arquivarCanaisOrfaos = useCallback(
+    async (listaCanais, listaModelos, { conferido = false } = {}) => {
+      if (!conferido || !ehAdmin(user)) return listaCanais;
+      const ids = new Set((listaModelos || []).map((modelo) => modelo?.id).filter(Boolean));
+      const orfaos = (listaCanais || []).filter(
+        (canal) =>
+          canal?.tipo === CANAL_MODELO &&
+          !canal.arquivado &&
+          (!canal.modelo_id || !ids.has(canal.modelo_id))
+      );
+      if (!orfaos.length) return listaCanais;
+
+      const marcados = new Set();
+      await Promise.all(
+        orfaos.map((canal) =>
+          base44.entities.ChatCanal.update(canal.id, { arquivado: true })
+            .then(() => marcados.add(canal.id))
+            .catch((falha) => {
+              console.warn('[Chat] não consegui arquivar canal sem modelo', canal.id, falha);
+            })
+        )
+      );
+      if (!marcados.size) return listaCanais;
+      return (listaCanais || []).map((canal) =>
+        marcados.has(canal.id) ? { ...canal, arquivado: true } : canal
+      );
+    },
+    [user]
+  );
+
   const recarregarCanais = useCallback(async () => {
     if (!euId) return null;
     try {
       const brutos = await juntarPrivadosRepetidos(
         asList(await base44.entities.ChatCanal.list('-created_date', 200, 0))
       );
-      const prontos = await garantirCanais(brutos, modelosRef.current);
+      const criados = await garantirCanais(brutos, modelosRef.current);
+      const prontos = await arquivarCanaisOrfaos(criados, modelosRef.current, {
+        conferido: modelosConferidosRef.current,
+      });
       setCanais(prontos);
       return prontos;
     } catch (falha) {
       console.warn('[Chat] não consegui atualizar os canais', falha);
       return null;
     }
-  }, [euId, garantirCanais, juntarPrivadosRepetidos]);
+  }, [euId, garantirCanais, juntarPrivadosRepetidos, arquivarCanaisOrfaos]);
 
   const carregar = useCallback(async () => {
     if (!euId) return;
     setErro('');
     try {
-      const [pessoasCarregadas, modelosCarregados] = await Promise.all([
+      const [pessoasCarregadas, respostaModelos] = await Promise.all([
         carregarPessoas(),
-        listar(base44.entities.Modelo.list('-created_date', 100, 0)),
+        base44.entities.Modelo.list('-created_date', 100, 0).catch((falha) => {
+          console.warn('[Chat] não consegui listar as modelos', falha);
+          return null;
+        }),
       ]);
+      const modelosCarregados = respostaModelos ? asList(respostaModelos) : [];
+      const conferido = Boolean(respostaModelos);
 
       const canaisBrutos = await juntarPrivadosRepetidos(
         asList(await base44.entities.ChatCanal.list('-created_date', 200, 0))
       );
-      const canaisProntos = await garantirCanais(canaisBrutos, modelosCarregados);
+      const canaisCriados = await garantirCanais(canaisBrutos, modelosCarregados);
+      const canaisProntos = await arquivarCanaisOrfaos(canaisCriados, modelosCarregados, {
+        conferido,
+      });
 
       const membrosCarregados = await base44.entities.ChatMembro
         .filter({ usuario_id: euId }, '-created_date', 300, 0)
@@ -303,6 +357,8 @@ export default function useChat() {
 
       setPessoas(pessoasCarregadas);
       setModelos(modelosCarregados);
+      setModelosConferidos(conferido);
+      modelosConferidosRef.current = conferido;
       setCanais(canaisProntos);
       setMembros(membrosCarregados);
       setMensagens(minhasMensagens);
@@ -312,7 +368,15 @@ export default function useChat() {
     } finally {
       setCarregando(false);
     }
-  }, [euId, user, carregarPessoas, garantirCanais, carregarMensagens, juntarPrivadosRepetidos]);
+  }, [
+    euId,
+    user,
+    carregarPessoas,
+    garantirCanais,
+    carregarMensagens,
+    juntarPrivadosRepetidos,
+    arquivarCanaisOrfaos,
+  ]);
 
   useEffect(() => {
     if (!euId) return;
@@ -321,15 +385,11 @@ export default function useChat() {
   }, [euId]);
 
   const canaisVisiveis = useMemo(() => {
-    const modelosProntos = modelos.length > 0;
+    /* Enquanto a lista de modelos não chega, canal de modelo espera: sem isso
+       ele apareceria e sumiria na abertura do app. */
     const lista = canais.filter((canal) => {
-      if (!canalVisivel(canal, user, modelos)) return false;
-      /* Conversa de modelo que não existe mais (excluída, não arquivada) fica
-         fora. Só depois de as modelos carregarem, para não piscar na abertura. */
-      if (canal.tipo === CANAL_MODELO && modelosProntos) {
-        return modelos.some((modelo) => modelo.id === canal.modelo_id);
-      }
-      return true;
+      if (canal.tipo === CANAL_MODELO && !modelosConferidos) return false;
+      return canalVisivel(canal, user, modelos);
     });
     // Um canal por modelo e o geral não podem aparecer duas vezes.
     const unicos = new Map();
@@ -338,7 +398,7 @@ export default function useChat() {
       if (!unicos.has(chave)) unicos.set(chave, canal);
     });
     return [...unicos.values()];
-  }, [canais, modelos, user]);
+  }, [canais, modelos, modelosConferidos, user]);
 
   useEffect(() => {
     canaisVisiveisRef.current = canaisVisiveis;
