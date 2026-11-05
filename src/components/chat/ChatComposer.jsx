@@ -232,28 +232,71 @@ export default function ChatComposer({
           />
         ) : (
           <>
-            <button
-              type="button"
-              onClick={() => arquivoRef.current?.click()}
-              disabled={Boolean(editando)}
-              aria-label="Anexar arquivo"
-              className="chat-anexar"
+            <div
               style={{
-                width: 30,
-                height: 34,
-                flexShrink: 0,
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 9,
-                border: '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
-                background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
-                color: editando ? 'var(--c12)' : 'var(--c2)',
-                cursor: editando ? 'default' : 'pointer',
+                flexDirection: 'column',
+                gap: 3,
+                flexShrink: 0,
               }}
             >
-              <PaperclipIcon size={14} />
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmojisAbertos(false);
+                  setGifsAbertos((aberto) => !aberto);
+                }}
+                disabled={Boolean(editando)}
+                aria-label="Enviar GIF"
+                title="Enviar GIF"
+                className="chat-gif"
+                style={{
+                  width: 30,
+                  height: 20,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 7,
+                  border: '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
+                  background: gifsAbertos
+                    ? 'color-mix(in srgb, var(--c1) 18%, transparent)'
+                    : 'color-mix(in srgb, var(--c8) 55%, transparent)',
+                  color: gifsAbertos ? 'var(--c1)' : editando ? 'var(--c12)' : 'var(--c2)',
+                  cursor: editando ? 'default' : 'pointer',
+                  fontSize: 8.5,
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  fontFamily: 'var(--font-main)',
+                  padding: 0,
+                }}
+              >
+                GIF
+              </button>
+
+              <button
+                type="button"
+                onClick={() => arquivoRef.current?.click()}
+                disabled={Boolean(editando)}
+                aria-label="Anexar arquivo"
+                className="chat-anexar"
+                style={{
+                  width: 30,
+                  height: 34,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 9,
+                  border: '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
+                  background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
+                  color: editando ? 'var(--c12)' : 'var(--c2)',
+                  cursor: editando ? 'default' : 'pointer',
+                }}
+              >
+                <PaperclipIcon size={14} />
+              </button>
+            </div>
 
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -347,40 +390,6 @@ export default function ChatComposer({
                 }}
               />
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setEmojisAbertos(false);
-                setGifsAbertos((aberto) => !aberto);
-              }}
-              disabled={Boolean(editando)}
-              aria-label="Enviar GIF"
-              title="Enviar GIF"
-              className="chat-gif"
-              style={{
-                height: 22,
-                minWidth: 30,
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 7,
-                border: '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
-                background: gifsAbertos
-                  ? 'color-mix(in srgb, var(--c1) 18%, transparent)'
-                  : 'color-mix(in srgb, var(--c8) 55%, transparent)',
-                color: gifsAbertos ? 'var(--c1)' : editando ? 'var(--c12)' : 'var(--c2)',
-                cursor: editando ? 'default' : 'pointer',
-                fontSize: 8.5,
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                fontFamily: 'var(--font-main)',
-                padding: '0 5px',
-              }}
-            >
-              GIF
-            </button>
 
             <button
               type="button"

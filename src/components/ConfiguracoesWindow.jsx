@@ -5,6 +5,7 @@ import { GearIcon } from '@/components/icons';
 import { useAuth } from '@/lib/AuthContext';
 import { iniciaisDe, nomeDe, salvarPerfil, usePerfil } from '@/lib/perfilUsuario';
 import { TEMAS } from '@/lib/temas';
+import { TAMANHOS } from '@/lib/fonte';
 
 const ABAS = [
   { id: 'perfil', label: 'Perfil' },
@@ -121,6 +122,15 @@ export default function ConfiguracoesWindow({ onClose }) {
       remoto
         ? null
         : { erro: false, texto: 'Tema aplicado neste navegador. Falta publicar o campo tema no Builder.' }
+    );
+  };
+
+  const trocarFonte = async (id) => {
+    const { remoto } = await salvarPerfil(user, { fonte: id });
+    setAviso(
+      remoto
+        ? null
+        : { erro: false, texto: 'Tamanho aplicado neste navegador. Falta publicar o campo de fonte no Builder.' }
     );
   };
 
@@ -336,6 +346,65 @@ export default function ConfiguracoesWindow({ onClose }) {
             className="glass-scroll"
             style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}
           >
+            <span style={{ ...labelStyle, marginTop: 2 }}>Tamanho da fonte</span>
+            <span style={dicaStyle}>
+              Vale para o sistema inteiro: chat, janelas, painéis e menus. O Normal é como sempre foi.
+            </span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8 }}>
+              {TAMANHOS.map((tamanho, indice) => {
+                const ativo = perfil.fonte === tamanho.id;
+                return (
+                  <button
+                    key={tamanho.id}
+                    type="button"
+                    onClick={() => trocarFonte(tamanho.id)}
+                    title={tamanho.dica}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '9px 6px',
+                      borderRadius: 10,
+                      border: ativo
+                        ? '1px solid color-mix(in srgb, var(--c1) 70%, transparent)'
+                        : '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+                      background: ativo
+                        ? 'color-mix(in srgb, var(--c1) 14%, transparent)'
+                        : 'color-mix(in srgb, var(--c8) 45%, transparent)',
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-main)',
+                      transition: 'border-color 150ms ease, background-color 150ms ease',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 11 + indice * 2,
+                        fontWeight: 700,
+                        lineHeight: 1,
+                        color: ativo ? 'var(--c1)' : 'var(--c3)',
+                      }}
+                    >
+                      Aa
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 9.5,
+                        fontWeight: 700,
+                        letterSpacing: '0.02em',
+                        color: ativo ? 'var(--c1)' : 'var(--c2)',
+                        textAlign: 'center',
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {tamanho.nome}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <span style={{ ...labelStyle, marginTop: 6 }}>Tema do sistema</span>
             <span style={dicaStyle}>
               Cada perfil veste o sistema inteiro: ícones, vidro, desktop e barras. Escolhe o seu.
             </span>

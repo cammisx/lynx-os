@@ -8,6 +8,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { base44 } from '@/api/base44Client';
 import { aplicarTema, temaPorId } from '@/lib/temas';
+import { aplicarFonte, fonteDoNavegador, tamanhoPorId } from '@/lib/fonte';
 import { PERFIL_PADRAO, iniciaisDe, mesclarPerfil, nomeDe } from '@/lib/perfilLogica';
 import { espelharNomeNoChatter, propagarNomeNasModelos } from '@/lib/pessoas';
 import { emitChattersChanged } from '@/lib/desktopEvents';
@@ -54,7 +55,9 @@ export const carregarPerfil = (user) => {
   if (!user?.id || carregadoPara === user.id) return atual;
   carregadoPara = user.id;
   atual = mesclarPerfil(lerLocal(user.id), user);
+  if (!atual.fonte) atual.fonte = fonteDoNavegador() || atual.fonte;
   aplicarTema(atual.tema);
+  aplicarFonte(atual.fonte);
   avisar();
   return atual;
 };
@@ -76,6 +79,7 @@ export const salvarPerfil = async (user, parcial = {}) => {
   const antes = { nome: atual.nomeExibicao, foto: atual.fotoUrl, subnick: atual.subnick };
   atual = { ...atual, ...parcial };
   aplicarTema(atual.tema);
+  aplicarFonte(atual.fonte);
   if (user?.id) gravarLocal(user.id, atual);
   avisar();
 
@@ -87,6 +91,7 @@ export const salvarPerfil = async (user, parcial = {}) => {
       foto_url: atual.fotoUrl || '',
       subnick: atual.subnick || '',
       tema: atual.tema || '',
+      fonte_escala: atual.fonte || '',
     });
     /* Campo que não existe no schema volta sem estar na resposta: nesse caso
        o perfil só ficou guardado aqui. */
@@ -127,5 +132,9 @@ export const usePerfil = (user) => {
   }, [user?.id]);
 
   const perfil = useSyncExternalStore(assinarPerfil, perfilAtual, perfilAtual);
-  return { ...perfil, tema: temaPorId(perfil.tema).id };
+  return {
+    ...perfil,
+    tema: temaPorId(perfil.tema).id,
+    fonte: tamanhoPorId(perfil.fonte).id,
+  };
 };

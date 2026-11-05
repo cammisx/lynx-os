@@ -33,11 +33,6 @@ export default function GifPicker({ onEscolher, onFechar }) {
   };
 
   useEffect(() => {
-    if (chave) buscar('');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chave]);
-
-  useEffect(() => {
     const fora = (evento) => {
       if (!caixaRef.current?.contains(evento.target)) onFechar();
     };
@@ -70,8 +65,8 @@ export default function GifPicker({ onEscolher, onFechar }) {
       ref={caixaRef}
       style={{
         position: 'absolute',
-        right: 8,
-        bottom: 50,
+        left: 8,
+        bottom: 66,
         width: 300,
         height: 324,
         display: 'flex',

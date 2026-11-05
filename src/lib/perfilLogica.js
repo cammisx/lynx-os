@@ -3,12 +3,14 @@
  * O que vem do banco manda; o que ficou salvo no navegador preenche o resto.
  */
 import { TEMA_PADRAO } from '@/lib/temas';
+import { FONTE_PADRAO } from '@/lib/fonte';
 
 export const PERFIL_PADRAO = {
   nomeExibicao: '',
   fotoUrl: '',
   subnick: '',
   tema: TEMA_PADRAO,
+  fonte: FONTE_PADRAO,
 };
 
 /** Campos custom do User, quando publicados no Builder. */
@@ -17,6 +19,7 @@ export const perfilDoUsuario = (user) => ({
   fotoUrl: user?.foto_url || '',
   subnick: user?.subnick || '',
   tema: user?.tema || '',
+  fonte: user?.fonte_escala || '',
 });
 
 export const mesclarPerfil = (local = {}, user = {}) => {

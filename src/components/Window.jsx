@@ -1,29 +1,161 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CloseIcon } from '@/components/icons';
 
+const MIN_W = 420;
+const MIN_H = 260;
+const MARGEM = 8;
+
+/* Com o tamanho de fonte fora do Normal o html recebe zoom: o innerWidth
+   continua sendo a tela física, então a área útil precisa ser dividida por
+   ele para as janelas não saírem da tela. */
+const zoomAtual = () => {
+  const valor = parseFloat(getComputedStyle(document.documentElement).zoom);
+  return Number.isFinite(valor) && valor > 0 ? valor : 1;
+};
+
+const areaUtil = () => {
+  const zoom = zoomAtual();
+  return { w: window.innerWidth / zoom, h: window.innerHeight / zoom };
+};
+
+const BORDAS = [
+  { dir: 'n', style: { top: 0, left: 10, right: 10, height: 5 }, cursor: 'ns-resize' },
+  { dir: 's', style: { bottom: 0, left: 10, right: 10, height: 5 }, cursor: 'ns-resize' },
+  { dir: 'w', style: { left: 0, top: 10, bottom: 10, width: 5 }, cursor: 'ew-resize' },
+  { dir: 'e', style: { right: 0, top: 10, bottom: 10, width: 5 }, cursor: 'ew-resize' },
+  { dir: 'nw', style: { top: 0, left: 0, width: 12, height: 12 }, cursor: 'nwse-resize' },
+  { dir: 'ne', style: { top: 0, right: 0, width: 12, height: 12 }, cursor: 'nesw-resize' },
+  { dir: 'sw', style: { bottom: 0, left: 0, width: 12, height: 12 }, cursor: 'nesw-resize' },
+  { dir: 'se', style: { bottom: 0, right: 0, width: 12, height: 12 }, cursor: 'nwse-resize' },
+];
+
 export default function Window({ title, icon: Icon, onClose, children, width = 620, height = 460 }) {
-  const [pos, setPos] = useState(() => ({
-    x: Math.max(8, Math.round((window.innerWidth - width) / 2)),
-    y: Math.max(8, Math.round((window.innerHeight - height) / 2)),
-  }));
+  const [size, setSize] = useState(() => {
+    const area = areaUtil();
+    return {
+      w: Math.min(width, Math.max(MIN_W, area.w - MARGEM * 2)),
+      h: Math.min(height, Math.max(MIN_H, area.h - MARGEM * 2)),
+    };
+  });
+  const [pos, setPos] = useState(() => {
+    const area = areaUtil();
+    const largura = Math.min(width, Math.max(MIN_W, area.w - MARGEM * 2));
+    const altura = Math.min(height, Math.max(MIN_H, area.h - MARGEM * 2));
+    return {
+      x: Math.max(MARGEM, Math.round((area.w - largura) / 2)),
+      y: Math.max(MARGEM, Math.round((area.h - altura) / 2)),
+    };
+  });
   const offsetRef = useRef(null);
+  const [redimensionando, setRedimensionando] = useState(false);
+  const sizeRef = useRef(size);
+  const posRef = useRef(pos);
+  sizeRef.current = size;
+  posRef.current = pos;
+
+  /* Tela mudou (ou o tamanho da fonte mudou): a janela volta para dentro. */
+  useEffect(() => {
+    const ajustar = () => {
+      const area = areaUtil();
+      const tamanho = {
+        w: Math.min(sizeRef.current.w, Math.max(MIN_W, area.w - MARGEM * 2)),
+        h: Math.min(sizeRef.current.h, Math.max(MIN_H, area.h - MARGEM * 2)),
+      };
+      setSize(tamanho);
+      setPos({
+        x: Math.min(Math.max(MARGEM, posRef.current.x), Math.max(MARGEM, area.w - tamanho.w - MARGEM)),
+        y: Math.min(Math.max(0, posRef.current.y), Math.max(0, area.h - tamanho.h - MARGEM)),
+      });
+    };
+    window.addEventListener('resize', ajustar);
+    window.addEventListener('lynx:fonte', ajustar);
+    return () => {
+      window.removeEventListener('resize', ajustar);
+      window.removeEventListener('lynx:fonte', ajustar);
+    };
+  }, []);
 
   const startDrag = (event) => {
     event.preventDefault();
-    offsetRef.current = { dx: event.clientX - pos.x, dy: event.clientY - pos.y };
+    offsetRef.current = {
+      dx: event.clientX - pos.x * zoomAtual(),
+      dy: event.clientY - pos.y * zoomAtual(),
+    };
 
     const handleMove = (moveEvent) => {
       const offset = offsetRef.current;
       if (!offset) return;
+      const zoom = zoomAtual();
+      const area = areaUtil();
+      const x = (moveEvent.clientX - offset.dx) / zoom;
+      const y = (moveEvent.clientY - offset.dy) / zoom;
       setPos({
-        x: Math.min(Math.max(-width + 120, moveEvent.clientX - offset.dx), window.innerWidth - 120),
-        y: Math.min(Math.max(0, moveEvent.clientY - offset.dy), window.innerHeight - 60),
+        x: Math.min(Math.max(-size.w + 120, x), area.w - 120),
+        y: Math.min(Math.max(0, y), area.h - 60),
       });
     };
 
     const handleUp = () => {
       offsetRef.current = null;
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+  };
+
+  /* Arrastar borda e canto: cresce para o lado que está sendo puxado. Nas
+     bordas de cima e da esquerda a posição anda junto, para a janela não
+     "fugir" debaixo do mouse. */
+  const startResize = (event, dir) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setRedimensionando(true);
+
+    const inicio = { px: pos.x, py: pos.y, w: size.w, h: size.h, mx: event.clientX, my: event.clientY };
+
+    const handleMove = (moveEvent) => {
+      const zoom = zoomAtual();
+      const area = areaUtil();
+      const dx = (moveEvent.clientX - inicio.mx) / zoom;
+      const dy = (moveEvent.clientY - inicio.my) / zoom;
+
+      let x = inicio.px;
+      let y = inicio.py;
+      let w = inicio.w;
+      let h = inicio.h;
+
+      if (dir.includes('e')) {
+        w = Math.min(Math.max(MIN_W, inicio.w + dx), Math.max(MIN_W, area.w - inicio.px - MARGEM));
+      }
+      if (dir.includes('s')) {
+        h = Math.min(Math.max(MIN_H, inicio.h + dy), Math.max(MIN_H, area.h - inicio.py - MARGEM));
+      }
+      if (dir.includes('w')) {
+        w = Math.max(MIN_W, inicio.w - dx);
+        x = inicio.px + (inicio.w - w);
+        if (x < MARGEM) {
+          w = Math.max(MIN_W, w + (x - MARGEM));
+          x = MARGEM;
+        }
+      }
+      if (dir.includes('n')) {
+        h = Math.max(MIN_H, inicio.h - dy);
+        y = inicio.py + (inicio.h - h);
+        if (y < MARGEM) {
+          h = Math.max(MIN_H, h + (y - MARGEM));
+          y = MARGEM;
+        }
+      }
+
+      setPos({ x, y });
+      setSize({ w: Math.round(w), h: Math.round(h) });
+    };
+
+    const handleUp = () => {
+      setRedimensionando(false);
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('mouseup', handleUp);
     };
@@ -38,21 +170,22 @@ export default function Window({ title, icon: Icon, onClose, children, width = 6
         position: 'fixed',
         left: pos.x,
         top: pos.y,
-        width,
-        height,
-        minWidth: 520,
-        minHeight: 380,
+        width: size.w,
+        height: size.h,
         zIndex: 8000,
         background: 'color-mix(in srgb, var(--c8) 45%, transparent)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         border: '1px solid color-mix(in srgb, var(--c1) 22%, transparent)',
         borderRadius: 14,
-        boxShadow: '0 16px 56px rgba(0,0,0,0.5)',
+        boxShadow: redimensionando
+          ? '0 22px 70px rgba(0,0,0,0.6)'
+          : '0 16px 56px rgba(0,0,0,0.5)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
         fontFamily: 'var(--font-main)',
+        transition: 'box-shadow 140ms ease',
       }}
     >
       <div
@@ -112,6 +245,20 @@ export default function Window({ title, icon: Icon, onClose, children, width = 6
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 16 }}>{children}</div>
+
+      {BORDAS.map((borda) => (
+        <div
+          key={borda.dir}
+          onMouseDown={(event) => startResize(event, borda.dir)}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            zIndex: 2,
+            cursor: borda.cursor,
+            ...borda.style,
+          }}
+        />
+      ))}
     </div>,
     document.body
   );
