@@ -295,7 +295,10 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose, 
           </span>
         </div>
       ) : (
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+      <div
+        className="glass-scroll"
+        style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 2 }}
+      >
         {visiveis.length === 0 ? (
           <div
             style={{
