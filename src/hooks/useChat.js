@@ -636,6 +636,20 @@ export default function useChat() {
     [euId, abrirCanal]
   );
 
+  /** Guarda a transcrição feita aqui no navegador para toda a equipe ver. */
+  const salvarTranscricao = useCallback(async (id, texto) => {
+    const limpo = String(texto || '').replace(/\s+/g, ' ').trim();
+    if (!id || !limpo) return;
+    setMensagens((anterior) =>
+      anterior.map((mensagem) => (mensagem.id === id ? { ...mensagem, transcricao: limpo } : mensagem))
+    );
+    try {
+      await base44.entities.ChatMensagem.update(id, { transcricao: limpo });
+    } catch (falha) {
+      console.warn('[Chat] não consegui salvar a transcrição', falha);
+    }
+  }, []);
+
   /* ---------------------------------------------------------------- */
   /* Tempo real                                                        */
   /* ---------------------------------------------------------------- */
@@ -774,6 +788,7 @@ export default function useChat() {
     enviando,
     criarCanal,
     marcarLido,
+    salvarTranscricao,
     recarregar: carregar,
   };
 }

@@ -11,6 +11,7 @@ import {
   TrashIcon,
 } from '@/components/chat/chatIcons';
 import AudioPlayer from '@/components/chat/AudioPlayer';
+import BotaoTranscrever from '@/components/chat/BotaoTranscrever';
 import ChatComposer from '@/components/chat/ChatComposer';
 import TextoRico from '@/components/chat/TextoRico';
 import { useChatPanel } from '@/components/chat/ChatProvider';
@@ -56,6 +57,7 @@ export default function ChatConversa({ onVoltar }) {
     apagar,
     enviando,
     fecharCanal,
+    salvarTranscricao,
   } = useChatPanel();
 
   const [texto, setTexto] = useState('');
@@ -472,6 +474,9 @@ export default function ChatConversa({ onVoltar }) {
                           url={mensagem.audio_url}
                           duracao={mensagem.audio_duracao}
                         />
+                        {!mensagem.transcricao && (
+                          <BotaoTranscrever mensagem={mensagem} onSalvar={salvarTranscricao} />
+                        )}
                       </div>
                     )}
 

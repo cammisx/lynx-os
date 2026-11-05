@@ -123,3 +123,9 @@ export const SmileIcon = ({ size = 15, ...rest }) => (
     <path d="M9 9.6v.9M15 9.6v.9" />
   </svg>
 );
+
+export const TextoIcon = ({ size = 14, ...rest }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...base} {...rest}>
+    <path d="M4.5 6.5h15M4.5 11h15M4.5 15.5h9M4.5 20h6" />
+  </svg>
+);
