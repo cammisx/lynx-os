@@ -32,18 +32,11 @@
       ],
       "default": "folga"
     },
-    "ajuste": {
+    "entrada_solicitada": {
       "type": "string",
-      "enum": [
-        "sair_antes",
-        "entrar_depois"
-      ],
-      "enumColors": [
-        "orange",
-        "teal"
-      ]
+      "format": "date-time"
     },
-    "horario_solicitado": {
+    "saida_solicitada": {
       "type": "string",
       "format": "date-time"
     },

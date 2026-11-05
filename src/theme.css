@@ -337,8 +337,27 @@ body {
   opacity: 1 !important;
 }
 
+.dtp-hours {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--c1) 45%, transparent) transparent;
+}
+
 .dtp-hours::-webkit-scrollbar {
-  display: none;
+  display: block;
+  width: 6px;
+}
+
+.dtp-hours::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dtp-hours::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--c1) 40%, transparent);
+  border-radius: 999px;
+}
+
+.dtp-hours:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--c1) 62%, transparent);
 }
 
 .ponto-btn {

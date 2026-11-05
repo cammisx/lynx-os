@@ -378,11 +378,11 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
                 width: 72,
                 maxHeight: 240,
                 overflowY: 'auto',
+                overscrollBehavior: 'contain',
                 padding: '8px 6px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 2,
-                scrollbarWidth: 'none',
                 fontFamily: 'var(--font-main)',
               }}
             >

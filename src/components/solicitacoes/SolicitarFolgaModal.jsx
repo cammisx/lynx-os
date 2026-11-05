@@ -72,16 +72,29 @@ const horaDe = (ms) =>
   new Date(ms).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
 const diaLongo = (ms) =>
-  new Date(ms).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  new Date(ms).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+
+/** Junta o dia do turno com o horário escolhido, virando o dia quando precisa. */
+const combinar = (diaBase, hora, ancora) => {
+  if (!hora) return null;
+  const base = new Date(diaBase);
+  base.setHours(hora.getHours(), hora.getMinutes(), 0, 0);
+  let valor = base.getTime();
+  if (valor < ancora) valor += DAY_MS;
+  return valor;
+};
 
 export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
   const [ocorrencias, setOcorrencias] = useState([]);
   const [selecionada, setSelecionada] = useState('');
   const [tipo, setTipo] = useState('folga');
-  const [ajuste, setAjuste] = useState('sair_antes');
-  const [hora, setHora] = useState(null);
+  const [entrada, setEntrada] = useState(null);
+  const [saida, setSaida] = useState(null);
   const [motivo, setMotivo] = useState('');
-  const [ciente, setCiente] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
@@ -124,32 +137,44 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
     [ocorrencias, selecionada]
   );
 
+  // Ao trocar de turno, os campos de horário começam iguais aos do turno.
+  useEffect(() => {
+    if (!ocorrencia) return;
+    setEntrada(new Date(ocorrencia.start));
+    setSaida(new Date(ocorrencia.end));
+  }, [ocorrencia?.chave]);
+
   const antecedenciaHoras = ocorrencia ? (ocorrencia.start - Date.now()) / 3600000 : 0;
   const foraDoPrazo = !!ocorrencia && antecedenciaHoras < PRAZO_HORAS;
 
-  /** Horário escolhido combinado com o dia do turno (madrugada cai no dia seguinte). */
-  const horarioFinal = useMemo(() => {
-    if (!ocorrencia || !hora) return null;
-    const base = new Date(ocorrencia.start);
-    base.setHours(hora.getHours(), hora.getMinutes(), 0, 0);
-    let valor = base.getTime();
-    if (valor <= ocorrencia.start) valor += DAY_MS;
-    if (valor >= ocorrencia.end) return null;
+  // Entrada: mesma data do turno; se o horário for menor que o início, cai na madrugada seguinte.
+  const entradaFinal = useMemo(() => {
+    if (!ocorrencia || !entrada) return null;
+    const valor = combinar(ocorrencia.start, entrada, ocorrencia.start);
+    if (valor === null || valor >= ocorrencia.end) return null;
     return valor;
-  }, [ocorrencia, hora]);
+  }, [ocorrencia, entrada]);
+
+  // Saída: sempre depois da entrada e nunca depois do fim do turno.
+  const saidaFinal = useMemo(() => {
+    if (!ocorrencia || !saida || !entradaFinal) return null;
+    const valor = combinar(ocorrencia.start, saida, entradaFinal + 1);
+    if (valor === null || valor > ocorrencia.end) return null;
+    return valor;
+  }, [ocorrencia, saida, entradaFinal]);
 
   const erroHorario = (() => {
-    if (tipo !== 'reducao' || !ocorrencia || !hora) return '';
-    if (!horarioFinal) return 'Esse horário não está dentro do turno.';
+    if (tipo !== 'reducao' || !ocorrencia) return '';
+    if (!entradaFinal) return 'A entrada precisa ser dentro do turno.';
+    if (!saidaFinal) return 'A saída precisa ser depois da entrada e dentro do turno.';
+    if (entradaFinal === ocorrencia.start && saidaFinal === ocorrencia.end) {
+      return 'Altere pelo menos um dos horários.';
+    }
     return '';
   })();
 
-  const faltaMotivo = foraDoPrazo && motivo.trim().length < 3;
-  const faltaCiente = foraDoPrazo && !ciente;
-  const reducaoIncompleta = tipo === 'reducao' && (!hora || !!erroHorario);
-
-  const podeEnviar =
-    !!ocorrencia && !reducaoIncompleta && !faltaMotivo && !faltaCiente && !salvando;
+  const reducaoIncompleta = tipo === 'reducao' && !!erroHorario;
+  const podeEnviar = !!ocorrencia && !reducaoIncompleta && !salvando;
 
   const enviar = async () => {
     if (!podeEnviar) return;
@@ -164,8 +189,8 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
         modelo_nome: ocorrencia.modeloNome,
         ocorrencia_data: ocorrencia.dateKey,
         tipo,
-        ajuste: tipo === 'reducao' ? ajuste : '',
-        horario_solicitado: horarioFinal ? new Date(horarioFinal).toISOString() : '',
+        entrada_solicitada: tipo === 'reducao' && entradaFinal ? new Date(entradaFinal).toISOString() : '',
+        saida_solicitada: tipo === 'reducao' && saidaFinal ? new Date(saidaFinal).toISOString() : '',
         turno_inicio: new Date(ocorrencia.start).toISOString(),
         turno_fim: new Date(ocorrencia.end).toISOString(),
         antecedencia_horas: Number(antecedenciaHoras.toFixed(1)),
@@ -180,9 +205,7 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
       const pedido =
         tipo === 'folga'
           ? `folga no turno de ${turnoTexto}`
-          : `redução no turno de ${turnoTexto} (${
-              ajuste === 'sair_antes' ? 'sair' : 'entrar'
-            } às ${horaDe(horarioFinal)})`;
+          : `redução no turno de ${turnoTexto}, ficando ${horaDe(entradaFinal)}–${horaDe(saidaFinal)}`;
       const prazo = foraDoPrazo
         ? ` Pedido fora do prazo (faltavam ${Math.max(0, Math.floor(antecedenciaHoras))}h).`
         : '';
@@ -192,7 +215,11 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
         titulo: tipo === 'folga' ? 'Pedido de folga' : 'Pedido de redução',
         mensagem: `${usuario?.full_name || usuario?.email || 'Chatter'} pediu ${pedido}.${prazo}${motivoTexto}`,
         tipo: 'folga_pendente',
-        extra: { folga_id: criada?.id || '', shift_id: ocorrencia.shiftId, ocorrencia_data: ocorrencia.dateKey },
+        extra: {
+          folga_id: criada?.id || '',
+          shift_id: ocorrencia.shiftId,
+          ocorrencia_data: ocorrencia.dateKey,
+        },
       });
 
       if (onSaved) await onSaved();
@@ -292,7 +319,15 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
           </button>
         </div>
 
-        <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 11, overflowY: 'auto' }}>
+        <div
+          style={{
+            padding: 14,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 11,
+            overflowY: 'auto',
+          }}
+        >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <span style={rotulo}>Turno</span>
             <select
@@ -347,45 +382,25 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
 
           {tipo === 'reducao' && (
             <>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                <span style={rotulo}>Como vai ser</span>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAjuste('sair_antes');
-                      setHora(null);
-                    }}
-                    style={{ ...SUGESTAO, ...(ajuste === 'sair_antes' ? ativoStyle : null) }}
-                  >
-                    Vou sair antes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAjuste('entrar_depois');
-                      setHora(null);
-                    }}
-                    style={{ ...SUGESTAO, ...(ajuste === 'entrar_depois' ? ativoStyle : null) }}
-                  >
-                    Vou entrar depois
-                  </button>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <DateTimePicker
+                    value={entrada}
+                    onChange={setEntrada}
+                    mode="time"
+                    label="Entrada"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <DateTimePicker value={saida} onChange={setSaida} mode="time" label="Saída" />
                 </div>
               </div>
-
-              <DateTimePicker
-                value={hora}
-                onChange={setHora}
-                mode="time"
-                label={ajuste === 'sair_antes' ? 'Horário que vou sair' : 'Horário que vou entrar'}
-              />
-
-              {ocorrencia && (
-                <span style={{ fontSize: 11, color: erroHorario ? '#ff6b6b' : 'var(--c2)' }}>
-                  {erroHorario ||
-                    `Turno das ${horaDe(ocorrencia.start)} às ${horaDe(ocorrencia.end)}.`}
-                </span>
-              )}
+              <span style={{ fontSize: 11, color: erroHorario ? '#ff6b6b' : 'var(--c2)' }}>
+                {erroHorario ||
+                  (ocorrencia
+                    ? `Turno das ${horaDe(ocorrencia.start)} às ${horaDe(ocorrencia.end)}.`
+                    : '')}
+              </span>
             </>
           )}
 
@@ -410,29 +425,11 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
                 <textarea
                   value={motivo}
                   onChange={(event) => setMotivo(event.target.value)}
-                  placeholder="Por que está pedindo em cima da hora?"
+                  placeholder=""
                   maxLength={280}
                   style={AREA}
                 />
               </div>
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 7,
-                  fontSize: 11,
-                  color: 'var(--c3)',
-                  cursor: 'pointer',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={ciente}
-                  onChange={(event) => setCiente(event.target.checked)}
-                  style={{ marginTop: 2, accentColor: 'var(--c1)' }}
-                />
-                Entendo que o pedido está fora do prazo e pode gerar falta.
-              </label>
             </div>
           )}
 
@@ -475,13 +472,15 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
             style={{
               ...BOTAO,
               border: 'none',
-              background: podeEnviar ? 'var(--c1)' : 'color-mix(in srgb, var(--c2) 22%, transparent)',
+              background: podeEnviar
+                ? 'var(--c1)'
+                : 'color-mix(in srgb, var(--c2) 22%, transparent)',
               color: podeEnviar ? 'var(--c8)' : 'var(--c2)',
               cursor: podeEnviar ? 'pointer' : 'default',
               opacity: salvando ? 0.6 : 1,
             }}
           >
-            {salvando ? 'Enviando…' : foraDoPrazo ? 'Confirmar e enviar' : 'Enviar pedido'}
+            {salvando ? 'Enviando…' : 'Enviar pedido'}
           </button>
         </div>
       </div>
