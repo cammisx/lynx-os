@@ -222,6 +222,16 @@ export function UploadIcon({ size = 16, className }) {
   );
 }
 
+export function DownloadIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="M12 4v12" />
+      <path d="m7 11 5 5 5-5" />
+    </Svg>
+  );
+}
+
 export function CheckIcon({ size = 16, className }) {
   return (
     <Svg size={size} className={className}>

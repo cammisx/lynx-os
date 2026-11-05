@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import GlassSelect from '@/components/GlassSelect';
+import RelatorioSemanalModal from '@/components/financeiro/RelatorioSemanalModal';
+import { DownloadIcon } from '@/components/icons';
 import {
   fimDoMes,
   inicioDoMes,
@@ -52,7 +54,7 @@ const navegacao = {
 export default function RelatorioFinanceiro({ modelos, chatters }) {
   const [referencia, setReferencia] = useState(() => new Date());
   const [modeloId, setModeloId] = useState('');
-  const [plataforma, setPlataforma] = useState('');
+  const [pdfAberto, setPdfAberto] = useState(false);
   const [vendas, setVendas] = useState([]);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
@@ -89,12 +91,8 @@ export default function RelatorioFinanceiro({ modelos, chatters }) {
 
   const filtradas = useMemo(
     () =>
-      vendas.filter((venda) => {
-        if (modeloId && venda.modelo_id !== modeloId) return false;
-        if (plataforma && venda.plataforma !== plataforma) return false;
-        return true;
-      }),
-    [vendas, modeloId, plataforma]
+      vendas.filter((venda) => !modeloId || venda.modelo_id === modeloId),
+    [vendas, modeloId]
   );
 
   const resumo = useMemo(
@@ -147,23 +145,33 @@ export default function RelatorioFinanceiro({ modelos, chatters }) {
           />
         </div>
 
-        <div style={{ width: 170 }}>
-          <GlassSelect
-            value={plataforma}
-            onChange={setPlataforma}
-            options={[
-              { value: '', label: 'Todas as plataformas' },
-              { value: 'privacy', label: 'Privacy' },
-              { value: 'onlyfans', label: 'OnlyFans' },
-              { value: 'fansly', label: 'Fansly' },
-            ]}
-            label="Plataforma"
-          />
-        </div>
-
-        <span style={{ fontSize: 11, color: 'var(--c2)' }}>
+        <span style={{ fontSize: 11, color: 'var(--c2)', marginLeft: 2 }}>
           {carregando ? 'Carregando...' : `${filtradas.length} venda(s) aprovada(s)`}
         </span>
+
+        <button
+          type="button"
+          onClick={() => setPdfAberto(true)}
+          style={{
+            marginLeft: 'auto',
+            height: 32,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            padding: '0 12px',
+            borderRadius: 8,
+            border: '1px solid color-mix(in srgb, var(--c1) 55%, transparent)',
+            background: 'color-mix(in srgb, var(--c1) 20%, transparent)',
+            color: 'var(--c1)',
+            fontFamily: 'var(--font-main)',
+            fontSize: 11.5,
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          <DownloadIcon size={14} />
+          Relatório semanal
+        </button>
       </div>
 
       {erro && <span style={{ fontSize: 11, color: '#ff6b6b' }}>{erro}</span>}
@@ -277,6 +285,14 @@ export default function RelatorioFinanceiro({ modelos, chatters }) {
           </table>
         </section>
       </div>
+
+      {pdfAberto && (
+        <RelatorioSemanalModal
+          modelos={modelos.filter((modelo) => !modelo.arquivada)}
+          chatters={chatters}
+          onClose={() => setPdfAberto(false)}
+        />
+      )}
     </div>
   );
 }
