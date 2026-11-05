@@ -1,17 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
-import { CHATTERS_CHANGED, MODELS_CHANGED, SHIFTS_CHANGED } from '@/lib/desktopEvents';
-import { buildChatterNames } from '@/lib/chatterNames';
-import { expandShift } from '@/lib/shiftRepeat';
+import { SHIFTS_CHANGED } from '@/lib/desktopEvents';
 import { isRecusado } from '@/lib/aceite';
-import {
-  buildPontoIndex,
-  clockLabel,
-  localDateKey,
-  occurrenceKey,
-} from '@/lib/ponto';
+import useTurnoPonto from '@/hooks/useTurnoPonto';
 import ShiftWidget from '@/components/shifts/ShiftWidget';
 import WeekToolbar from '@/components/shifts/WeekToolbar';
 import WeekGrid from '@/components/shifts/WeekGrid';
@@ -34,22 +26,23 @@ const shortDate = (date) =>
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
 export default function ClockPanel({ open, onClose, anchorRef, notificacoes = [], onOpenJustificativa }) {
-  const { user } = useAuth();
+  const {
+    user,
+    userId,
+    chatterNames,
+    ownShifts,
+    models,
+    pontoIndex,
+    ponto,
+    saving,
+    feedback,
+    punch,
+  } = useTurnoPonto();
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()));
   const [weekShifts, setWeekShifts] = useState([]);
-  const [ownShifts, setOwnShifts] = useState([]);
-  const [registros, setRegistros] = useState([]);
-  const [models, setModels] = useState([]);
-  const [chatters, setChatters] = useState([]);
   const [activeTab, setActiveTab] = useState('agenda');
-  const [saving, setSaving] = useState(null);
-  const [feedback, setFeedback] = useState(null);
   const [tick, setTick] = useState(0);
-  const [modelsVersion, setModelsVersion] = useState(0);
-  const [chattersVersion, setChattersVersion] = useState(0);
   const panelRef = useRef(null);
-  const feedbackTimer = useRef(null);
-  const userId = user?.id;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -68,62 +61,12 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
     return () => clearInterval(id);
   }, [open]);
 
-  useEffect(() => () => clearTimeout(feedbackTimer.current), []);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const handleModelsChanged = () => {
-      setModelsVersion((n) => n + 1);
-      setTick((n) => n + 1);
-    };
-    const handleChattersChanged = () => {
-      setChattersVersion((n) => n + 1);
-      setTick((n) => n + 1);
-    };
-    window.addEventListener(MODELS_CHANGED, handleModelsChanged);
-    window.addEventListener(CHATTERS_CHANGED, handleChattersChanged);
-    return () => {
-      window.removeEventListener(MODELS_CHANGED, handleModelsChanged);
-      window.removeEventListener(CHATTERS_CHANGED, handleChattersChanged);
-    };
-  }, [open]);
-
   useEffect(() => {
     if (!open) return undefined;
     const handleShiftsChanged = () => setTick((n) => n + 1);
     window.addEventListener(SHIFTS_CHANGED, handleShiftsChanged);
     return () => window.removeEventListener(SHIFTS_CHANGED, handleShiftsChanged);
   }, [open]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    let active = true;
-    base44.entities.Modelo.list()
-      .then((result) => {
-        if (active) setModels(asList(result));
-      })
-      .catch(() => {
-        if (active) setModels([]);
-      });
-    return () => {
-      active = false;
-    };
-  }, [open, modelsVersion]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    let active = true;
-    base44.entities.Chatter.list()
-      .then((result) => {
-        if (active) setChatters(asList(result));
-      })
-      .catch(() => {
-        if (active) setChatters([]);
-      });
-    return () => {
-      active = false;
-    };
-  }, [open, chattersVersion]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -154,46 +97,6 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
     };
   }, [open, anchor, tick]);
 
-  useEffect(() => {
-    if (!open || !userId) return undefined;
-    let active = true;
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    base44.entities.Shift.filter(
-      { usuario_id: userId, fim: { $gte: monthStart.toISOString() } },
-      { sort: 'inicio', limit: 100 }
-    )
-      .then((result) => {
-        if (active) setOwnShifts(asList(result));
-      })
-      .catch(() => {
-        if (active) setOwnShifts([]);
-      });
-    return () => {
-      active = false;
-    };
-  }, [open, userId, tick]);
-
-  useEffect(() => {
-    if (!open || !userId) return undefined;
-    let active = true;
-    base44.entities.RegistroPonto.filter(
-      { usuario_id: userId },
-      { sort: '-timestamp', limit: 200 }
-    )
-      .then((result) => {
-        if (active) setRegistros(asList(result));
-      })
-      .catch(() => {
-        if (active) setRegistros([]);
-      });
-    return () => {
-      active = false;
-    };
-  }, [open, userId, tick]);
-
-  const chatterNames = useMemo(() => buildChatterNames(chatters), [chatters]);
-
   // Chatter só vê a agenda das modelos em que ele tem turno marcado.
   const modelosComTurno = useMemo(
     () => new Set(ownShifts.map((shift) => shift.modelo_id).filter(Boolean)),
@@ -209,65 +112,6 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
 
   const archivedModels = useMemo(() => models.filter((model) => model.arquivada), [models]);
 
-  const pontoIndex = useMemo(() => buildPontoIndex(registros), [registros]);
-
-  const openEntries = useMemo(
-    () =>
-      Object.values(pontoIndex)
-        .filter((entry) => entry.entrada && !entry.saida)
-        .sort((a, b) => b.entrada - a.entrada)
-        .map((entry) => ({
-          shiftId: entry.shiftId,
-          dateKey: entry.dateKey,
-          modeloId: entry.modeloId,
-          modeloNome: entry.modeloNome,
-          entradaAt: entry.entrada,
-          pausaAbertaAt: entry.pausaAberta,
-          pausasMs: entry.pausasMs,
-        })),
-    [pontoIndex]
-  );
-
-  const ponto = useMemo(() => {
-    const activeEntry = openEntries[0];
-    if (activeEntry) {
-      return {
-        ...activeEntry,
-        mode: activeEntry.pausaAbertaAt ? 'pausa' : 'ativo',
-      };
-    }
-
-    const now = Date.now();
-    const windowStart = startOfDay(new Date()).getTime();
-    const windowEnd = windowStart + 7 * DAY_MS;
-    const archivedIds = new Set(
-      models.filter((model) => model.arquivada).map((model) => model.id)
-    );
-
-    const next = ownShifts
-      .filter((shift) => !archivedIds.has(shift.modelo_id))
-      .filter((shift) => !isRecusado(shift))
-      .flatMap((shift) => expandShift(shift, windowStart, windowEnd))
-      .filter((occurrence) => occurrence.end > now)
-      .sort((a, b) => a.start - b.start)
-      .find((occurrence) => {
-        const dateKey = localDateKey(occurrence.start);
-        const entry = pontoIndex[occurrenceKey(occurrence.shift.id, dateKey)];
-        return !entry || !entry.entrada;
-      });
-
-    if (!next) return { mode: 'livre' };
-
-    return {
-      mode: 'proximo',
-      start: next.start,
-      shiftId: next.shift.id,
-      dateKey: localDateKey(next.start),
-      modeloId: next.shift.modelo_id || '',
-      modeloNome: next.shift.modelo_nome || '',
-    };
-  }, [openEntries, ownShifts, models, pontoIndex]);
-
   const justificativaPendente = useMemo(
     () =>
       notificacoes.find(
@@ -275,75 +119,6 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
       ) || null,
     [notificacoes]
   );
-
-  const showFeedback = (text, error = false) => {
-    setFeedback({ text, error });
-    clearTimeout(feedbackTimer.current);
-    feedbackTimer.current = setTimeout(() => setFeedback(null), 2000);
-  };
-
-  const createRegistro = (occurrence, tipo, timestamp) =>
-    base44.entities.RegistroPonto.create({
-      shift_id: occurrence.shiftId,
-      ocorrencia_data: occurrence.dateKey,
-      usuario_id: userId,
-      usuario_nome: chatterNames[userId] || user?.full_name || '',
-      modelo_id: occurrence.modeloId || '',
-      modelo_nome: occurrence.modeloNome || '',
-      tipo,
-      timestamp,
-    });
-
-  const closeOccurrence = async (occurrence) => {
-    const timestamp = new Date().toISOString();
-    if (occurrence.pausaAbertaAt) await createRegistro(occurrence, 'retorno', timestamp);
-    await createRegistro(occurrence, 'saida', timestamp);
-    await base44.entities.Shift.update(occurrence.shiftId, {
-      status: 'concluido',
-      fim_real: timestamp,
-    });
-    return timestamp;
-  };
-
-  const punch = async (tipo) => {
-    if (!userId || saving) return;
-    const activeEntry = openEntries[0] || null;
-
-    if (tipo !== 'entrada' && !activeEntry) {
-      showFeedback('Registre a entrada primeiro', true);
-      return;
-    }
-
-    setSaving(tipo);
-    try {
-      if (tipo === 'entrada') {
-        for (const previous of openEntries) {
-          await closeOccurrence(previous);
-        }
-        const timestamp = new Date().toISOString();
-        await createRegistro(ponto, 'entrada', timestamp);
-        await base44.entities.Shift.update(ponto.shiftId, {
-          status: 'em_andamento',
-          inicio_real: timestamp,
-        });
-        showFeedback(`Entrada registrada às ${clockLabel(timestamp)}`);
-      } else if (tipo === 'pausa') {
-        const timestamp = new Date().toISOString();
-        await createRegistro(activeEntry, 'pausa', timestamp);
-        showFeedback(`Pausa registrada às ${clockLabel(timestamp)}`);
-      } else if (tipo === 'retorno') {
-        const timestamp = new Date().toISOString();
-        await createRegistro(activeEntry, 'retorno', timestamp);
-        showFeedback(`Retorno registrado às ${clockLabel(timestamp)}`);
-      } else if (tipo === 'saida') {
-        const timestamp = await closeOccurrence(activeEntry);
-        showFeedback(`Turno encerrado às ${clockLabel(timestamp)}`);
-      }
-      setTick((n) => n + 1);
-    } finally {
-      setSaving(null);
-    }
-  };
 
   if (!open) return null;
 
