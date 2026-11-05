@@ -7,11 +7,9 @@ import NovoChatModal from '@/components/chat/NovoChatModal';
 import ChatAjustes from '@/components/chat/ChatAjustes';
 import { definirFocoDoChat } from '@/lib/sons';
 import ChatIcon from '@/components/icons/ChatIcon';
-import { useAuth } from '@/lib/AuthContext';
 
 /** Barra fixa do lado direito do desktop. */
 export default function ChatSidebar() {
-  const { user } = useAuth();
   const { aberto, fechar, canalAtivo, fecharCanal, erro, totalNaoLidas, recarregar } = useChatPanel();
   const [novo, setNovo] = useState(false);
   const [ajustes, setAjustes] = useState(false);
@@ -132,7 +130,7 @@ export default function ChatSidebar() {
         </div>
 
         {ajustes && (
-          <ChatAjustes onFechar={() => setAjustes(false)} emailDaConta={user?.email || ''} />
+          <ChatAjustes onFechar={() => setAjustes(false)} />
         )}
 
         {erro && (

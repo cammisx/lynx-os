@@ -17,7 +17,6 @@ const asList = (resultado) => (Array.isArray(resultado) ? resultado : resultado?
 export const PADRAO_EMAIL = {
   notificar_email: true,
   email_todas: false,
-  email: '',
   notificar_navegador: false,
 };
 
@@ -53,7 +52,6 @@ export const carregarPreferenciasDeEmail = async () => {
       mapa.set(registro.usuario_id, {
         notificar_email: registro.notificar_email !== false,
         email_todas: registro.email_todas === true,
-        email: String(registro.email || '').trim(),
         notificar_navegador: registro.notificar_navegador === true,
       });
     });
@@ -64,8 +62,8 @@ export const carregarPreferenciasDeEmail = async () => {
   }
 };
 
-const enderecoDe = (preferencia, pessoa) =>
-  String(preferencia?.email || pessoa?.email || '').trim();
+/* O aviso vai sempre para o e-mail da conta. */
+const enderecoDe = (pessoa) => String(pessoa?.email || '').trim();
 
 const linkDoApp = () => {
   try {
@@ -147,7 +145,7 @@ export const avisarPorEmail = async ({
 
   for (const pessoa of destinatarios) {
     const preferencia = preferencias.get(pessoa.id) || PADRAO_EMAIL;
-    const para = enderecoDe(preferencia, pessoa);
+    const para = enderecoDe(pessoa);
     if (!para) continue;
 
     const mencionada = quemFoiMencionado.has(pessoa.id);

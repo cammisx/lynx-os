@@ -23,7 +23,6 @@ const PADRAO = {
   /* Avisos por e-mail: menção vem ligada, "todas as mensagens" não. */
   notificar_email: true,
   email_todas: false,
-  email: '',
   notificar_navegador: false,
 };
 
@@ -61,7 +60,6 @@ export default function usePreferenciaSom() {
             volume_chat: typeof registro.volume_chat === 'number' ? registro.volume_chat : 60,
             notificar_email: simPorPadrao(registro.notificar_email),
             email_todas: naoPorPadrao(registro.email_todas),
-            email: String(registro.email || ''),
             notificar_navegador: naoPorPadrao(registro.notificar_navegador),
           };
           lembrarNavegadorLigado(dados.notificar_navegador);
@@ -181,7 +179,6 @@ export default function usePreferenciaSom() {
     (valor) => atualizar({ email_todas: valor }),
     [atualizar]
   );
-  const mudarEmail = useCallback((valor) => atualizar({ email: valor }), [atualizar]);
   const alternarNotificacaoNavegador = useCallback(
     (valor) => {
       lembrarNavegadorLigado(valor);
@@ -201,7 +198,6 @@ export default function usePreferenciaSom() {
     mudarVolumeChat,
     alternarEmailMencoes,
     alternarEmailTodas,
-    mudarEmail,
     alternarNotificacaoNavegador,
   };
 }

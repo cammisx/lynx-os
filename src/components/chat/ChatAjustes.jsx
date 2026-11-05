@@ -79,7 +79,7 @@ const SECAO = {
  * Ajustes do chat: som das mensagens, avisos por e-mail e notificação do
  * navegador. Tudo é escolha de cada pessoa e vale só para ela.
  */
-export default function ChatAjustes({ onFechar, emailDaConta = '' }) {
+export default function ChatAjustes({ onFechar }) {
   const preferencia = usePreferenciaSom();
   const pref = preferencia?.pref || {
     som_chat: 'mensagem',
@@ -87,7 +87,6 @@ export default function ChatAjustes({ onFechar, emailDaConta = '' }) {
     volume_chat: 60,
     notificar_email: true,
     email_todas: false,
-    email: '',
     notificar_navegador: false,
   };
   const ligado = pref.chat_ativo !== false;
@@ -288,31 +287,10 @@ export default function ChatAjustes({ onFechar, emailDaConta = '' }) {
         />
       </Linha>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.8 }}>E-mail dos avisos</span>
-        <input
-          type="email"
-          value={pref.email || ''}
-          placeholder={emailDaConta || 'o e-mail da sua conta'}
-          aria-label="E-mail que recebe os avisos"
-          onChange={(evento) => preferencia?.mudarEmail?.(evento.target.value)}
-          style={{
-            width: '100%',
-            padding: '5px 7px',
-            borderRadius: 7,
-            border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
-            background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
-            color: 'var(--c3)',
-            fontFamily: 'var(--font-main)',
-            fontSize: 10.5,
-            outline: 'none',
-          }}
-        />
-        <span style={{ fontSize: 8.5, color: 'var(--c2)', opacity: 0.65, lineHeight: 1.4 }}>
-          Em branco usa o e-mail da conta. Menções vêm marcadas para todo mundo; todas as
-          mensagens não.
-        </span>
-      </div>
+      <span style={{ fontSize: 8.5, color: 'var(--c2)', opacity: 0.65, lineHeight: 1.4 }}>
+        Os avisos vão para o e-mail da sua conta. Menções vêm marcadas para todo mundo; todas
+        as mensagens não.
+      </span>
 
       <div
         style={{

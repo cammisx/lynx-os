@@ -63,10 +63,6 @@
       "default": false,
       "description": "Receber e-mail de todas as mensagens dos canais que participo"
     },
-    "email": {
-      "type": "string",
-      "description": "E-mail que recebe os avisos (vazio usa o e-mail da conta)"
-    },
     "notificar_navegador": {
       "type": "boolean",
       "default": false,
