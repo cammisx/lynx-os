@@ -153,7 +153,14 @@ const panelStyle = {
 
 const painelFixo = { ...panelStyle, position: 'fixed', left: 0, top: 0, minWidth: 0, zIndex: 12000 };
 
-export default function DateTimePicker({ value, onChange, label, mode = 'datetime', align = 'left' }) {
+export default function DateTimePicker({
+  value,
+  onChange,
+  label,
+  mode = 'datetime',
+  align = 'left',
+  digitavel = false,
+}) {
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(value || new Date()));
   const [focusDate, setFocusDate] = useState(() => value || new Date());
@@ -161,6 +168,54 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
   const triggerRef = useRef(null);
   const hoursRef = useRef(null);
   const panelRef = useRef(null);
+
+  // Digitação livre (só quando digitavel): além dos blocos de 30 min,
+  // dá para escrever o horário exato, tipo 10:47.
+  const digitando = digitavel && mode === 'time';
+  const [texto, setTexto] = useState(value ? formatTime(value) : '');
+  const [editando, setEditando] = useState(false);
+
+  useEffect(() => {
+    if (!digitando || editando) return;
+    setTexto(value ? formatTime(value) : '');
+  }, [digitando, editando, value]);
+
+  const formatarDigitacao = (bruto) => {
+    const digitos = String(bruto || '').replace(/\D/g, '').slice(0, 4);
+    if (digitos.length <= 2) return digitos;
+    // 3 dígitos: 9 vira 9:30 · 4 dígitos: 10:47
+    if (digitos.length === 3) return `${digitos.slice(0, 1)}:${digitos.slice(1)}`;
+    return `${digitos.slice(0, 2)}:${digitos.slice(2)}`;
+  };
+
+  const confirmarTexto = () => {
+    setEditando(false);
+    if (!digitando) return;
+    const digitos = texto.replace(/\D/g, '');
+    if (!digitos) {
+      setTexto(value ? formatTime(value) : '');
+      return;
+    }
+    const hora = digitos.length <= 2 ? Number(digitos) : Number(digitos.slice(0, digitos.length - 2));
+    const minuto = digitos.length <= 2 ? 0 : Number(digitos.slice(-2));
+    if (!(hora >= 0 && hora <= 23 && minuto >= 0 && minuto <= 59)) {
+      setTexto(value ? formatTime(value) : '');
+      return;
+    }
+    const base = value || focusDate || new Date();
+    const proximo = new Date(
+      base.getFullYear(),
+      base.getMonth(),
+      base.getDate(),
+      hora,
+      minuto,
+      0,
+      0
+    );
+    setFocusDate(proximo);
+    onChange(proximo);
+    setTexto(formatTime(proximo));
+  };
 
   const showCalendar = mode !== 'time';
   const showHours = mode !== 'date';
@@ -278,6 +333,87 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
     <div ref={rootRef} onKeyDown={handleKeyDown} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 6 }}>
       {label && <span style={labelStyle}>{label}</span>}
 
+      {digitando ? (
+        <div
+          ref={triggerRef}
+          style={{
+            ...triggerStyle,
+            cursor: 'text',
+            padding: '0 4px 0 12px',
+            gap: 4,
+          }}
+        >
+          <input
+            value={texto}
+            onChange={(event) => {
+              setEditando(true);
+              setTexto(formatarDigitacao(event.target.value));
+            }}
+            onFocus={() => setEditando(true)}
+            onBlur={confirmarTexto}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                event.stopPropagation();
+                confirmarTexto();
+                event.currentTarget.blur();
+              }
+              if (event.key === 'Escape') {
+                event.stopPropagation();
+                setTexto(value ? formatTime(value) : '');
+                setEditando(false);
+                event.currentTarget.blur();
+              }
+            }}
+            placeholder="--:--"
+            inputMode="numeric"
+            autoComplete="off"
+            aria-label={label ? `${label} (horário)` : 'Horário'}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              height: 34,
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+              color: value ? 'var(--c3)' : 'var(--c2)',
+              fontFamily: 'var(--font-main)',
+              fontSize: 13,
+              letterSpacing: '0.02em',
+              outline: 'none',
+            }}
+          />
+          <button
+            type="button"
+            onClick={toggleOpen}
+            aria-label="Abrir seletor de horário"
+            className="dtp-nav"
+            style={{
+              ...navStyle,
+              width: 26,
+              height: 26,
+              background: 'transparent',
+              color: 'var(--c2)',
+              opacity: 0.6,
+            }}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7.5V12l3 1.8" />
+            </svg>
+          </button>
+        </div>
+      ) : (
       <button
         type="button"
         className="dtp-trigger"
@@ -302,6 +438,7 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
           <path d="M3 10h18M8 3v4M16 3v4" />
         </svg>
       </button>
+      )}
 
       {open &&
         pos &&

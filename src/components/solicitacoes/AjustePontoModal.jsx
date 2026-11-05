@@ -466,10 +466,17 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
                 onChange={setEntrada}
                 mode="time"
                 label="Entrada correta"
+                digitavel
               />
             </div>
             <div style={{ flex: 1 }}>
-              <DateTimePicker value={saida} onChange={setSaida} mode="time" label="Saída correta" />
+              <DateTimePicker
+                value={saida}
+                onChange={setSaida}
+                mode="time"
+                label="Saída correta"
+                digitavel
+              />
             </div>
           </div>
 
@@ -503,6 +510,7 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
                       onChange={(valor) => alterarPausa(indice, 'inicio', valor)}
                       mode="time"
                       label="Início"
+                      digitavel
                     />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -511,6 +519,7 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
                       onChange={(valor) => alterarPausa(indice, 'fim', valor)}
                       mode="time"
                       label="Retorno"
+                      digitavel
                     />
                   </div>
                 </div>
