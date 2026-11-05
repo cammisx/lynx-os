@@ -68,7 +68,7 @@ export default function ShiftWidget({
         <PunchButton
           variant="danger"
           icon={StopIcon}
-          label="Registrar Fim do Turno"
+          label="Registrar Saída"
           busy={saving === 'saida'}
           disabled={busy}
           onClick={() => onPunch('saida')}
@@ -95,7 +95,7 @@ export default function ShiftWidget({
         <PunchButton
           variant="danger"
           icon={StopIcon}
-          label="Registrar Fim do Turno"
+          label="Registrar Saída"
           busy={saving === 'saida'}
           disabled={busy}
           onClick={() => onPunch('saida')}
