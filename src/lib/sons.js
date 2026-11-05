@@ -78,7 +78,9 @@ export const tocarSom = (id, volume = 0.6) => {
     if (audio.currentTime > 0) audio.currentTime = 0;
     console.debug('[Som] tocou', som.id, new Date().toISOString());
     const promessa = audio.play();
-    if (promessa?.catch) promessa.catch(() => {});
+    if (promessa?.catch) {
+      promessa.catch((erro) => console.warn('[Som] navegador barrou o áudio:', erro?.name));
+    }
   } catch (error) {
     console.warn('[Som] não consegui tocar', error);
   }
