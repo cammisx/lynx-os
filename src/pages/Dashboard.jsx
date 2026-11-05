@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import '@/theme.css';
 import DesktopBackground from '@/components/DesktopBackground';
+import DesktopWidgets from '@/components/desktop/DesktopWidgets';
 import Taskbar from '@/components/Taskbar';
 import ChattersWindow from '@/components/ChattersWindow';
 import ModelosWindow from '@/components/ModelosWindow';
@@ -33,6 +34,7 @@ export default function Dashboard() {
       }}
     >
       <DesktopBackground />
+      <DesktopWidgets />
       <Taskbar onOpenApp={setOpenApp} />
 
       {openApp === 'chatters' && <ChattersWindow onClose={() => setOpenApp(null)} />}

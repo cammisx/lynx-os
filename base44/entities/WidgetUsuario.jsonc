@@ -1,0 +1,33 @@
+{
+  "name": "WidgetUsuario",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "turno"
+      ],
+      "enumColors": [
+        "orange"
+      ],
+      "default": "turno"
+    },
+    "icone_x": {
+      "type": "number"
+    },
+    "icone_y": {
+      "type": "number"
+    },
+    "aberto": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "usuario_id",
+    "tipo"
+  ]
+}
