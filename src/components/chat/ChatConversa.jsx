@@ -15,6 +15,7 @@ import BotaoTranscrever from '@/components/chat/BotaoTranscrever';
 import ChatComposer from '@/components/chat/ChatComposer';
 import TextoRico from '@/components/chat/TextoRico';
 import { useChatPanel } from '@/components/chat/ChatProvider';
+import PerfilUsuarioModal from '@/components/chat/PerfilUsuarioModal';
 import { useAuth } from '@/lib/AuthContext';
 import {
   CANAL_PRIVADO,
@@ -66,6 +67,7 @@ export default function ChatConversa({ onVoltar }) {
   const [editando, setEditando] = useState(null);
   const [menuDe, setMenuDe] = useState(null);
   const [imagemAberta, setImagemAberta] = useState('');
+  const [perfilAberto, setPerfilAberto] = useState(false);
   const [ocupado, setOcupado] = useState(false);
 
   const fimRef = useRef(null);
@@ -82,6 +84,13 @@ export default function ChatConversa({ onVoltar }) {
     });
     return mapa;
   }, [pessoas]);
+
+  /* Em conversa privada o cabeçalho mostra quem está do outro lado. */
+  const outraPessoa = useMemo(() => {
+    if (canalAtivo?.tipo !== CANAL_PRIVADO) return null;
+    const outroId = (canalAtivo.participantes || []).find((id) => id !== user?.id);
+    return pessoaPorId.get(outroId) || null;
+  }, [canalAtivo, pessoaPorId, user]);
 
   useEffect(() => {
     if (fimRef.current) fimRef.current.scrollIntoView({ block: 'end' });
@@ -261,20 +270,59 @@ export default function ChatConversa({ onVoltar }) {
           <BackIcon size={14} />
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div
+          <button
+            type="button"
+            onClick={() => outraPessoa && setPerfilAberto(true)}
+            disabled={!outraPessoa}
+            title={outraPessoa ? `Ver o perfil de ${nome}` : undefined}
             style={{
+              display: 'block',
+              width: '100%',
+              textAlign: 'left',
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
               fontSize: 12,
               color: 'var(--c3)',
               fontWeight: 600,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              cursor: outraPessoa ? 'pointer' : 'default',
+              fontFamily: 'var(--font-main)',
             }}
           >
             {nome}
-          </div>
-          <div style={{ fontSize: 9, color: 'var(--c12)', letterSpacing: '0.06em' }}>
-            {mensagens.length ? `${mensagens.length} mensagem(ns) recentes` : 'comece a conversa'}
+          </button>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              fontSize: 9,
+              color: 'var(--c12)',
+              letterSpacing: '0.06em',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {outraPessoa?.subnick && (
+              <span
+                style={{
+                  fontStyle: 'italic',
+                  color: 'var(--c1)',
+                  letterSpacing: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {outraPessoa.subnick}
+              </span>
+            )}
+            <span style={{ flexShrink: 0 }}>
+              {outraPessoa?.subnick ? '· ' : ''}
+              {mensagens.length ? `${mensagens.length} mensagem(ns)` : 'comece a conversa'}
+            </span>
           </div>
         </div>
       </div>
@@ -630,6 +678,10 @@ export default function ChatConversa({ onVoltar }) {
         })}
         <div ref={fimRef} />
       </div>
+
+      {perfilAberto && outraPessoa && (
+        <PerfilUsuarioModal pessoa={outraPessoa} onClose={() => setPerfilAberto(false)} />
+      )}
 
       <ChatComposer
         texto={texto}

@@ -8,6 +8,7 @@ import ConfirmarTurnoModal from '@/components/notifications/ConfirmarTurnoModal'
 import VendaPendenteModal from '@/components/vendas/VendaPendenteModal';
 import FolgaPendenteModal from '@/components/solicitacoes/FolgaPendenteModal';
 import HorarioDisponivelModal from '@/components/solicitacoes/HorarioDisponivelModal';
+import CutucadaModal from '@/components/notifications/CutucadaModal';
 import useNotifications from '@/hooks/useNotifications';
 import usePreferenciaSom from '@/hooks/usePreferenciaSom';
 import ChatIcon from '@/components/icons/ChatIcon';
@@ -29,6 +30,7 @@ export default function Taskbar({ onOpenApp }) {
   const [vendaPendente, setVendaPendente] = useState(null);
   const [folgaPendente, setFolgaPendente] = useState(null);
   const [horarioLivre, setHorarioLivre] = useState(null);
+  const [cutucada, setCutucada] = useState(null);
   const clockRef = useRef(null);
   const bellRef = useRef(null);
 
@@ -52,6 +54,12 @@ export default function Taskbar({ onOpenApp }) {
   const openNotification = async (notification) => {
     markRead(notification.id);
     setBellOpen(false);
+
+    if (notification.tipo === 'cutucada') {
+      if (notification.status === 'resolvida') return;
+      setCutucada(notification);
+      return;
+    }
 
     if (notification.tipo === 'turno_esquecido') {
       setJustificativa(notification);
@@ -206,6 +214,16 @@ export default function Taskbar({ onOpenApp }) {
         notificacoes={items}
         onOpenJustificativa={openNotification}
       />
+
+      {cutucada && (
+        <CutucadaModal
+          notificacao={cutucada}
+          onClose={() => {
+            setCutucada(null);
+            reload();
+          }}
+        />
+      )}
 
       {bellOpen && (
         <NotificationsPanel

@@ -88,6 +88,7 @@ export default function useChat() {
         // Nome e foto do perfil valem aqui e em qualquer lugar do app.
         nome: nomeDaPessoa(usuario, chatterPorUsuario.get(usuario.id)),
         foto_url: fotoDaPessoa(usuario),
+        subnick: String(usuario.subnick || '').trim(),
       });
     });
 
@@ -100,6 +101,7 @@ export default function useChat() {
         cargo: 'chatter',
         nome: nomeDaPessoa(null, chatter),
         foto_url: '',
+        subnick: '',
       });
     });
 

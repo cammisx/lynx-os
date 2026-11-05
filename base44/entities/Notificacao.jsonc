@@ -23,7 +23,8 @@
         "ajuste_ponto_pendente",
         "folga_automatica",
         "horario_disponivel",
-        "turno_espontaneo_encerrado"
+        "turno_espontaneo_encerrado",
+        "cutucada"
       ],
       "enumColors": [
         "yellow",
@@ -35,7 +36,8 @@
         "green",
         "pink",
         "purple",
-        "gray"
+        "gray",
+        "orange"
       ],
       "default": "turno_esquecido"
     },
@@ -98,6 +100,12 @@
     "lida": {
       "type": "boolean",
       "default": false
+    },
+    "cutucada_id": {
+      "type": "string"
+    },
+    "cutucada_sequencia": {
+      "type": "number"
     },
     "criado_por_automacao": {
       "type": "boolean",

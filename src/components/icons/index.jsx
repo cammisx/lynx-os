@@ -248,3 +248,12 @@ export function RefreshIcon({ size = 16, className }) {
     </Svg>
   );
 }
+
+export function FireIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M12 2.5c2.7 3 4.2 5.4 4.2 7.6a4.2 4.2 0 0 1-8.4 0c0-1 .3-2 1-3.1.4 1 1.2 1.7 2.1 1.9-.4-2.4-.3-4.5.3-6.2.2-.4.5-.5.8-.2Z" />
+      <path d="M8.4 14.2A6 6 0 0 0 12 21.5a6 6 0 0 0 3.6-7.3" />
+    </Svg>
+  );
+}

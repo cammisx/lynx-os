@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { FireIcon } from '@/components/icons';
+import { SEQUENCIA_COM_FOGUINHO } from '@/lib/cutucadas';
 
 const timeLabel = (value) => {
   const date = new Date(value);
@@ -12,6 +14,9 @@ const timeLabel = (value) => {
 export default function NotificationRow({ notification, read, onOpen }) {
   const [hovered, setHovered] = useState(false);
   const pending = notification.status === 'pendente';
+  const foguinho =
+    notification.tipo === 'cutucada' &&
+    Number(notification.cutucada_sequencia || 0) >= SEQUENCIA_COM_FOGUINHO;
 
   return (
     <button
@@ -37,14 +42,21 @@ export default function NotificationRow({ notification, read, onOpen }) {
     >
       <span
         style={{
-          display: 'block',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 5,
           fontSize: 12,
           fontWeight: 600,
           color: 'var(--c3)',
           lineHeight: 1.35,
         }}
       >
-        {notification.titulo}
+        {foguinho && (
+          <span style={{ color: 'var(--c1)', display: 'flex', flexShrink: 0 }}>
+            <FireIcon size={13} />
+          </span>
+        )}
+        <span style={{ minWidth: 0 }}>{notification.titulo}</span>
       </span>
       <span
         style={{

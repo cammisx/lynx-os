@@ -1,0 +1,38 @@
+{
+  "name": "Cutucada",
+  "type": "object",
+  "properties": {
+    "de_id": {
+      "type": "string"
+    },
+    "de_nome": {
+      "type": "string"
+    },
+    "para_id": {
+      "type": "string"
+    },
+    "sequencia": {
+      "type": "number",
+      "default": 1
+    },
+    "aberta_em": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "respondida": {
+      "type": "boolean",
+      "default": false
+    },
+    "respondida_em": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notificacao_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "de_id",
+    "para_id"
+  ]
+}
