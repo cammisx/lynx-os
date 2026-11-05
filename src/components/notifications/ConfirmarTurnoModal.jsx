@@ -47,6 +47,7 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
   const [motivo, setMotivo] = useState('');
   const [recusando, setRecusando] = useState(false);
   const [saving, setSaving] = useState(null);
+  const [erro, setErro] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -76,15 +77,23 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
   const aceitar = async () => {
     if (!shift || saving) return;
     setSaving('aceitar');
+    setErro('');
     try {
-      await base44.entities.Shift.update(shift.id, {
+      const salvo = await base44.entities.Shift.update(shift.id, {
         aceite: 'aceito',
         aceite_em: new Date().toISOString(),
       });
+      if (salvo && salvo.aceite !== 'aceito') {
+        throw new Error(
+          'O campo de aceite ainda não existe no banco. Publique o app para sincronizar o schema.'
+        );
+      }
       await finalizarNotificacao('aceito');
       emitShiftsChanged();
       if (onSaved) await onSaved();
       onClose();
+    } catch (error) {
+      setErro(error?.message || 'Não consegui salvar a confirmação.');
     } finally {
       setSaving(null);
     }
@@ -93,13 +102,19 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
   const recusar = async () => {
     if (!shift || saving) return;
     setSaving('recusar');
+    setErro('');
     try {
       const motivoLimpo = motivo.trim();
-      await base44.entities.Shift.update(shift.id, {
+      const salvo = await base44.entities.Shift.update(shift.id, {
         aceite: 'recusado',
         aceite_em: new Date().toISOString(),
         motivo_recusa: motivoLimpo,
       });
+      if (salvo && salvo.aceite !== 'recusado') {
+        throw new Error(
+          'O campo de aceite ainda não existe no banco. Publique o app para sincronizar o schema.'
+        );
+      }
       await finalizarNotificacao(motivoLimpo ? `recusado: ${motivoLimpo}` : 'recusado');
 
       await notificarAdmins(base44, {
@@ -114,6 +129,8 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
       emitShiftsChanged();
       if (onSaved) await onSaved();
       onClose();
+    } catch (error) {
+      setErro(error?.message || 'Não consegui salvar a recusa.');
     } finally {
       setSaving(null);
     }
@@ -216,6 +233,10 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
             />
             <span style={hintStyle}>O admin recebe este motivo junto com o aviso de recusa.</span>
           </div>
+        )}
+
+        {erro && (
+          <span style={{ fontSize: 11, color: '#ff6b6b', lineHeight: 1.4 }}>{erro}</span>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
