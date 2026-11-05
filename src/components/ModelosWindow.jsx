@@ -12,6 +12,17 @@ import { buildChatterNames } from '@/lib/chatterNames';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
+/* Cada lista responde por si: uma leitura recusada não pode esconder as
+   modelos que já existem. */
+const carregarLista = async (promessa) => {
+  try {
+    return { lista: asList(await promessa), falhou: false };
+  } catch (falha) {
+    console.warn('[Modelos] consulta falhou', falha?.message || falha);
+    return { lista: [], falhou: true };
+  }
+};
+
 export default function ModelosWindow({ onClose }) {
   const [models, setModels] = useState([]);
   const [chatters, setChatters] = useState([]);
@@ -19,16 +30,18 @@ export default function ModelosWindow({ onClose }) {
   const [form, setForm] = useState(null);
   const [pendingArchive, setPendingArchive] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [falhouModelos, setFalhouModelos] = useState(false);
 
   const load = async () => {
-    const [modelResult, chatterResult, userResult] = await Promise.all([
-      base44.entities.Modelo.list(),
-      base44.entities.Chatter.list(),
-      base44.entities.User.list(),
+    const [modelosLidos, chattersLidos, usuariosLidos] = await Promise.all([
+      carregarLista(base44.entities.Modelo.list()),
+      carregarLista(base44.entities.Chatter.list()),
+      carregarLista(base44.entities.User.list()),
     ]);
-    setModels(asList(modelResult));
-    setChatters(asList(chatterResult));
-    setUsers(asList(userResult));
+    setModels(modelosLidos.lista);
+    setChatters(chattersLidos.lista);
+    setUsers(usuariosLidos.lista);
+    setFalhouModelos(modelosLidos.falhou);
   };
 
   useEffect(() => {
@@ -71,6 +84,15 @@ export default function ModelosWindow({ onClose }) {
 
   const chatterOptions = useMemo(() => {
     const names = buildChatterNames(chatters);
+    if (users.length === 0) {
+      return chatters
+        .filter((chatter) => chatter?.usuario_id)
+        .map((chatter) => ({
+          usuario_id: chatter.usuario_id,
+          nome: chatter.nome_exibicao || chatter.usuario_email || '',
+          isAdmin: false,
+        }));
+    }
     return users.map((user) => ({
       usuario_id: user.id,
       nome: user.nome_exibicao || names[user.id] || user.full_name || user.email || '',
@@ -117,8 +139,32 @@ export default function ModelosWindow({ onClose }) {
 
             {activeModels.length === 0 && (
               <span style={{ fontSize: 11, color: 'var(--c2)', opacity: 0.6 }}>
-                Nenhuma modelo cadastrada ainda.
+                {falhouModelos
+                  ? 'Não consegui carregar a lista agora.'
+                  : 'Nenhuma modelo cadastrada ainda.'}
               </span>
+            )}
+
+            {falhouModelos && (
+              <div>
+                <button
+                  type="button"
+                  onClick={load}
+                  style={{
+                    borderRadius: 8,
+                    padding: '5px 12px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-main)',
+                    cursor: 'pointer',
+                    border: '1px solid color-mix(in srgb, var(--c1) 35%, transparent)',
+                    background: 'color-mix(in srgb, var(--c1) 12%, transparent)',
+                    color: 'var(--c1)',
+                  }}
+                >
+                  Tentar de novo
+                </button>
+              </div>
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
