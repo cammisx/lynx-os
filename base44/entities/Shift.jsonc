@@ -95,6 +95,55 @@
     "repetir_ate": {
       "type": "string",
       "format": "date"
+    },
+    "ajustes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "string"
+          },
+          "inicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fim": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "solicitacao_id": {
+            "type": "string"
+          },
+          "chatter_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "cancelamentos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "string"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "solicitacao_id": {
+            "type": "string"
+          },
+          "chatter_id": {
+            "type": "string"
+          },
+          "cancelado_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
     }
   },
   "required": [

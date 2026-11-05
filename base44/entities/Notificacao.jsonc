@@ -20,7 +20,8 @@
         "turno_pendente",
         "venda_pendente",
         "folga_pendente",
-        "ajuste_ponto_pendente"
+        "ajuste_ponto_pendente",
+        "horario_disponivel"
       ],
       "enumColors": [
         "yellow",
@@ -29,7 +30,8 @@
         "orange",
         "purple",
         "teal",
-        "pink"
+        "pink",
+        "purple"
       ],
       "default": "turno_esquecido"
     },
@@ -47,6 +49,23 @@
     },
     "ajuste_ponto_id": {
       "type": "string"
+    },
+    "solicitacao_id": {
+      "type": "string"
+    },
+    "modelo_id": {
+      "type": "string"
+    },
+    "modelo_nome": {
+      "type": "string"
+    },
+    "turno_inicio": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "turno_fim": {
+      "type": "string",
+      "format": "date-time"
     },
     "ocorrencia_data": {
       "type": "string"

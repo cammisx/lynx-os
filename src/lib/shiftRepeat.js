@@ -16,6 +16,38 @@ export const daysLabel = (dias) => sortDays(dias).map((day) => WEEKDAY_LABELS[da
 
 export const hasWeekdays = (shift) => sortDays(shift?.dias_semana).length > 0;
 
+/** Chave local AAAA-MM-DD, sem depender de fuso. */
+export const dayKey = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate()
+  ).padStart(2, '0')}`;
+};
+
+/** Dias cancelados individualmente (folga aprovada, por exemplo). */
+export const diasCancelados = (shift) =>
+  new Set(
+    (Array.isArray(shift?.cancelamentos) ? shift.cancelamentos : [])
+      .map((item) => (typeof item === 'string' ? item : item?.data))
+      .filter(Boolean)
+  );
+
+export const isDiaCancelado = (shift, valor) => diasCancelados(shift).has(dayKey(valor));
+
+/** Horários diferentes só naquele dia (redução de horário aprovada). */
+export const ajustesPorDia = (shift) => {
+  const mapa = new Map();
+  (Array.isArray(shift?.ajustes) ? shift.ajustes : []).forEach((item) => {
+    if (!item?.data) return;
+    const inicio = new Date(item.inicio).getTime();
+    const fim = new Date(item.fim).getTime();
+    if (Number.isNaN(inicio) || Number.isNaN(fim) || fim <= inicio) return;
+    mapa.set(item.data, { inicio, fim });
+  });
+  return mapa;
+};
+
 /**
  * Occurrences of a shift that fall inside [windowStart, windowEnd).
  * No marked weekdays means a single occurrence on the start date.
@@ -25,8 +57,15 @@ export const expandShift = (shift, windowStart, windowEnd) => {
   const end = new Date(shift?.fim);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) return [];
 
+  const cancelados = diasCancelados(shift);
+  const ajustes = ajustesPorDia(shift);
+
   const dias = sortDays(shift.dias_semana);
   if (!dias.length) {
+    const chave = dayKey(start);
+    if (cancelados.has(chave)) return [];
+    const ajuste = ajustes.get(chave);
+    if (ajuste) return [{ shift, start: ajuste.inicio, end: ajuste.fim, ajustado: true }];
     return [{ shift, start: start.getTime(), end: end.getTime() }];
   }
 
@@ -41,8 +80,16 @@ export const expandShift = (shift, windowStart, windowEnd) => {
     const dayStart = cursor.getTime();
 
     if (dayStart >= baseDay && dayStart <= limit && dias.includes(cursor.getDay())) {
-      const occStart = dayStart + timeOffset;
-      occurrences.push({ shift, start: occStart, end: occStart + duration });
+      const chave = dayKey(dayStart);
+      if (!cancelados.has(chave)) {
+        const ajuste = ajustes.get(chave);
+        const occStart = dayStart + timeOffset;
+        occurrences.push(
+          ajuste
+            ? { shift, start: ajuste.inicio, end: ajuste.fim, ajustado: true }
+            : { shift, start: occStart, end: occStart + duration }
+        );
+      }
     }
 
     cursor.setDate(cursor.getDate() + 1);

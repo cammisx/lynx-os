@@ -7,6 +7,7 @@ import JustificativaModal from '@/components/notifications/JustificativaModal';
 import ConfirmarTurnoModal from '@/components/notifications/ConfirmarTurnoModal';
 import VendaPendenteModal from '@/components/vendas/VendaPendenteModal';
 import FolgaPendenteModal from '@/components/solicitacoes/FolgaPendenteModal';
+import HorarioDisponivelModal from '@/components/solicitacoes/HorarioDisponivelModal';
 import useNotifications from '@/hooks/useNotifications';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -21,6 +22,7 @@ export default function Taskbar({ onOpenApp }) {
   const [confirmacao, setConfirmacao] = useState(null);
   const [vendaPendente, setVendaPendente] = useState(null);
   const [folgaPendente, setFolgaPendente] = useState(null);
+  const [horarioLivre, setHorarioLivre] = useState(null);
   const clockRef = useRef(null);
   const bellRef = useRef(null);
 
@@ -53,6 +55,12 @@ export default function Taskbar({ onOpenApp }) {
     if (notification.tipo === 'folga_pendente') {
       if (notification.status === 'resolvida') return;
       setFolgaPendente(notification);
+      return;
+    }
+
+    if (notification.tipo === 'horario_disponivel') {
+      if (notification.status === 'resolvida') return;
+      setHorarioLivre(notification);
       return;
     }
 
@@ -176,6 +184,14 @@ export default function Taskbar({ onOpenApp }) {
           anchorRef={bellRef}
           onOpen={openNotification}
           onClose={() => setBellOpen(false)}
+        />
+      )}
+
+      {horarioLivre && (
+        <HorarioDisponivelModal
+          notification={horarioLivre}
+          onClose={() => setHorarioLivre(null)}
+          onSaved={reload}
         />
       )}
 
