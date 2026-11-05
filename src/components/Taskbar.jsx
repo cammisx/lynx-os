@@ -6,6 +6,7 @@ import NotificationsPanel from '@/components/notifications/NotificationsPanel';
 import JustificativaModal from '@/components/notifications/JustificativaModal';
 import ConfirmarTurnoModal from '@/components/notifications/ConfirmarTurnoModal';
 import VendaPendenteModal from '@/components/vendas/VendaPendenteModal';
+import FolgaPendenteModal from '@/components/solicitacoes/FolgaPendenteModal';
 import useNotifications from '@/hooks/useNotifications';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -19,6 +20,7 @@ export default function Taskbar({ onOpenApp }) {
   const [justificativa, setJustificativa] = useState(null);
   const [confirmacao, setConfirmacao] = useState(null);
   const [vendaPendente, setVendaPendente] = useState(null);
+  const [folgaPendente, setFolgaPendente] = useState(null);
   const clockRef = useRef(null);
   const bellRef = useRef(null);
 
@@ -45,6 +47,12 @@ export default function Taskbar({ onOpenApp }) {
 
     if (notification.tipo === 'turno_esquecido') {
       setJustificativa(notification);
+      return;
+    }
+
+    if (notification.tipo === 'folga_pendente') {
+      if (notification.status === 'resolvida') return;
+      setFolgaPendente(notification);
       return;
     }
 
@@ -168,6 +176,14 @@ export default function Taskbar({ onOpenApp }) {
           anchorRef={bellRef}
           onOpen={openNotification}
           onClose={() => setBellOpen(false)}
+        />
+      )}
+
+      {folgaPendente && (
+        <FolgaPendenteModal
+          notification={folgaPendente}
+          onClose={() => setFolgaPendente(null)}
+          onSaved={reload}
         />
       )}
 

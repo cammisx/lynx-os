@@ -176,7 +176,8 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
   })();
 
   const reducaoIncompleta = tipo === 'reducao' && !!erroHorario;
-  const podeEnviar = !!ocorrencia && !reducaoIncompleta && !salvando;
+  const faltaJustificativa = foraDoPrazo && motivo.trim().length < 3;
+  const podeEnviar = !!ocorrencia && !reducaoIncompleta && !faltaJustificativa && !salvando;
 
   const enviar = async () => {
     if (!podeEnviar) return;
@@ -391,14 +392,24 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
                 turno e o mínimo é {PRAZO_HORAS}h. Isso pode gerar falta.
               </span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={rotulo}>Motivo</span>
+                <span style={rotulo}>Justificativa</span>
                 <textarea
                   value={motivo}
                   onChange={(event) => setMotivo(event.target.value)}
                   placeholder=""
                   maxLength={280}
-                  style={AREA}
+                  style={{
+                    ...AREA,
+                    ...(faltaJustificativa
+                      ? { border: '1px solid color-mix(in srgb, #e8b93b 55%, transparent)' }
+                      : null),
+                  }}
                 />
+                {faltaJustificativa && (
+                  <span style={{ fontSize: 10.5, color: '#e8b93b' }}>
+                    A justificativa é obrigatória para pedidos com menos de {PRAZO_HORAS}h.
+                  </span>
+                )}
               </div>
             </div>
           )}
