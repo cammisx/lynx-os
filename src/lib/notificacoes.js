@@ -99,7 +99,7 @@ export { weekdayOf };
  */
 export const notificarPonto = async (
   base44,
-  { tipo, usuario, modeloNome = '', modeloId = '', shiftId = '', ocorrenciaData = '', timestamp }
+  { tipo, usuario, modeloNome = '', modeloId = '', shiftId = '', ocorrenciaData = '', timestamp, avulso = false }
 ) => {
   const nome = usuario?.full_name || usuario?.email || 'Alguém';
   const quando = timestamp ? new Date(timestamp) : new Date();
@@ -108,11 +108,12 @@ export const notificarPonto = async (
     : quando.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
   const onde = modeloNome ? ` em ${modeloNome}` : '';
   const verbo = tipo === 'saida' ? 'bateu saída' : 'bateu entrada';
+  const detalhe = avulso ? `${verbo}${onde} em turno avulso` : `${verbo}${onde}`;
 
   try {
     return await notificarAdminsSolicitacao(base44, {
       titulo: tipo === 'saida' ? 'Saída registrada' : 'Entrada registrada',
-      mensagem: `${nome} ${verbo}${onde}${hora ? ` às ${hora}` : ''}.`,
+      mensagem: `${nome} ${detalhe}${hora ? ` às ${hora}` : ''}.`,
       tipo: tipo === 'saida' ? 'ponto_saida' : 'ponto_entrada',
       extra: {
         shift_id: shiftId,

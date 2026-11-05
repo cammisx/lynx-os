@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { carregarPaginas, iniciarEspontaneo } from '@/lib/paginas';
 import { emitNotificationsChanged, SHIFTS_CHANGED } from '@/lib/desktopEvents';
+import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/api/base44Client';
+import { notificarPonto } from '@/lib/notificacoes';
 
 const REFRESH_MS = 15000;
 
@@ -11,6 +14,7 @@ const REFRESH_MS = 15000;
  * turno muda, para o cartão não mentir sobre quem está na página.
  */
 export default function usePaginas() {
+  const { user } = useAuth();
   const [paginas, setPaginas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
@@ -51,6 +55,19 @@ export default function usePaginas() {
       setEntrando(modeloId);
       try {
         const resultado = await iniciarEspontaneo(modeloId);
+        // Entrada avulsa também avisa todos os admins, igual à do turno marcado.
+        if (resultado?.ok) {
+          const pagina = paginas.find((item) => item.modelo_id === modeloId);
+          notificarPonto(base44, {
+            tipo: 'entrada',
+            usuario: user,
+            modeloNome: pagina?.modelo_nome || '',
+            modeloId,
+            shiftId: resultado.shift_id || '',
+            timestamp: resultado.entrada || new Date().toISOString(),
+            avulso: true,
+          }).catch((erro) => console.warn('[Ponto] aviso de entrada avulsa falhou', erro));
+        }
         await recarregar();
         if (resultado?.ok && resultado?.proximo?.usuario_nome) {
           emitNotificationsChanged();
@@ -62,7 +79,7 @@ export default function usePaginas() {
         setEntrando(null);
       }
     },
-    [recarregar]
+    [paginas, recarregar, user]
   );
 
   return { paginas, carregando, erro, entrando, recarregar, entrar };
