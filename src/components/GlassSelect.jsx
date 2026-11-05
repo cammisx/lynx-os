@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import usePopoverPos from '@/lib/popover';
 
 const triggerStyle = {
   width: '100%',
@@ -41,6 +43,14 @@ const panelStyle = {
   overflow: 'hidden',
 };
 
+const panelFixo = {
+  ...panelStyle,
+  position: 'fixed',
+  left: 0,
+  top: 0,
+  zIndex: 12000,
+};
+
 const itemStyle = (active) => ({
   width: '100%',
   flexShrink: 0,
@@ -74,9 +84,11 @@ export default function GlassSelect({
   disabled = false,
 }) {
   const [open, setOpen] = useState(false);
-  const [width, setWidth] = useState(0);
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
+  const panelRef = useRef(null);
+
+  const pos = usePopoverPos({ open, anchorRef: triggerRef, alturaMax: 268, align });
 
   const selecionado = useMemo(
     () => options.find((option) => String(option.value) === String(value)) || null,
@@ -86,7 +98,9 @@ export default function GlassSelect({
   useEffect(() => {
     if (!open) return undefined;
     const aoClicarFora = (event) => {
-      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+      const dentroDoCampo = rootRef.current && rootRef.current.contains(event.target);
+      const dentroDaLista = panelRef.current && panelRef.current.contains(event.target);
+      if (!dentroDoCampo && !dentroDaLista) setOpen(false);
     };
     const aoTeclar = (event) => {
       if (event.key === 'Escape') setOpen(false);
@@ -101,7 +115,6 @@ export default function GlassSelect({
 
   const alternar = () => {
     if (disabled) return;
-    if (!open) setWidth(triggerRef.current?.offsetWidth || 0);
     setOpen(!open);
   };
 
@@ -149,19 +162,25 @@ export default function GlassSelect({
         </svg>
       </button>
 
-      {open && (
+      {open &&
+        pos &&
+        createPortal(
         <div
+          ref={panelRef}
           style={{
-            ...(align === 'right' ? { ...panelStyle, left: 'auto', right: 0 } : panelStyle),
-            width: width || undefined,
-            maxWidth: width || undefined,
+            ...panelFixo,
+            left: pos.left,
+            top: pos.top,
+            width: pos.width,
+            maxWidth: pos.width,
+            maxHeight: pos.maxHeight,
           }}
         >
           <div
             className="glass-scroll"
             style={{
               width: '100%',
-              maxHeight: 240,
+              maxHeight: Math.max(140, pos.maxHeight - 16),
               overflowY: 'auto',
               overscrollBehavior: 'contain',
               padding: '8px 6px',
@@ -194,7 +213,8 @@ export default function GlassSelect({
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

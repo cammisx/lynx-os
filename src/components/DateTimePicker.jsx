@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import usePopoverPos from '@/lib/popover';
 
 const MONTHS = [
   'Janeiro',
@@ -149,6 +151,8 @@ const panelStyle = {
   minWidth: 300,
 };
 
+const painelFixo = { ...panelStyle, position: 'fixed', left: 0, top: 0, minWidth: 0, zIndex: 12000 };
+
 export default function DateTimePicker({ value, onChange, label, mode = 'datetime', align = 'left' }) {
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(value || new Date()));
@@ -156,15 +160,24 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
   const hoursRef = useRef(null);
-  const [triggerWidth, setTriggerWidth] = useState(0);
+  const panelRef = useRef(null);
 
   const showCalendar = mode !== 'time';
   const showHours = mode !== 'date';
+
+  const pos = usePopoverPos({
+    open,
+    anchorRef: triggerRef,
+    alturaMax: showCalendar ? 380 : 268,
+    align,
+  });
+  const larguraPainel = pos ? (showCalendar ? Math.max(300, pos.width) : pos.width) : undefined;
 
   useEffect(() => {
     if (!open) return undefined;
     const handleDown = (event) => {
       if (rootRef.current && rootRef.current.contains(event.target)) return;
+      if (panelRef.current && panelRef.current.contains(event.target)) return;
       setOpen(false);
     };
     const handleKey = (event) => {
@@ -202,7 +215,6 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
 
   const toggleOpen = () => {
     if (!open) {
-      setTriggerWidth(triggerRef.current?.offsetWidth || 0);
       const base = value || new Date();
       setViewMonth(startOfMonth(base));
       setFocusDate(base);
@@ -291,13 +303,19 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
         </svg>
       </button>
 
-      {open && (
+      {open &&
+        pos &&
+        createPortal(
         <div
+          ref={panelRef}
           style={{
-            ...(align === 'right' ? { ...panelStyle, left: 'auto', right: 0 } : panelStyle),
-            ...(showHours && !showCalendar && triggerWidth
-              ? { width: triggerWidth, minWidth: triggerWidth, maxWidth: triggerWidth }
-              : null),
+            ...painelFixo,
+            left: pos.left,
+            top: pos.top,
+            width: larguraPainel,
+            maxWidth: larguraPainel,
+            maxHeight: pos.maxHeight,
+            overflowY: 'auto',
           }}
         >
           {showCalendar && (
@@ -392,7 +410,7 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
               style={{
                 position: 'relative',
                 width: showCalendar ? 72 : '100%',
-                maxHeight: 240,
+                maxHeight: showCalendar ? 240 : Math.max(140, pos.maxHeight - 16),
                 overflowY: 'auto',
                 overscrollBehavior: 'contain',
                 padding: '8px 6px',
@@ -420,7 +438,8 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
               ))}
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
