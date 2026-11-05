@@ -129,3 +129,59 @@ export const tocarNotificacao = () => {
   ultimoToque = agora;
   tocarSom(preferencia.som, preferencia.volume);
 };
+
+/* ------------------------------------------------------------------ */
+/* Som de mensagem do chat (independente do som de notificação)        */
+/* ------------------------------------------------------------------ */
+
+let preferenciaChat = { som: 'mensagem', ativo: true, volume: 0.6 };
+
+export const definirPreferenciaSomChat = (dados = {}) => {
+  preferenciaChat = { ...preferenciaChat, ...dados };
+};
+
+export const lerPreferenciaSomChat = () => preferenciaChat;
+
+/**
+ * Onde a pessoa está olhando: null (painel fechado), 'lista' (lista de
+ * conversas) ou o id do canal aberto. Se ela já está no canal, a mensagem
+ * não precisa de som.
+ */
+let focoDoChat = null;
+export const definirFocoDoChat = (valor) => {
+  focoDoChat = valor || null;
+};
+
+export const lerFocoDoChat = () => focoDoChat;
+
+const vistas = new Set();
+let vistasIniciadas = false;
+let ultimoToqueChat = 0;
+const INTERVALO_MINIMO_CHAT = 1200;
+
+/**
+ * Compara a lista de mensagens com o que já foi visto e devolve a mensagem
+ * mais recente de outra pessoa, ou null. A primeira chamada só registra o
+ * histórico, para não tocar som ao abrir o app.
+ */
+export const avaliarMensagensChat = (mensagens = [], euId) => {
+  const lista = (mensagens || []).filter((mensagem) => mensagem?.id);
+  const novas = lista.filter((mensagem) => !vistas.has(mensagem.id));
+  lista.forEach((mensagem) => vistas.add(mensagem.id));
+  if (!vistasIniciadas) {
+    vistasIniciadas = true;
+    return null;
+  }
+  const deOutros = novas.filter((mensagem) => mensagem.autor_id && mensagem.autor_id !== euId);
+  return deOutros.length ? deOutros[deOutros.length - 1] : null;
+};
+
+export const tocarSomChat = () => {
+  if (!preferenciaChat.ativo) return;
+  const agoraMs = Date.now();
+  if (agoraMs - ultimoToqueChat < INTERVALO_MINIMO_CHAT) return;
+  ultimoToqueChat = agoraMs;
+  tocarSom(preferenciaChat.som, preferenciaChat.volume);
+};
+
+export const mensagemEmFoco = (canalId) => focoDoChat !== null && focoDoChat === canalId;

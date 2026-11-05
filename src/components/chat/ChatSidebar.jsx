@@ -1,15 +1,27 @@
-import { useState } from 'react';
-import { CloseIcon, PlusIcon } from '@/components/icons';
+import { useEffect, useState } from 'react';
+import { CloseIcon, GearIcon, PlusIcon } from '@/components/icons';
 import { useChatPanel } from '@/components/chat/ChatProvider';
 import CanalLista from '@/components/chat/CanalLista';
 import ChatConversa from '@/components/chat/ChatConversa';
 import NovoChatModal from '@/components/chat/NovoChatModal';
+import ChatAjustes from '@/components/chat/ChatAjustes';
+import { definirFocoDoChat } from '@/lib/sons';
 import ChatIcon from '@/components/icons/ChatIcon';
 
 /** Barra fixa do lado direito do desktop. */
 export default function ChatSidebar() {
   const { aberto, fechar, canalAtivo, fecharCanal, erro, totalNaoLidas, recarregar } = useChatPanel();
   const [novo, setNovo] = useState(false);
+  const [ajustes, setAjustes] = useState(false);
+
+  /* O som das mensagens só toca quando a pessoa não está vendo o canal. */
+  useEffect(() => {
+    definirFocoDoChat(aberto ? canalAtivo?.id || 'lista' : null);
+  }, [aberto, canalAtivo]);
+
+  useEffect(() => {
+    if (!canalAtivo) setAjustes(false);
+  }, [canalAtivo]);
 
   if (!aberto) return null;
 
@@ -36,7 +48,7 @@ export default function ChatSidebar() {
           top: 10,
           right: 10,
           bottom: 'calc(100vh * 1.5 / 24 + 12px)',
-          width: 372,
+          width: 410,
           maxWidth: '94vw',
           zIndex: 1050,
           display: 'flex',
@@ -91,6 +103,16 @@ export default function ChatSidebar() {
             type="button"
             style={botaoHeader}
             className="chat-icone"
+            aria-label="Ajustes do som das mensagens"
+            aria-expanded={ajustes}
+            onClick={() => setAjustes((anterior) => !anterior)}
+          >
+            <GearIcon size={13} />
+          </button>
+          <button
+            type="button"
+            style={botaoHeader}
+            className="chat-icone"
             aria-label="Nova conversa"
             onClick={() => setNovo(true)}
           >
@@ -106,6 +128,8 @@ export default function ChatSidebar() {
             <CloseIcon size={13} />
           </button>
         </div>
+
+        {ajustes && <ChatAjustes onFechar={() => setAjustes(false)} />}
 
         {erro && (
           <div

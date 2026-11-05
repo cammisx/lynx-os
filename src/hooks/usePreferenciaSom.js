@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import {
   SOM_PADRAO,
   definirPreferenciaSom,
+  definirPreferenciaSomChat,
   preaquecerSons,
   tocarNotificacao,
   tocarSom,
@@ -11,7 +12,14 @@ import {
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
-const PADRAO = { som: SOM_PADRAO, ativo: true, volume: 60 };
+const PADRAO = {
+  som: SOM_PADRAO,
+  ativo: true,
+  volume: 60,
+  som_chat: 'mensagem',
+  chat_ativo: true,
+  volume_chat: 60,
+};
 
 /** Preferência de som de notificação de cada pessoa, salva em PreferenciaSom. */
 export default function usePreferenciaSom() {
@@ -38,17 +46,32 @@ export default function usePreferenciaSom() {
             som: registro.som || SOM_PADRAO,
             ativo: registro.ativo !== false,
             volume: typeof registro.volume === 'number' ? registro.volume : 60,
+            som_chat: registro.som_chat || 'mensagem',
+            chat_ativo: registro.chat_ativo !== false,
+            volume_chat: typeof registro.volume_chat === 'number' ? registro.volume_chat : 60,
           };
           prefRef.current = dados;
           setPref(dados);
           definirPreferenciaSom({ ...dados, volume: dados.volume / 100 });
+          definirPreferenciaSomChat({
+            som: dados.som_chat,
+            ativo: dados.chat_ativo,
+            volume: dados.volume_chat / 100,
+          });
         } else {
           const criado = await base44.entities.PreferenciaSom.create({
             usuario_id: userId,
             ...PADRAO,
           });
           if (criado?.id) idRef.current = criado.id;
-          if (ativo) definirPreferenciaSom({ ...PADRAO, volume: PADRAO.volume / 100 });
+          if (ativo) {
+            definirPreferenciaSom({ ...PADRAO, volume: PADRAO.volume / 100 });
+            definirPreferenciaSomChat({
+              som: PADRAO.som_chat,
+              ativo: PADRAO.chat_ativo,
+              volume: PADRAO.volume_chat / 100,
+            });
+          }
         }
       } catch (error) {
         console.warn('[PreferenciaSom]', error);
@@ -97,6 +120,11 @@ export default function usePreferenciaSom() {
       prefRef.current = proximo;
       setPref(proximo);
       definirPreferenciaSom({ ...proximo, volume: proximo.volume / 100 });
+      definirPreferenciaSomChat({
+        som: proximo.som_chat,
+        ativo: proximo.chat_ativo,
+        volume: proximo.volume_chat / 100,
+      });
       if (tocar) tocarNotificacao();
       persistir(dados);
     },
@@ -118,5 +146,25 @@ export default function usePreferenciaSom() {
   );
   const mudarVolume = useCallback((volume) => atualizar({ volume }), [atualizar]);
 
-  return { pref, carregado, escolherSom, alternarSom, mudarVolume };
+  /* Som das mensagens: escolha própria, independente da notificação. */
+  const escolherSomChat = useCallback(
+    (som) => {
+      atualizar({ som_chat: som });
+      tocarSom(som, prefRef.current.volume_chat / 100);
+    },
+    [atualizar]
+  );
+  const alternarSomChat = useCallback((valor) => atualizar({ chat_ativo: valor }), [atualizar]);
+  const mudarVolumeChat = useCallback((volume) => atualizar({ volume_chat: volume }), [atualizar]);
+
+  return {
+    pref,
+    carregado,
+    escolherSom,
+    alternarSom,
+    mudarVolume,
+    escolherSomChat,
+    alternarSomChat,
+    mudarVolumeChat,
+  };
 }

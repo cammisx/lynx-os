@@ -11,6 +11,8 @@ import {
   naoLidasDoCanal,
   ordemDosCanais,
 } from '@/lib/chat';
+import { avaliarMensagensChat, lerFocoDoChat, tocarSomChat } from '@/lib/sons';
+import { paraData } from '@/lib/datas';
 
 /** Mensagens consideradas para contagem e histórico curto. */
 const JANELA_MS = 14 * 86400000;
@@ -29,7 +31,9 @@ const listar = async (promessa) => {
 
 const agora = () => new Date().toISOString();
 
-const porData = (a, b) => new Date(a.created_date) - new Date(b.created_date);
+/* created_date vem do banco sem timezone: paraData garante a mesma leitura
+   usada na exibição, senão a ordem erra perto das 21h. */
+const porData = (a, b) => paraData(a.created_date) - paraData(b.created_date);
 
 /**
  * Fonte de verdade do chat: canais visíveis, mensagens da janela recente,
@@ -439,15 +443,29 @@ export default function useChat() {
 
   /* Canal aberto na tela não acumula badge: o que chega enquanto a pessoa
      está olhando já conta como lido. */
-  const ultimaMarcadaRef = useRef(null);
+  const marcadasRef = useRef(new Map());
   useEffect(() => {
     if (!canalAtivoId || !euId) return;
     const lista = mensagensPorCanal.get(canalAtivoId) || [];
     const ultima = lista[lista.length - 1];
-    if (!ultima || ultima.id === ultimaMarcadaRef.current) return;
-    ultimaMarcadaRef.current = ultima.id;
-    if (ultima.autor_id !== euId) marcarLido(canalAtivoId);
+    /* A chave guarda o que já foi marcado naquele canal. Marca sempre que o
+       canal abre ou chega algo novo, inclusive quando a última é minha: o que
+       zera o badge é ter o canal aberto, não quem escreveu por último. */
+    const chave = ultima?.id || 'vazio';
+    if (marcadasRef.current.get(canalAtivoId) === chave) return;
+    marcadasRef.current.set(canalAtivoId, chave);
+    marcarLido(canalAtivoId);
   }, [canalAtivoId, mensagensPorCanal, euId, marcarLido]);
+
+  /* Som de mensagem nova: toca quando a mensagem é de outra pessoa e ela não
+     está com aquele canal aberto na tela. */
+  useEffect(() => {
+    if (!euId) return;
+    const nova = avaliarMensagensChat(mensagens, euId);
+    if (!nova) return;
+    if (lerFocoDoChat() === nova.canal_id) return;
+    tocarSomChat();
+  }, [mensagens, euId]);
 
   const canalAtivo = canaisVisiveis.find((canal) => canal.id === canalAtivoId) || null;
   const mensagensDoCanalAtivo = useMemo(() => {

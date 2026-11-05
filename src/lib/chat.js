@@ -110,11 +110,14 @@ export const mensagemVisivel = (mensagem, usuarioId) =>
 
 /** Quantas mensagens de outras pessoas chegaram depois da última leitura. */
 export const naoLidasDoCanal = (mensagens, membro, usuarioId) => {
-  const desde = membro?.ultima_leitura_em ? new Date(membro.ultima_leitura_em).getTime() : 0;
+  /* O banco devolve created_date sem timezone (UTC) e a última leitura é
+     gravada com "Z". Sem passar as duas pelo mesmo parser, a mensagem parecia
+     sempre mais nova que a leitura e o badge nunca zerava. */
+  const desde = membro?.ultima_leitura_em ? paraData(membro.ultima_leitura_em).getTime() : 0;
   return (mensagens || []).filter((mensagem) => {
     if (mensagem.autor_id === usuarioId) return false;
     if (!mensagemVisivel(mensagem, usuarioId)) return false;
-    return new Date(mensagem.created_date).getTime() > desde;
+    return paraData(mensagem.created_date).getTime() > desde;
   }).length;
 };
 

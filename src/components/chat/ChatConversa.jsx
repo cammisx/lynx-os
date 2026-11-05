@@ -246,12 +246,12 @@ export default function ChatConversa({ onVoltar }) {
             }
           }}
           placeholder="escrever mensagem…"
-          rows={1}
+          rows={2}
           className="chat-campo"
           style={{
             flex: 1,
-            minHeight: 34,
-            maxHeight: 96,
+            minHeight: 58,
+            maxHeight: 168,
             resize: 'none',
             background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
             border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
