@@ -14,6 +14,8 @@ import { inserirEmoji } from '@/lib/emojis';
 import { SmileIcon } from '@/components/chat/chatIcons';
 import { aplicarMarcador } from '@/lib/textoRico';
 import { tamanhoLegivel } from '@/lib/chat';
+import { consultaDeMencao, opcoesDeMencao } from '@/lib/mencoes';
+import { iniciais } from '@/lib/chat';
 
 const BOTOES_FORMATO = [
   { tipo: 'forte', rotulo: 'B', titulo: 'Negrito (Ctrl+B)', estilo: { fontWeight: 700 } },
@@ -37,12 +39,46 @@ export default function ChatComposer({
   ocupado,
   falha,
   setFalha,
+  pessoasMencionaveis = [],
 }) {
   const [gravando, setGravando] = useState(false);
+  const [mencao, setMencao] = useState(null); // { inicio, consulta }
+  const [mencaoAtiva, setMencaoAtiva] = useState(0);
   const [emojisAbertos, setEmojisAbertos] = useState(false);
   const [gifsAbertos, setGifsAbertos] = useState(false);
   const areaRef = useRef(null);
   const arquivoRef = useRef(null);
+
+  /* Abre o seletor quando alguém digita "@" e fecha ao sair do trecho. */
+  const acompanharMencao = (valor, cursor) => {
+    if (editando) {
+      setMencao(null);
+      return;
+    }
+    const achado = consultaDeMencao(valor, cursor);
+    setMencao(achado);
+    setMencaoAtiva(0);
+  };
+
+  const opcoes = mencao ? opcoesDeMencao(mencao.consulta, pessoasMencionaveis) : [];
+
+  const inserirMencao = (opcao) => {
+    if (!mencao || !opcao) return;
+    const campo = areaRef.current;
+    const cursor = campo?.selectionStart ?? texto.length;
+    const antes = texto.slice(0, mencao.inicio);
+    const depois = texto.slice(cursor);
+    const pedaco = `@${opcao.rotulo} `;
+    setTexto(`${antes}${pedaco}${depois}`);
+    setMencao(null);
+    requestAnimationFrame(() => {
+      const alvo = areaRef.current;
+      if (!alvo) return;
+      const posicao = antes.length + pedaco.length;
+      alvo.focus();
+      alvo.setSelectionRange(posicao, posicao);
+    });
+  };
 
   const aplicarFormato = (tipo) => {
     const campo = areaRef.current;
@@ -298,7 +334,16 @@ export default function ChatComposer({
               </button>
             </div>
 
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 {BOTOES_FORMATO.map((botao) => (
                   <button
@@ -333,10 +378,117 @@ export default function ChatComposer({
                 </span>
               </div>
 
+              {mencao && opcoes.length > 0 && (
+                <div
+                  role="listbox"
+                  aria-label="Mencionar alguém"
+                  className="chat-mencoes"
+                  style={{
+                    position: 'absolute',
+                    bottom: '100%',
+                    left: 0,
+                    marginBottom: 6,
+                    width: 210,
+                    maxHeight: 190,
+                    overflowY: 'auto',
+                    zIndex: 30,
+                    borderRadius: 10,
+                    border: '1px solid color-mix(in srgb, var(--c1) 26%, transparent)',
+                    background: 'color-mix(in srgb, var(--c8) 96%, transparent)',
+                    backdropFilter: 'blur(18px)',
+                    WebkitBackdropFilter: 'blur(18px)',
+                    boxShadow: '0 14px 34px rgba(0,0,0,0.42)',
+                    padding: 4,
+                  }}
+                >
+                  {opcoes.map((opcao, indice) => {
+                    const escolhida = indice === mencaoAtiva;
+                    return (
+                      <button
+                        key={opcao.id}
+                        type="button"
+                        role="option"
+                        aria-selected={escolhida}
+                        onMouseDown={(evento) => evento.preventDefault()}
+                        onMouseEnter={() => setMencaoAtiva(indice)}
+                        onClick={() => inserirMencao(opcao)}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 7,
+                          padding: '5px 7px',
+                          border: 'none',
+                          borderRadius: 7,
+                          background: escolhida
+                            ? 'color-mix(in srgb, var(--c1) 16%, transparent)'
+                            : 'transparent',
+                          color: escolhida ? 'var(--c1)' : 'var(--c3)',
+                          fontFamily: 'var(--font-main)',
+                          fontSize: 11,
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {opcao.atalho ? (
+                          <span
+                            style={{
+                              width: 18,
+                              height: 18,
+                              flexShrink: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: '50%',
+                              border: '1px solid color-mix(in srgb, var(--c1) 40%, transparent)',
+                              fontSize: 9,
+                              color: 'var(--c1)',
+                            }}
+                          >
+                            @
+                          </span>
+                        ) : opcao.foto_url ? (
+                          <img
+                            src={opcao.foto_url}
+                            alt=""
+                            style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <span
+                            style={{
+                              width: 18,
+                              height: 18,
+                              flexShrink: 0,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              borderRadius: '50%',
+                              background: 'color-mix(in srgb, var(--c1) 20%, transparent)',
+                              fontSize: 8,
+                              fontWeight: 700,
+                              color: 'var(--c1)',
+                            }}
+                          >
+                            {iniciais(opcao.nome)}
+                          </span>
+                        )}
+                        <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {opcao.atalho ? 'todos do canal' : opcao.rotulo}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               <textarea
                 ref={areaRef}
                 value={texto}
-                onChange={(evento) => setTexto(evento.target.value)}
+                onChange={(evento) => {
+                  setTexto(evento.target.value);
+                  acompanharMencao(evento.target.value, evento.target.selectionStart);
+                }}
+                onClick={(evento) => acompanharMencao(texto, evento.currentTarget.selectionStart)}
                 onPaste={(evento) => {
                   if (editando) return;
                   const itens = Array.from(evento.clipboardData?.items || []);
@@ -348,6 +500,27 @@ export default function ChatComposer({
                   onEscolherArquivo(arquivo);
                 }}
                 onKeyDown={(evento) => {
+                  if (mencao && opcoes.length > 0) {
+                    if (evento.key === 'ArrowDown' || evento.key === 'ArrowUp') {
+                      evento.preventDefault();
+                      setMencaoAtiva((indice) => {
+                        const passo = evento.key === 'ArrowDown' ? 1 : -1;
+                        return (indice + passo + opcoes.length) % opcoes.length;
+                      });
+                      return;
+                    }
+                    if (evento.key === 'Enter' || evento.key === 'Tab') {
+                      evento.preventDefault();
+                      inserirMencao(opcoes[mencaoAtiva] || opcoes[0]);
+                      return;
+                    }
+                    if (evento.key === 'Escape') {
+                      evento.preventDefault();
+                      setMencao(null);
+                      return;
+                    }
+                  }
+
                   const comando = evento.ctrlKey || evento.metaKey;
                   if (comando && evento.key.toLowerCase() === 'b') {
                     evento.preventDefault();

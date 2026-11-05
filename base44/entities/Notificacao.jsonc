@@ -24,7 +24,8 @@
         "folga_automatica",
         "horario_disponivel",
         "turno_espontaneo_encerrado",
-        "cutucada"
+        "cutucada",
+        "mencao"
       ],
       "enumColors": [
         "yellow",
@@ -37,7 +38,8 @@
         "pink",
         "purple",
         "gray",
-        "orange"
+        "orange",
+        "teal"
       ],
       "default": "turno_esquecido"
     },
@@ -100,6 +102,13 @@
     "lida": {
       "type": "boolean",
       "default": false
+    },
+    "canal_id": {
+      "type": "string",
+      "description": "Canal do chat, quando a notificação vem de uma mensagem"
+    },
+    "mensagem_id": {
+      "type": "string"
     },
     "cutucada_id": {
       "type": "string"

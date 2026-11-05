@@ -21,6 +21,7 @@ import { cargoDaPessoa, fotoDaPessoa, nomeDaPessoa } from '@/lib/pessoas';
 import { perfilAtual, usePerfil } from '@/lib/perfilUsuario';
 import { CHATTERS_CHANGED, MODELS_CHANGED } from '@/lib/desktopEvents';
 import { PERFIS_EVENT, listarPerfis, mapaDePerfis } from '@/lib/perfis';
+import { notificarMencoes } from '@/lib/notificacoes';
 
 /** Mensagens consideradas para contagem e histórico curto. */
 const JANELA_MS = 14 * 86400000;
@@ -631,6 +632,27 @@ export default function useChat() {
           );
         }
         await marcarLido(canalId);
+
+        /* Quem foi mencionado recebe aviso próprio. Falha aqui não pode
+           derrubar a mensagem, que já está gravada. */
+        const canalDaMensagem = canaisVisiveisRef.current.find((item) => item.id === canalId);
+        if (canalDaMensagem) {
+          /* Só avisa quem realmente enxerga o canal: canal de modelo não
+             menciona quem não é daquela modelo. */
+          const doCanal = pessoas.filter((pessoa) => {
+            if (pessoa.id === euId) return true;
+            const usuarioDaPessoa = { id: pessoa.id, role: pessoa.cargo === 'admin' ? 'admin' : 'user' };
+            return canalVisivel(canalDaMensagem, usuarioDaPessoa, modelosRef.current);
+          });
+          notificarMencoes(base44, {
+            canal: canalDaMensagem,
+            mensagem: { ...criada, texto: limpo },
+            autorId: euId,
+            autorNome: nomeDaPessoa(user) || eu?.nome || '',
+            pessoas: doCanal,
+          }).catch((erro) => console.warn('[Chat] menções', erro));
+        }
+
         base44.entities.ChatCanal.update(canalId, {
           ultima_mensagem_em: agora(),
           ultima_mensagem_preview: limpo ? limpo.slice(0, 80) : previewDaMensagem(criada),

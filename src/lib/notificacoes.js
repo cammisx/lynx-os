@@ -2,6 +2,7 @@ import { emitNotificationsChanged } from '@/lib/desktopEvents';
 import { nomeDaPessoa } from '@/lib/pessoas';
 import notificarAdminsSolicitacao, { listarAdmins } from '@/lib/solicitacoes';
 import { nextOccurrence } from '@/lib/aceite';
+import { acharMencoes, primeiroNome, resumoDaMensagem } from '@/lib/mencoes';
 /** Não lida = ainda não abriu e não está resolvida. */
 export const isNaoLida = (notification) =>
   Boolean(notification) && !notification.lida && notification.status !== 'resolvida';
@@ -192,4 +193,52 @@ export const notificarAdmins = async (base44, payload, { dedupe = true } = {}) =
   );
   emitNotificationsChanged();
   return criadas;
+};
+
+/**
+ * Avisa quem foi mencionado numa mensagem do chat.
+ *
+ * Uma notificação por pessoa (o autor nunca recebe a sua), com o canal para
+ * abrir direto na conversa. É o único aviso do sino que também destaca a
+ * mensagem, então o tipo 'mencao' tem tratamento próprio no painel.
+ */
+export const notificarMencoes = async (
+  base44,
+  { canal, mensagem, autorId, autorNome, pessoas = [] }
+) => {
+  if (!canal?.id || !mensagem?.id) return [];
+
+  const { todos, ids } = acharMencoes(mensagem.texto, pessoas, autorId);
+  if (!ids.length) return [];
+
+  const nomeDoAutor = primeiroNome(autorNome) || 'Alguém';
+  const onde = canal?.nome ? `em ${canal.nome}` : 'no chat';
+  const trecho = resumoDaMensagem(mensagem.texto) || (mensagem.anexo_url ? 'enviou um anexo' : '');
+  const titulo = todos
+    ? `${nomeDoAutor} mencionou todos ${onde}`
+    : `${nomeDoAutor} te mencionou ${onde}`;
+
+  const criadas = await Promise.all(
+    ids.map((usuarioId) =>
+      base44.entities.Notificacao.create({
+        usuario_id: usuarioId,
+        titulo,
+        mensagem: trecho,
+        tipo: 'mencao',
+        canal_id: canal.id,
+        mensagem_id: mensagem.id,
+        solicitante_id: autorId,
+        solicitante_nome: nomeDoAutor,
+        status: 'pendente',
+        lida: false,
+        criado_por_automacao: false,
+      }).catch((erro) => {
+        console.warn('[mencoes] não consegui avisar', erro?.message || erro);
+        return null;
+      })
+    )
+  );
+
+  emitNotificationsChanged();
+  return criadas.filter(Boolean);
 };

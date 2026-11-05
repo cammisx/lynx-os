@@ -75,6 +75,22 @@ export default function ChatConversa({ onVoltar }) {
 
   const nome = nomeDoCanal(canalAtivo, { usuario: user, pessoas, modelos });
 
+  /* Quem pode ser mencionado: quem está no canal (canal sem participantes,
+     como o geral, pode chamar todo mundo). */
+  const pessoasDoCanal = useMemo(() => {
+    const lista = Array.isArray(pessoas) ? pessoas : [];
+    const dentro = canalAtivo?.participantes || [];
+    const filtradas = dentro.length
+      ? lista.filter((pessoa) => dentro.includes(pessoa.id))
+      : lista;
+    return filtradas.map((pessoa) => ({ id: pessoa.id, nome: pessoa.nome, foto_url: pessoa.foto_url }));
+  }, [pessoas, canalAtivo]);
+
+  const nomesDoCanal = useMemo(
+    () => pessoasDoCanal.map((pessoa) => pessoa.nome).filter(Boolean),
+    [pessoasDoCanal]
+  );
+
   /* Nome e foto vêm do perfil atual: trocar o nome no sistema atualiza também
      as mensagens que já estavam na tela. */
   const pessoaPorId = useMemo(() => {
@@ -579,7 +595,7 @@ export default function ChatConversa({ onVoltar }) {
                     {apagada ? (
                       'mensagem apagada'
                     ) : mensagem.texto ? (
-                      <TextoRico texto={mensagem.texto} />
+                      <TextoRico texto={mensagem.texto} pessoas={nomesDoCanal} />
                     ) : null}
 
                     {!apagada && mensagem.transcricao && (
@@ -717,6 +733,7 @@ export default function ChatConversa({ onVoltar }) {
         ocupado={ocupado || enviando}
         falha={falha}
         setFalha={setFalha}
+        pessoasMencionaveis={pessoasDoCanal}
       />
 
       {imagemAberta &&

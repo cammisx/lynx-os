@@ -58,6 +58,20 @@ export default function Taskbar({ onOpenApp }) {
     markRead(notification.id);
     setBellOpen(false);
 
+    if (notification.tipo === 'mencao') {
+      if (notification.canal_id) {
+        chat.abrir();
+        chat.abrirCanal(notification.canal_id);
+      }
+      if (notification.status !== 'resolvida') {
+        base44.entities.Notificacao.update(notification.id, { status: 'resolvida' }).catch(
+          (erro) => console.warn('[Notificacao]', erro)
+        );
+        await reload();
+      }
+      return;
+    }
+
     if (notification.tipo === 'cutucada') {
       if (notification.status === 'resolvida') return;
       setCutucada(notification);

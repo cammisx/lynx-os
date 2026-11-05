@@ -21,6 +21,9 @@ export default function NotificationRow({ notification, read, onOpen }) {
     notification.tipo === 'cutucada' &&
     Number(notification.cutucada_sequencia || 0) >= SEQUENCIA_COM_FOGUINHO;
 
+  /* Menção é aviso pessoal: fica com a barra dourada e o @ na frente. */
+  const mencao = notification.tipo === 'mencao' && !read;
+
   return (
     <button
       type="button"
@@ -36,7 +39,12 @@ export default function NotificationRow({ notification, read, onOpen }) {
         paddingRight: 24,
         border: 'none',
         borderBottom: '1px solid color-mix(in srgb, var(--c2) 10%, transparent)',
-        background: hovered ? 'color-mix(in srgb, var(--c1) 10%, transparent)' : 'transparent',
+        boxShadow: mencao ? 'inset 3px 0 0 var(--c1)' : 'none',
+        background: mencao
+          ? `color-mix(in srgb, var(--c1) ${hovered ? 18 : 9}%, transparent)`
+          : hovered
+            ? 'color-mix(in srgb, var(--c1) 10%, transparent)'
+            : 'transparent',
         cursor: 'pointer',
         opacity: read ? 0.6 : 1,
         fontFamily: 'var(--font-main)',
@@ -54,6 +62,26 @@ export default function NotificationRow({ notification, read, onOpen }) {
           lineHeight: 1.35,
         }}
       >
+        {mencao && (
+          <span
+            style={{
+              flexShrink: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 15,
+              height: 15,
+              borderRadius: '50%',
+              border: '1px solid color-mix(in srgb, var(--c1) 50%, transparent)',
+              color: 'var(--c1)',
+              fontSize: 9,
+              fontWeight: 700,
+              lineHeight: 1,
+            }}
+          >
+            @
+          </span>
+        )}
         {foguinho && (
           <span style={{ color: 'var(--c1)', display: 'flex', flexShrink: 0 }}>
             <FireIcon size={13} />
