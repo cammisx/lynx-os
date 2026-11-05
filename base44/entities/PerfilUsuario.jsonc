@@ -1,0 +1,35 @@
+{
+  "name": "PerfilUsuario",
+  "type": "object",
+  "description": "Nome, foto e subnick que a pessoa escolheu. Fica separado do User porque a listagem de User nem sempre devolve os campos extras para as outras pessoas.",
+  "properties": {
+    "usuario_id": {
+      "type": "string",
+      "description": "Id do usuário dono do perfil"
+    },
+    "usuario_email": {
+      "type": "string"
+    },
+    "nome_exibicao": {
+      "type": "string",
+      "description": "Nome que aparece no sistema"
+    },
+    "foto_url": {
+      "type": "string",
+      "description": "Foto de perfil"
+    },
+    "subnick": {
+      "type": "string",
+      "description": "Recado curto embaixo do nome"
+    },
+    "tema": {
+      "type": "string"
+    },
+    "fonte_escala": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "usuario_id"
+  ]
+}

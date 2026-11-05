@@ -20,6 +20,7 @@ import { avaliarMensagensChat, lerFocoDoChat, tocarSomChat } from '@/lib/sons';
 import { cargoDaPessoa, fotoDaPessoa, nomeDaPessoa } from '@/lib/pessoas';
 import { perfilAtual, usePerfil } from '@/lib/perfilUsuario';
 import { CHATTERS_CHANGED, MODELS_CHANGED } from '@/lib/desktopEvents';
+import { PERFIS_EVENT, listarPerfis, mapaDePerfis } from '@/lib/perfis';
 
 /** Mensagens consideradas para contagem e histórico curto. */
 const JANELA_MS = 14 * 86400000;
@@ -73,10 +74,12 @@ export default function useChat() {
   const perfil = usePerfil(user);
 
   const carregarPessoas = useCallback(async () => {
-    const [usuarios, chatters] = await Promise.all([
+    const [usuarios, chatters, perfis] = await Promise.all([
       listar(base44.entities.User.list()),
       listar(base44.entities.Chatter.list()),
+      listarPerfis(),
     ]);
+    const perfilPorUsuario = mapaDePerfis(perfis);
     const mapa = new Map();
     const chatterPorUsuario = new Map();
     chatters.forEach((chatter) => {
@@ -84,27 +87,45 @@ export default function useChat() {
     });
 
     usuarios.forEach((usuario) => {
+      /* O perfil público é o que a pessoa escolheu e chega para todo mundo;
+         o User e o Chatter entram como reserva. */
+      const publico = perfilPorUsuario.get(usuario.id) || null;
       mapa.set(usuario.id, {
         id: usuario.id,
         email: usuario.email || '',
         cargo: cargoDaPessoa(usuario),
-        // Nome e foto do perfil valem aqui e em qualquer lugar do app.
-        nome: nomeDaPessoa(usuario, chatterPorUsuario.get(usuario.id)),
-        foto_url: fotoDaPessoa(usuario),
-        subnick: String(usuario.subnick || '').trim(),
+        nome: (
+          publico?.nome_exibicao ||
+          nomeDaPessoa(usuario, chatterPorUsuario.get(usuario.id))
+        ).trim(),
+        foto_url: publico?.foto_url || fotoDaPessoa(usuario),
+        subnick: String(publico?.subnick || usuario.subnick || '').trim(),
       });
     });
 
     // Quem aparece só no Chatter (cadastro antigo) ainda entra na lista.
     chatterPorUsuario.forEach((chatter, usuarioId) => {
       if (mapa.has(usuarioId)) return;
+      const publico = perfilPorUsuario.get(usuarioId) || null;
       mapa.set(usuarioId, {
         id: usuarioId,
-        email: chatter.usuario_email || '',
+        email: chatter.usuario_email || publico?.usuario_email || '',
         cargo: 'chatter',
-        nome: nomeDaPessoa(null, chatter),
-        foto_url: '',
-        subnick: '',
+        nome: (publico?.nome_exibicao || nomeDaPessoa(null, chatter)).trim(),
+        foto_url: publico?.foto_url || '',
+        subnick: String(publico?.subnick || '').trim(),
+      });
+    });
+
+    perfilPorUsuario.forEach((perfil, usuarioId) => {
+      if (mapa.has(usuarioId) || !perfil?.nome_exibicao) return;
+      mapa.set(usuarioId, {
+        id: usuarioId,
+        email: perfil.usuario_email || '',
+        cargo: 'chatter',
+        nome: String(perfil.nome_exibicao).trim(),
+        foto_url: perfil.foto_url || '',
+        subnick: String(perfil.subnick || '').trim(),
       });
     });
 
@@ -140,10 +161,12 @@ export default function useChat() {
     };
     window.addEventListener(CHATTERS_CHANGED, atualizar);
     window.addEventListener(MODELS_CHANGED, atualizar);
+    window.addEventListener(PERFIS_EVENT, atualizar);
     return () => {
       ativo = false;
       window.removeEventListener(CHATTERS_CHANGED, atualizar);
       window.removeEventListener(MODELS_CHANGED, atualizar);
+      window.removeEventListener(PERFIS_EVENT, atualizar);
     };
   }, [euId, carregarPessoas]);
 

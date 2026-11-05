@@ -9,6 +9,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { base44 } from '@/api/base44Client';
 import { aplicarTema, temaPorId } from '@/lib/temas';
 import { aplicarFonte, fonteDoNavegador, tamanhoPorId } from '@/lib/fonte';
+import { buscarPerfil, salvarPerfilPublico } from '@/lib/perfis';
 import { PERFIL_PADRAO, iniciaisDe, mesclarPerfil, nomeDe } from '@/lib/perfilLogica';
 import { espelharNomeNoChatter, propagarNomeNasModelos } from '@/lib/pessoas';
 import { emitChattersChanged } from '@/lib/desktopEvents';
@@ -59,6 +60,32 @@ export const carregarPerfil = (user) => {
   aplicarTema(atual.tema);
   aplicarFonte(atual.fonte);
   avisar();
+
+  /* O perfil público é a fonte que chega para todo mundo (a listagem de User
+     não devolve os campos extras). Chega depois, sem travar a tela. */
+  buscarPerfil(user.id).then((publico) => {
+    if (publico) {
+      atual = mesclarPerfil(atual, publico);
+      gravarLocal(user.id, atual);
+      aplicarTema(atual.tema);
+      aplicarFonte(atual.fonte);
+      avisar();
+      return;
+    }
+    /* Nada no banco, mas o navegador tem nome/foto de um salvamento anterior
+       que não chegou lá: sobe agora, para as outras pessoas passarem a ver. */
+    if (atual.nomeExibicao || atual.fotoUrl) {
+      salvarPerfilPublico(user.id, {
+        usuario_email: user.email,
+        nome_exibicao: atual.nomeExibicao,
+        foto_url: atual.fotoUrl,
+        subnick: atual.subnick,
+        tema: atual.tema,
+        fonte_escala: atual.fonte,
+      });
+    }
+  });
+
   return atual;
 };
 
@@ -77,6 +104,16 @@ export const refletirNomeDeUsuario = (usuarioId, nome) => {
  */
 export const salvarPerfil = async (user, parcial = {}) => {
   const antes = { nome: atual.nomeExibicao, foto: atual.fotoUrl, subnick: atual.subnick };
+
+  /* Se a tela ainda não recebeu o perfil do banco (ele chega logo depois da
+     abertura), salvar agora gravaria campos vazios por cima do que existe. */
+  const mexeuNoNome = Object.prototype.hasOwnProperty.call(parcial, 'nomeExibicao');
+  const mexeuNaFoto = Object.prototype.hasOwnProperty.call(parcial, 'fotoUrl');
+  if (user?.id && ((!atual.nomeExibicao && !mexeuNoNome) || (!atual.fotoUrl && !mexeuNaFoto))) {
+    const doBanco = await buscarPerfil(user.id);
+    if (doBanco) atual = mesclarPerfil(atual, doBanco);
+  }
+
   atual = { ...atual, ...parcial };
   aplicarTema(atual.tema);
   aplicarFonte(atual.fonte);
@@ -85,6 +122,10 @@ export const salvarPerfil = async (user, parcial = {}) => {
 
   if (!user?.id) return { remoto: false };
 
+  /* Duas gravações, cada uma por si: o User (campo oficial, usado pela janela
+     de Chatters) e o perfil público (o que os outros enxergam). Se uma falhar,
+     a outra ainda vale. */
+  let noUser = false;
   try {
     const salvo = await base44.auth.updateMe({
       nome_exibicao: atual.nomeExibicao || '',
@@ -93,37 +134,44 @@ export const salvarPerfil = async (user, parcial = {}) => {
       tema: atual.tema || '',
       fonte_escala: atual.fonte || '',
     });
-    /* Campo que não existe no schema volta sem estar na resposta: nesse caso
-       o perfil só ficou guardado aqui. */
-    const remoto = Boolean(salvo && 'nome_exibicao' in salvo);
-
-    /* O nome é o mesmo do resto do app: quando ele muda, leva para a cópia que
-       o desktop, o painel do relógio e os relatórios já leem. Trocar só o tema
-       não custa essas leituras. */
-    if (atual.nomeExibicao && atual.nomeExibicao !== antes.nome) {
-      await espelharNomeNoChatter({
-        usuarioId: user.id,
-        nome: atual.nomeExibicao,
-        email: user.email,
-      });
-      await propagarNomeNasModelos({ usuarioId: user.id, nome: atual.nomeExibicao });
-    }
-
-    /* Foto e subnick também aparecem em outras janelas: avisa sempre que
-       qualquer um dos três mudou. */
-    if (
-      atual.nomeExibicao !== antes.nome ||
-      atual.fotoUrl !== antes.foto ||
-      atual.subnick !== antes.subnick
-    ) {
-      emitChattersChanged();
-    }
-
-    return { remoto };
+    noUser = Boolean(salvo && 'nome_exibicao' in salvo);
   } catch (erro) {
-    console.warn('[Perfil] salvo só neste navegador:', erro?.message || erro);
-    return { remoto: false };
+    console.warn('[Perfil] o User recusou os campos extras:', erro?.message || erro);
   }
+
+  const publico = await salvarPerfilPublico(user.id, {
+    usuario_email: user.email,
+    nome_exibicao: atual.nomeExibicao,
+    foto_url: atual.fotoUrl,
+    subnick: atual.subnick,
+    tema: atual.tema,
+    fonte_escala: atual.fonte,
+  });
+  const remoto = noUser || Boolean(publico);
+
+  /* O nome é o mesmo do resto do app: quando ele muda, leva para a cópia que
+     o desktop, o painel do relógio e os relatórios já leem. Trocar só o tema
+     não custa essas leituras. */
+  if (atual.nomeExibicao && atual.nomeExibicao !== antes.nome) {
+    await espelharNomeNoChatter({
+      usuarioId: user.id,
+      nome: atual.nomeExibicao,
+      email: user.email,
+    });
+    await propagarNomeNasModelos({ usuarioId: user.id, nome: atual.nomeExibicao });
+  }
+
+  /* Foto e subnick também aparecem em outras janelas: avisa sempre que
+     qualquer um dos três mudou. */
+  if (
+    atual.nomeExibicao !== antes.nome ||
+    atual.fotoUrl !== antes.foto ||
+    atual.subnick !== antes.subnick
+  ) {
+    emitChattersChanged();
+  }
+
+  return { remoto };
 };
 
 export const usePerfil = (user) => {
