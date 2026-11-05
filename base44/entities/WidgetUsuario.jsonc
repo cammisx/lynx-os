@@ -37,5 +37,19 @@
   "required": [
     "usuario_id",
     "tipo"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.usuario_id": "{{user.id}}"
+    },
+    "read": {
+      "data.usuario_id": "{{user.id}}"
+    },
+    "update": {
+      "data.usuario_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.usuario_id": "{{user.id}}"
+    }
+  }
 }

@@ -45,5 +45,31 @@
   },
   "required": [
     "tipo"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.criado_por": "{{user.id}}"
+    },
+    "read": null,
+    "update": {
+      "$or": [
+        {
+          "data.participantes": "{{user.id}}"
+        },
+        {
+          "data.criado_por": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }

@@ -87,5 +87,39 @@
     "usuario_id",
     "shift_id",
     "tipo"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.usuario_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.usuario_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.usuario_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }
