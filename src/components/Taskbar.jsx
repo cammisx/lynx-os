@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { base44 } from '@/api/base44Client';
 import StartMenu from '@/components/StartMenu';
 import ClockPanel from '@/components/ClockPanel';
 import NotificationsPanel from '@/components/notifications/NotificationsPanel';
@@ -38,10 +39,24 @@ export default function Taskbar({ onOpenApp }) {
     (notification) => notification.status === 'pendente' && !readIds.has(notification.id)
   ).length;
 
-  const openJustificativa = (notification) => {
+  const openNotification = async (notification) => {
     markRead(notification.id);
     setBellOpen(false);
-    setJustificativa(notification);
+
+    if (notification.tipo === 'turno_esquecido') {
+      setJustificativa(notification);
+      return;
+    }
+
+    // Aviso de turno novo: só precisa ser lido, sem justificativa.
+    if (notification.status !== 'resolvida') {
+      try {
+        await base44.entities.Notificacao.update(notification.id, { status: 'resolvida' });
+      } catch (error) {
+        console.warn('[Notificacao]', error);
+      }
+      await reload();
+    }
   };
 
   const toggleBell = () => {
@@ -130,7 +145,7 @@ export default function Taskbar({ onOpenApp }) {
         onClose={() => setClockOpen(false)}
         anchorRef={clockRef}
         notificacoes={items}
-        onOpenJustificativa={openJustificativa}
+        onOpenJustificativa={openNotification}
       />
 
       {bellOpen && (
@@ -138,7 +153,7 @@ export default function Taskbar({ onOpenApp }) {
           items={items}
           readIds={readIds}
           anchorRef={bellRef}
-          onOpen={openJustificativa}
+          onOpen={openNotification}
           onClose={() => setBellOpen(false)}
         />
       )}

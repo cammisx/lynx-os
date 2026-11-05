@@ -144,8 +144,17 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
     };
 
     try {
-      if (shift) await base44.entities.Shift.update(shift.id, payload);
-      else await base44.entities.Shift.create(payload);
+      if (shift) {
+        await base44.entities.Shift.update(shift.id, payload);
+      } else {
+        const created = await base44.entities.Shift.create(payload);
+        if (created?.id) {
+          // Avisa o chatter do turno novo sem travar o salvamento do formulário.
+          base44.functions
+            .invoke('notificarNovoShift', { shift_id: created.id })
+            .catch((error) => console.warn('[notificarNovoShift]', error));
+        }
+      }
       await onSaved();
     } finally {
       setSaving(false);

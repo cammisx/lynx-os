@@ -14,10 +14,12 @@
     "tipo": {
       "type": "string",
       "enum": [
-        "turno_esquecido"
+        "turno_esquecido",
+        "novo_shift"
       ],
       "enumColors": [
-        "yellow"
+        "yellow",
+        "blue"
       ],
       "default": "turno_esquecido"
     },
