@@ -154,7 +154,9 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(value || new Date()));
   const [focusDate, setFocusDate] = useState(() => value || new Date());
   const rootRef = useRef(null);
+  const triggerRef = useRef(null);
   const hoursRef = useRef(null);
+  const [triggerWidth, setTriggerWidth] = useState(0);
 
   const showCalendar = mode !== 'time';
   const showHours = mode !== 'date';
@@ -200,6 +202,7 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
 
   const toggleOpen = () => {
     if (!open) {
+      setTriggerWidth(triggerRef.current?.offsetWidth || 0);
       const base = value || new Date();
       setViewMonth(startOfMonth(base));
       setFocusDate(base);
@@ -263,7 +266,13 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
     <div ref={rootRef} onKeyDown={handleKeyDown} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 6 }}>
       {label && <span style={labelStyle}>{label}</span>}
 
-      <button type="button" className="dtp-trigger" onClick={toggleOpen} style={triggerStyle}>
+      <button
+        type="button"
+        className="dtp-trigger"
+        ref={triggerRef}
+        onClick={toggleOpen}
+        style={triggerStyle}
+      >
         <span>{formatValue(value, mode)}</span>
         <svg
           width="14"
@@ -283,7 +292,14 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
       </button>
 
       {open && (
-        <div style={align === 'right' ? { ...panelStyle, left: 'auto', right: 0 } : panelStyle}>
+        <div
+          style={{
+            ...(align === 'right' ? { ...panelStyle, left: 'auto', right: 0 } : panelStyle),
+            ...(showHours && !showCalendar && triggerWidth
+              ? { width: triggerWidth, minWidth: triggerWidth, maxWidth: triggerWidth }
+              : null),
+          }}
+        >
           {showCalendar && (
             <div
               style={{
@@ -375,7 +391,7 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
               className="dtp-hours"
               style={{
                 position: 'relative',
-                width: 72,
+                width: showCalendar ? 72 : '100%',
                 maxHeight: 240,
                 overflowY: 'auto',
                 overscrollBehavior: 'contain',
@@ -393,7 +409,11 @@ export default function DateTimePicker({ value, onChange, label, mode = 'datetim
                   data-slot={slot}
                   className={`dtp-hour${activeSlot === slot ? ' is-active' : ''}`}
                   onClick={() => pickSlot(slot)}
-                  style={hourStyle(activeSlot === slot)}
+                  style={{
+                    ...hourStyle(activeSlot === slot),
+                    width: '100%',
+                    flexShrink: 0,
+                  }}
                 >
                   {slotLabel(slot)}
                 </button>
