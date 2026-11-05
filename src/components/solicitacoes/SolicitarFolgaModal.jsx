@@ -9,6 +9,7 @@ import { expandShift } from '@/lib/shiftRepeat';
 import { isRecusado } from '@/lib/aceite';
 import { localDateKey } from '@/lib/ponto';
 import notificarAdminsSolicitacao from '@/lib/solicitacoes';
+import { aplicarFolgaAprovada } from '@/lib/folgas';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 const DAY_MS = 86400000;
@@ -184,7 +185,7 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
     setSalvando(true);
     setErro('');
     try {
-      const criada = await base44.entities.SolicitacaoFolga.create({
+      const registro = {
         usuario_id: usuario?.id || '',
         usuario_nome: usuario?.full_name || usuario?.email || '',
         shift_id: ocorrencia.shiftId,
@@ -192,39 +193,63 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
         modelo_nome: ocorrencia.modeloNome,
         ocorrencia_data: ocorrencia.dateKey,
         tipo,
-        entrada_solicitada: tipo === 'reducao' && entradaFinal ? new Date(entradaFinal).toISOString() : '',
-        saida_solicitada: tipo === 'reducao' && saidaFinal ? new Date(saidaFinal).toISOString() : '',
+        entrada_solicitada:
+          tipo === 'reducao' && entradaFinal ? new Date(entradaFinal).toISOString() : '',
+        saida_solicitada:
+          tipo === 'reducao' && saidaFinal ? new Date(saidaFinal).toISOString() : '',
         turno_inicio: new Date(ocorrencia.start).toISOString(),
         turno_fim: new Date(ocorrencia.end).toISOString(),
         antecedencia_horas: Number(antecedenciaHoras.toFixed(1)),
         fora_do_prazo: foraDoPrazo,
         motivo: motivo.trim(),
         status: 'pendente',
-      });
+      };
 
-      const turnoTexto = `${ocorrencia.modeloNome || 'turno'} em ${diaLongo(
-        ocorrencia.start
-      )}, ${horaDe(ocorrencia.start)}–${horaDe(ocorrencia.end)}`;
-      const pedido =
-        tipo === 'folga'
-          ? `folga no turno de ${turnoTexto}`
-          : `redução no turno de ${turnoTexto}, ficando ${horaDe(entradaFinal)}–${horaDe(saidaFinal)}`;
-      const prazo = foraDoPrazo
-        ? ` Pedido fora do prazo (faltavam ${Math.max(0, Math.floor(antecedenciaHoras))}h).`
-        : '';
-      const motivoTexto = motivo.trim() ? ` Motivo: ${motivo.trim()}` : '';
+      const criada = await base44.entities.SolicitacaoFolga.create(registro);
+      const registroCompleto = { ...registro, id: criada?.id || '' };
 
-      await notificarAdminsSolicitacao(base44, {
-        titulo: tipo === 'folga' ? 'Pedido de folga' : 'Pedido de redução',
-        mensagem: `${usuario?.full_name || usuario?.email || 'Chatter'} pediu ${pedido}.${prazo}${motivoTexto}`,
-        tipo: 'folga_pendente',
-        extra: {
-          folga_id: criada?.id || '',
-          shift_id: ocorrencia.shiftId,
-          ocorrencia_data: ocorrencia.dateKey,
-        },
-        solicitante: usuario,
-      });
+      // Fora do prazo continua passando pela revisão do admin.
+      // Dentro do prazo o pedido já entra aplicado na grade.
+      let aprovadaNaHora = false;
+      if (!foraDoPrazo) {
+        try {
+          await aplicarFolgaAprovada(base44, registroCompleto);
+          await base44.entities.SolicitacaoFolga.update(criada.id, {
+            status: 'aprovada',
+            revisado_por: 'automático',
+            revisado_em: new Date().toISOString(),
+          });
+          aprovadaNaHora = true;
+        } catch (error) {
+          console.warn('[Folga] aprovação automática indisponível', error);
+        }
+      }
+
+      if (!aprovadaNaHora) {
+        const turnoTexto = `${ocorrencia.modeloNome || 'turno'} em ${diaLongo(
+          ocorrencia.start
+        )}, ${horaDe(ocorrencia.start)}–${horaDe(ocorrencia.end)}`;
+        const pedido =
+          tipo === 'folga'
+            ? `folga no turno de ${turnoTexto}`
+            : `redução no turno de ${turnoTexto}, ficando ${horaDe(entradaFinal)}–${horaDe(saidaFinal)}`;
+        const prazo = foraDoPrazo
+          ? ` Pedido fora do prazo (faltavam ${Math.max(0, Math.floor(antecedenciaHoras))}h).`
+          : '';
+        const motivoTexto = motivo.trim() ? ` Motivo: ${motivo.trim()}` : '';
+
+        await notificarAdminsSolicitacao(base44, {
+          titulo: tipo === 'folga' ? 'Pedido de folga' : 'Pedido de redução',
+          mensagem: `${usuario?.full_name || usuario?.email || 'Chatter'} pediu ${pedido}.${prazo}${motivoTexto}`,
+          tipo: 'folga_pendente',
+          extra: {
+            folga_id: criada?.id || '',
+            shift_id: ocorrencia.shiftId,
+            ocorrencia_data: ocorrencia.dateKey,
+          },
+          solicitante: usuario,
+        });
+      }
 
       if (onSaved) await onSaved();
       onClose();
@@ -417,7 +442,7 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
 
           {!foraDoPrazo && ocorrencia && (
             <span style={{ fontSize: 10.5, color: 'var(--c2)', opacity: 0.85 }}>
-              Pedido dentro do prazo de {PRAZO_HORAS}h.
+              Dentro do prazo de {PRAZO_HORAS}h: aplicado automaticamente, sem revisão.
             </span>
           )}
 

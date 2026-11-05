@@ -4,8 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { CloseIcon, CoffeeIcon } from '@/components/icons';
 import { MODAL_CAIXA } from '@/lib/modalStyles';
 import { useAuth } from '@/lib/AuthContext';
-import { dayKey } from '@/lib/shiftRepeat';
-import { cancelarOcorrencia, avisarHorarioDisponivel } from '@/lib/cobertura';
+import { aplicarFolgaAprovada } from '@/lib/folgas';
 
 const BOTAO = {
   height: 30,
@@ -113,39 +112,8 @@ export default function FolgaPendenteModal({ notification, onClose, onSaved }) {
     setSalvando(decisao);
     setErro('');
     try {
-      const chave = pedido.ocorrencia_data || dayKey(pedido.turno_inicio);
-
-      if (decisao === 'aprovada' && pedido.tipo === 'folga') {
-        const turno = await cancelarOcorrencia(base44, pedido.shift_id, chave, {
-          motivo: 'folga aprovada',
-          solicitacao_id: pedido.id,
-          chatter_id: pedido.usuario_id,
-        });
-        await avisarHorarioDisponivel(base44, {
-          shift: turno,
-          dateKey: chave,
-          inicio: pedido.turno_inicio,
-          fim: pedido.turno_fim,
-          modeloId: pedido.modelo_id,
-          modeloNome: pedido.modelo_nome,
-          solicitacaoId: pedido.id,
-          excluir: [pedido.usuario_id],
-        });
-      }
-
-      if (decisao === 'aprovada' && pedido.tipo === 'reducao') {
-        await base44.entities.Shift.update(pedido.shift_id, {
-          ajustes: [
-            ...((await base44.entities.Shift.get(pedido.shift_id))?.ajustes || []),
-            {
-              data: chave,
-              inicio: pedido.entrada_solicitada,
-              fim: pedido.saida_solicitada,
-              solicitacao_id: pedido.id,
-              chatter_id: pedido.usuario_id,
-            },
-          ],
-        });
+      if (decisao === 'aprovada') {
+        await aplicarFolgaAprovada(base44, pedido);
       }
 
       await base44.entities.SolicitacaoFolga.update(pedido.id, {
