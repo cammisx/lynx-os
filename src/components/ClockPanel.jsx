@@ -194,14 +194,18 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
 
   const chatterNames = useMemo(() => buildChatterNames(chatters), [chatters]);
 
+  // Chatter só vê a agenda das modelos em que ele tem turno marcado.
+  const modelosComTurno = useMemo(
+    () => new Set(ownShifts.map((shift) => shift.modelo_id).filter(Boolean)),
+    [ownShifts]
+  );
+
   const visibleModels = useMemo(() => {
     const isAdmin = user?.role === 'admin';
     return models.filter(
-      (model) =>
-        !model.arquivada &&
-        (isAdmin || (model.chatters || []).some((chatter) => chatter.usuario_id === userId))
+      (model) => !model.arquivada && (isAdmin || modelosComTurno.has(model.id))
     );
-  }, [models, user, userId]);
+  }, [models, user, modelosComTurno]);
 
   const archivedModels = useMemo(() => models.filter((model) => model.arquivada), [models]);
 

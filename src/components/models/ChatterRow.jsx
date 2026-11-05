@@ -13,7 +13,15 @@ const idInputStyle = {
   outline: 'none',
 };
 
-export default function ChatterRow({ nome, checked, identificador, error, onToggle, onIdentificadorChange }) {
+export default function ChatterRow({
+  nome,
+  checked,
+  identificador,
+  error,
+  locked = false,
+  onToggle,
+  onIdentificadorChange,
+}) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <div
@@ -41,8 +49,9 @@ export default function ChatterRow({ nome, checked, identificador, error, onTogg
           <input
             type="checkbox"
             checked={checked}
+            disabled={locked}
             onChange={onToggle}
-            style={{ accentColor: 'var(--c1)', cursor: 'pointer' }}
+            style={{ accentColor: 'var(--c1)', cursor: locked ? 'default' : 'pointer' }}
           />
           <span
             style={{
@@ -54,6 +63,21 @@ export default function ChatterRow({ nome, checked, identificador, error, onTogg
           >
             {nome}
           </span>
+          {locked && (
+            <span
+              style={{
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: 'var(--c1)',
+                opacity: 0.7,
+                flexShrink: 0,
+              }}
+            >
+              admin
+            </span>
+          )}
         </label>
 
         {checked && (

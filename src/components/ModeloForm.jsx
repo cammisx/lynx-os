@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import ChatterRow from '@/components/models/ChatterRow';
 
@@ -26,9 +26,32 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
       (model?.chatters || []).map((chatter) => [chatter.usuario_id, chatter.identificador || ''])
     )
   );
+
+  // Admin é chatter de todas as modelos: entra marcado e não pode ser desmarcado.
+  const adminIds = useMemo(
+    () => chatters.filter((chatter) => chatter.isAdmin).map((chatter) => chatter.usuario_id),
+    [chatters]
+  );
+
+  useEffect(() => {
+    if (model || adminIds.length === 0) return;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      adminIds.forEach((id) => {
+        if (!next.has(id)) {
+          next.add(id);
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [adminIds, model]);
   const [errors, setErrors] = useState({});
+  const [nomeError, setNomeError] = useState('');
 
   const toggle = (id) => {
+    if (adminIds.includes(id)) return;
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -44,8 +67,13 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
   };
 
   const save = async () => {
+    if (saving) return;
     const cleanName = nome.trim();
-    if (!cleanName || saving) return;
+    if (!cleanName) {
+      setNomeError('Informe o nome da modelo.');
+      return;
+    }
+    setNomeError('');
 
     const chosen = chatters.filter((chatter) => selected.has(chatter.usuario_id));
     const nextErrors = {};
@@ -97,6 +125,7 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
           onChange={(event) => setNome(event.target.value)}
           placeholder="Ex.: Modelo Aurora"
         />
+        {nomeError && <span style={{ fontSize: 10, color: '#ff6b6b' }}>{nomeError}</span>}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -122,7 +151,8 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
             <ChatterRow
               key={chatter.usuario_id}
               nome={chatter.nome}
-              checked={selected.has(chatter.usuario_id)}
+              checked={chatter.isAdmin || selected.has(chatter.usuario_id)}
+              locked={chatter.isAdmin}
               identificador={ids[chatter.usuario_id] || ''}
               error={errors[chatter.usuario_id]}
               onToggle={() => toggle(chatter.usuario_id)}
