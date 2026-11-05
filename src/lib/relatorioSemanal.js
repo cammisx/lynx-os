@@ -409,11 +409,7 @@ export const gerarRelatorioSemanal = async ({ modelo, chatter, inicio, vendas })
     tamanho: 7,
     cor: PAPEL.suave,
   });
-  texto(doc, 'sem a parte da agência neste documento', MARGEM + 6, y + 29.5, {
-    tamanho: 6.4,
-    cor: PAPEL.fraco,
-  });
-
+ 
   // divisória
   doc.setDrawColor(...mistura([70, 30, 55], [255, 255, 255], 0.14));
   doc.setLineWidth(0.15);
