@@ -25,9 +25,21 @@ const clamp = (x, y) => ({
 export default function WidgetIcon({ label, position, onOpen, onCommit, pulsando = false }) {
   const [pos, setPos] = useState(() => clamp(position.icone_x, position.icone_y));
   const [arrastando, setArrastando] = useState(false);
+  const [selecionado, setSelecionado] = useState(false);
+  const containerRef = useRef(null);
   const drag = useRef(null);
   const posRef = useRef(pos);
   posRef.current = pos;
+
+  useEffect(() => {
+    if (!selecionado) return undefined;
+    const handleDown = (event) => {
+      if (containerRef.current?.contains(event.target)) return;
+      setSelecionado(false);
+    };
+    document.addEventListener('mousedown', handleDown);
+    return () => document.removeEventListener('mousedown', handleDown);
+  }, [selecionado]);
 
   useEffect(() => {
     if (drag.current) return;
@@ -69,10 +81,15 @@ export default function WidgetIcon({ label, position, onOpen, onCommit, pulsando
 
   return (
     <div
+      ref={containerRef}
       role="button"
       tabIndex={0}
       aria-label={label}
       onMouseDown={startDrag}
+      onClick={() => setSelecionado(true)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') setSelecionado(true);
+      }}
       onDoubleClick={() => {
         if (drag.current?.moveu) return;
         onOpen();
@@ -88,6 +105,9 @@ export default function WidgetIcon({ label, position, onOpen, onCommit, pulsando
         alignItems: 'center',
         justifyContent: 'center',
         gap: 0,
+        borderRadius: 14,
+        background: selecionado ? 'color-mix(in srgb, var(--c1) 20%, transparent)' : 'transparent',
+        transition: 'background-color 0.14s ease',
         cursor: arrastando ? 'grabbing' : 'default',
         userSelect: 'none',
         zIndex: 1,
