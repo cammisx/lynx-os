@@ -21,6 +21,12 @@
     "icone_y": {
       "type": "number"
     },
+    "painel_x": {
+      "type": "number"
+    },
+    "painel_y": {
+      "type": "number"
+    },
     "aberto": {
       "type": "boolean",
       "default": false

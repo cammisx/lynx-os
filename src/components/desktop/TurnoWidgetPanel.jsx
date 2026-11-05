@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import PunchButton from '@/components/shifts/PunchButton';
 import { CloseIcon, LogInIcon, PauseIcon, PlayIcon, StopIcon } from '@/components/icons';
@@ -8,6 +9,7 @@ import { TASKBAR_SAFE, WIDGET_TILE } from './widgetLayout';
 const WIDTH = 340;
 const HEIGHT = 236;
 const TASKBAR = TASKBAR_SAFE;
+const MARGIN = 8;
 
 const dayLabel = (value) => {
   const date = new Date(value);
@@ -26,17 +28,19 @@ const dayLabel = (value) => {
   return `${mesmoDia ? 'hoje' : dia} às ${hora}`;
 };
 
-/** Posição do painel: nasce ao lado do ícone e nunca sai da tela. */
+const limitar = (left, top) => ({
+  left: Math.min(Math.max(MARGIN, left), Math.max(MARGIN, window.innerWidth - WIDTH - MARGIN)),
+  top: Math.min(
+    Math.max(MARGIN, top),
+    Math.max(MARGIN, window.innerHeight - TASKBAR - Math.min(HEIGHT, 120))
+  ),
+});
+
+/** Posição de estreia do painel: ao lado do ícone, sem sair da tela. */
 export const posicaoPainel = (icone) => {
-  const largura = window.innerWidth;
-  const altura = window.innerHeight;
-  const abreParaEsquerda = icone.icone_x + WIDGET_TILE + WIDTH + 12 > largura;
-  const x = abreParaEsquerda ? icone.icone_x - WIDTH - 12 : icone.icone_x + WIDGET_TILE + 12;
-  const y = icone.icone_y - 8;
-  return {
-    left: Math.min(Math.max(8, x), Math.max(8, largura - WIDTH - 8)),
-    top: Math.min(Math.max(8, y), Math.max(8, altura - TASKBAR - HEIGHT)),
-  };
+  const abreParaEsquerda = icone.icone_x + WIDGET_TILE + WIDTH + 12 > window.innerWidth;
+  const left = abreParaEsquerda ? icone.icone_x - WIDTH - 12 : icone.icone_x + WIDGET_TILE + 12;
+  return limitar(left, icone.icone_y - 8);
 };
 
 export default function TurnoWidgetPanel({
@@ -48,10 +52,51 @@ export default function TurnoWidgetPanel({
   justificativaPendente,
   onOpenJustificativa,
   onClose,
+  onMove,
 }) {
-  const pos = posicaoPainel(widget);
+  const [pos, setPos] = useState(() => {
+    if (typeof widget.painel_x === 'number' && typeof widget.painel_y === 'number') {
+      return limitar(widget.painel_x, widget.painel_y);
+    }
+    return posicaoPainel(widget);
+  });
+  const [arrastando, setArrastando] = useState(false);
+  const drag = useRef(null);
+  const posRef = useRef(pos);
+  posRef.current = pos;
+
   const busy = !!saving;
   const agora = Date.now();
+
+  const startDrag = (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    drag.current = {
+      dx: event.clientX - posRef.current.left,
+      dy: event.clientY - posRef.current.top,
+      moveu: false,
+    };
+    setArrastando(true);
+
+    const handleMove = (moveEvent) => {
+      const data = drag.current;
+      if (!data) return;
+      data.moveu = true;
+      setPos(limitar(moveEvent.clientX - data.dx, moveEvent.clientY - data.dy));
+    };
+
+    const handleUp = () => {
+      const data = drag.current;
+      drag.current = null;
+      setArrastando(false);
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+      if (data?.moveu) onMove({ painel_x: posRef.current.left, painel_y: posRef.current.top });
+    };
+
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+  };
 
   let titulo = 'Turno';
   let linha = 'Nenhum turno agendado.';
@@ -140,11 +185,11 @@ export default function TurnoWidgetPanel({
         display: 'flex',
         flexDirection: 'column',
         borderRadius: 14,
-        background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
-        backdropFilter: 'blur(26px) saturate(1.35)',
-        WebkitBackdropFilter: 'blur(26px) saturate(1.35)',
-        border: '1px solid color-mix(in srgb, white 14%, color-mix(in srgb, var(--c1) 22%, transparent))',
-        boxShadow: '0 18px 48px rgba(0,0,0,0.55)',
+        background: 'color-mix(in srgb, var(--c8) 32%, transparent)',
+        backdropFilter: 'blur(28px) saturate(1.4)',
+        WebkitBackdropFilter: 'blur(28px) saturate(1.4)',
+        border: '1px solid color-mix(in srgb, white 12%, transparent)',
+        boxShadow: '0 18px 48px rgba(0,0,0,0.45)',
         zIndex: 900,
         overflow: 'hidden',
         fontFamily: 'var(--font-main)',
@@ -152,6 +197,7 @@ export default function TurnoWidgetPanel({
       }}
     >
       <div
+        onMouseDown={startDrag}
         style={{
           height: 34,
           flexShrink: 0,
@@ -160,7 +206,9 @@ export default function TurnoWidgetPanel({
           justifyContent: 'space-between',
           gap: 8,
           padding: '0 6px 0 10px',
-          borderBottom: '1px solid color-mix(in srgb, var(--c2) 12%, transparent)',
+          borderBottom: '1px solid color-mix(in srgb, white 10%, transparent)',
+          cursor: arrastando ? 'grabbing' : 'grab',
+          userSelect: 'none',
         }}
       >
         <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
@@ -181,6 +229,7 @@ export default function TurnoWidgetPanel({
         <button
           type="button"
           aria-label="Fechar widget"
+          onMouseDown={(event) => event.stopPropagation()}
           onClick={onClose}
           className="clk-nav-btn"
           style={{

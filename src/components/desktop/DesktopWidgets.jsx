@@ -50,6 +50,7 @@ export default function DesktopWidgets() {
           justificativaPendente={justificativaPendente}
           onOpenJustificativa={(notificacao) => setJustificativa(notificacao)}
           onClose={() => patch(turno.id, { aberto: false })}
+          onMove={(posicao) => patch(turno.id, posicao)}
         />
       )}
 
