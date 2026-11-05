@@ -43,6 +43,17 @@ const elemento = (som) => {
   if (!cache.has(som.id)) {
     const audio = new Audio(som.arquivo);
     audio.preload = 'auto';
+    /* Nunca em loop: um áudio que se repete sozinho vira barulho sem fim. */
+    audio.loop = false;
+    audio.addEventListener('ended', () => {
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+      } catch (erro) {
+        // elemento ainda sem metadata
+      }
+      if (tocando === audio) tocando = null;
+    });
     cache.set(som.id, audio);
   }
   return cache.get(som.id);
@@ -63,12 +74,31 @@ const parar = (audio) => {
   }
 };
 
+/* Freio de segurança: nenhum som toca mais de N vezes por minuto, aconteça o
+   que acontecer na origem do aviso. */
+const toques = [];
+const LIMITE_TOQUES = 6;
+const JANELA_TOQUES = 60000;
+
 /** Toca o som escolhido. Volume em 0..1. */
 export const tocarSom = (id, volume = 0.6) => {
   const som = somPorId(id);
   if (!som) return;
   const audio = elemento(som);
   if (!audio) return;
+
+  /* O mesmo som ainda em reprodução não é reiniciado: empilhar play() no
+     mesmo elemento é o que fazia o ZAP parecer que repetia sem parar. */
+  const tocandoAgora = !audio.paused && !audio.ended && audio.currentTime > 0.05;
+  if (tocando === audio && tocandoAgora) return;
+
+  const agoraMs = Date.now();
+  while (toques.length && agoraMs - toques[0] > JANELA_TOQUES) toques.shift();
+  if (toques.length >= LIMITE_TOQUES) {
+    console.warn('[Som] muitos avisos seguidos, segurando o som por ora');
+    return;
+  }
+  toques.push(agoraMs);
 
   if (tocando && tocando !== audio) parar(tocando);
   tocando = audio;
@@ -157,7 +187,7 @@ export const lerFocoDoChat = () => focoDoChat;
 const vistas = new Set();
 let vistasIniciadas = false;
 let ultimoToqueChat = 0;
-const INTERVALO_MINIMO_CHAT = 1200;
+const INTERVALO_MINIMO_CHAT = 2400;
 
 /**
  * Compara a lista de mensagens com o que já foi visto e devolve a mensagem
