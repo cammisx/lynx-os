@@ -11,12 +11,14 @@ import { ChatProvider } from '@/components/chat/ChatProvider';
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import useFecharTurnosEsquecidos from '@/hooks/useFecharTurnosEsquecidos';
 import useAvisarTurnosPendentes from '@/hooks/useAvisarTurnosPendentes';
+import useVersaoPublicada from '@/hooks/useVersaoPublicada';
 
 export default function Dashboard() {
   const [openApp, setOpenApp] = useState(null);
 
   useFecharTurnosEsquecidos();
   useAvisarTurnosPendentes();
+  useVersaoPublicada();
 
   useEffect(() => {
     const root = document.documentElement;
