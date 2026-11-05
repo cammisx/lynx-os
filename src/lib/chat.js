@@ -126,12 +126,19 @@ export const previewDaMensagem = (mensagem) => {
   return texto.length > 60 ? `${texto.slice(0, 60)}…` : texto;
 };
 
-export const horaDaMensagem = (iso) =>
-  new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
+export const horaDaMensagem = (iso) => {
+  if (!iso) return '';
+  const texto = String(iso).trim();
+  const comFuso = /Z$|[+-]\d{2}:\d{2}$/.test(texto);
+  const data = new Date(comFuso ? texto : `${texto.replace(' ', 'T')}Z`);
+  if (Number.isNaN(data.getTime())) return '';
+  return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
+};
 
 /** "Hoje", "Ontem" ou "05/11" para separar os blocos de mensagens por dia. */
 export const diaDaMensagem = (iso) => {
-  const data = new Date(iso);
+  const comFuso = /Z$|[+-]\d{2}:\d{2}$/.test(String(iso).trim());
+  const data = new Date(comFuso ? iso : `${String(iso).trim().replace(' ', 'T')}Z`);
   const hoje = new Date();
   const zerar = (valor) => new Date(valor.getFullYear(), valor.getMonth(), valor.getDate()).getTime();
   const diferenca = Math.round((zerar(hoje) - zerar(data)) / 86400000);
@@ -143,7 +150,8 @@ export const diaDaMensagem = (iso) => {
 /** Quando foi a última mensagem, no formato curto da lista de canais. */
 export const quandoFoi = (iso) => {
   if (!iso) return '';
-  const data = new Date(iso);
+  const comFuso = /Z$|[+-]\d{2}:\d{2}$/.test(String(iso).trim());
+  const data = new Date(comFuso ? iso : `${String(iso).trim().replace(' ', 'T')}Z`);
   const agora = new Date();
   const mesmoDia =
     data.getDate() === agora.getDate() &&
