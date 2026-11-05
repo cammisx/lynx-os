@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { FireIcon } from '@/components/icons';
 import { SEQUENCIA_COM_FOGUINHO } from '@/lib/cutucadas';
+import { paraData } from '@/lib/chat';
 
+/* O banco manda created_date em UTC, sem timezone. Ler direto com new Date()
+   jogava o horário 3h para frente em São Paulo. */
 const timeLabel = (value) => {
-  const date = new Date(value);
+  const date = paraData(value);
   if (Number.isNaN(date.getTime())) return '';
   return `${date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} · ${date.toLocaleTimeString(
     'pt-BR',
