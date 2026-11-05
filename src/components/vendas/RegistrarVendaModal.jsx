@@ -13,8 +13,8 @@ const asList = (result) => (Array.isArray(result) ? result : result?.items || []
 const AREA_TEXTO = {
   width: '100%',
   boxSizing: 'border-box',
-  minHeight: 92,
-  resize: 'vertical',
+  height: 116,
+  resize: 'none',
   background: 'color-mix(in srgb, var(--c8) 60%, transparent)',
   border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
   borderRadius: 8,
@@ -287,6 +287,7 @@ export default function RegistrarVendaModal({ usuario, modeloPadraoId = '', onCl
               value={texto}
               onChange={(event) => setTexto(event.target.value)}
               placeholder={'08/10/2026, 22:39\nguti3133\nR$ 10,00\nR$ 8,00\nPix\nMimo - Chat'}
+              className="glass-scroll"
               style={AREA_TEXTO}
             />
             <span style={{ fontSize: 10, color: 'var(--c2)', opacity: 0.8 }}>
