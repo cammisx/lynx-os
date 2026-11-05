@@ -6,6 +6,8 @@
  * A conversa com o banco fica no hook useChat.
  */
 
+import { diaCurtoLocal, horaLocal, paraData } from '@/lib/datas';
+
 export const CANAL_GERAL = 'geral';
 export const CANAL_MODELO = 'modelo';
 export const CANAL_PRIVADO = 'privado';
@@ -126,24 +128,23 @@ export const previewDaMensagem = (mensagem) => {
   return texto.length > 60 ? `${texto.slice(0, 60)}…` : texto;
 };
 
-export const horaDaMensagem = (iso) =>
-  new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
+export const horaDaMensagem = (iso) => horaLocal(iso);
 
 /** "Hoje", "Ontem" ou "05/11" para separar os blocos de mensagens por dia. */
 export const diaDaMensagem = (iso) => {
-  const data = new Date(iso);
+  const data = paraData(iso);
   const hoje = new Date();
   const zerar = (valor) => new Date(valor.getFullYear(), valor.getMonth(), valor.getDate()).getTime();
   const diferenca = Math.round((zerar(hoje) - zerar(data)) / 86400000);
   if (diferenca === 0) return 'Hoje';
   if (diferenca === 1) return 'Ontem';
-  return data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  return diaCurtoLocal(iso);
 };
 
 /** Quando foi a última mensagem, no formato curto da lista de canais. */
 export const quandoFoi = (iso) => {
   if (!iso) return '';
-  const data = new Date(iso);
+  const data = paraData(iso);
   const agora = new Date();
   const mesmoDia =
     data.getDate() === agora.getDate() &&
@@ -158,7 +159,7 @@ export const quandoFoi = (iso) => {
   ) {
     return 'ontem';
   }
-  return data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  return diaCurtoLocal(iso);
 };
 
 /** Ordem da lista: conversas com novidade primeiro, depois as mais recentes. */
