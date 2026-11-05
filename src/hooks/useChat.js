@@ -652,6 +652,10 @@ export default function useChat() {
         const dados = evento?.data;
         if (!dentroDoMeuChat(dados)) return;
         if (evento.type === 'create') {
+          /* Chegou agora, em tempo real: é o caso em que o som deve tocar. */
+          if (dados.autor_id && dados.autor_id !== euId && !dados.apagada) {
+            if (lerFocoDoChat() !== dados.canal_id) tocarSomChat();
+          }
           setMensagens((anterior) =>
             anterior.some((mensagem) => mensagem.id === dados.id)
               ? anterior.map((mensagem) => (mensagem.id === dados.id ? dados : mensagem))
@@ -729,11 +733,13 @@ export default function useChat() {
     marcarLido(canalAtivoId);
   }, [canalAtivoId, mensagensPorCanal, euId, marcarLido]);
 
-  /* Som de mensagem nova: toca quando a mensagem é de outra pessoa e ela não
-     está com aquele canal aberto na tela. */
+  /* Som de mensagem nova: toca quando a mensagem é de outra pessoa, chegou
+     depois de a página abrir e ela não está com aquele canal aberto na tela.
+     Histórico e não lidas antigas nunca soam. */
+  const aberturaRef = useRef(Date.now());
   useEffect(() => {
     if (!euId) return;
-    const nova = avaliarMensagensChat(mensagens, euId);
+    const nova = avaliarMensagensChat(mensagens, euId, aberturaRef.current);
     if (!nova) return;
     if (lerFocoDoChat() === nova.canal_id) return;
     tocarSomChat();

@@ -139,16 +139,27 @@ let ultimoToque = 0;
 const INTERVALO_MINIMO = 2500;
 
 /** Marca os ids como conhecidos e diz se algum deles é novidade de verdade. */
-export const avaliarNotificacoesNovas = (ids = []) => {
-  const lista = ids.filter(Boolean);
-  const novos = lista.filter((id) => !avisadas.has(id));
-  lista.forEach((id) => avisadas.add(id));
+/**
+ * Só avisa de notificação que nasceu depois de a página abrir. Antes disso o
+ * sino voltava a soar a cada recarregamento por causa das pendências antigas.
+ */
+export const avaliarNotificacoesNovas = (itens = [], desde = 0) => {
+  const lista = (itens || [])
+    .map((item) => (typeof item === 'string' ? { id: item } : item))
+    .filter((item) => item?.id);
+  const novos = lista.filter((item) => !avisadas.has(item.id));
+  lista.forEach((item) => avisadas.add(item.id));
 
   if (!avisosIniciados) {
     avisosIniciados = true;
     return false;
   }
-  return novos.length > 0;
+
+  return novos.some((item) => {
+    if (!item.created_date) return true;
+    const quando = new Date(item.created_date).getTime();
+    return Number.isFinite(quando) && quando > desde;
+  });
 };
 
 /** Toca o som escolhido pelo usuário, respeitando o desligar e o volume. */
@@ -191,18 +202,35 @@ const INTERVALO_MINIMO_CHAT = 2400;
 
 /**
  * Compara a lista de mensagens com o que já foi visto e devolve a mensagem
- * mais recente de outra pessoa, ou null. A primeira chamada só registra o
- * histórico, para não tocar som ao abrir o app.
+ * mais recente que chegou agora, de outra pessoa, ou null.
+ *
+ * `desde` é o instante em que a página abriu: o histórico carregado depois
+ * disso é antigo e não pode soar. Sem esse corte, cada recarregamento tocava o
+ * som para as mensagens que já estavam lá.
  */
-export const avaliarMensagensChat = (mensagens = [], euId) => {
+export const avaliarMensagensChat = (mensagens = [], euId, desde = 0) => {
   const lista = (mensagens || []).filter((mensagem) => mensagem?.id);
   const novas = lista.filter((mensagem) => !vistas.has(mensagem.id));
   lista.forEach((mensagem) => vistas.add(mensagem.id));
+
+  const chegouAgora = (mensagem) => {
+    if (!mensagem.created_date) return false;
+    const quando = new Date(mensagem.created_date).getTime();
+    return Number.isFinite(quando) && quando > desde;
+  };
+
   if (!vistasIniciadas) {
     vistasIniciadas = true;
     return null;
   }
-  const deOutros = novas.filter((mensagem) => mensagem.autor_id && mensagem.autor_id !== euId);
+
+  const deOutros = novas.filter(
+    (mensagem) =>
+      mensagem.autor_id &&
+      mensagem.autor_id !== euId &&
+      !mensagem.apagada &&
+      chegouAgora(mensagem)
+  );
   return deOutros.length ? deOutros[deOutros.length - 1] : null;
 };
 

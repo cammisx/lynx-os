@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { isNaoLida } from '@/lib/notificacoes';
 import { isSolicitacaoSemDono } from '@/lib/solicitacoes';
@@ -11,6 +11,9 @@ const asList = (result) => (Array.isArray(result) ? result : result?.items || []
 
 export default function useNotifications(userId, isAdmin = false) {
   const [items, setItems] = useState([]);
+
+  /* Instante em que a página abriu: nada criado antes disso deve soar. */
+  const aberturaRef = useRef(Date.now());
 
   const load = useCallback(async () => {
     if (!userId) return;
@@ -37,8 +40,11 @@ export default function useNotifications(userId, isAdmin = false) {
       }
 
       // Avisa com o som escolhido quando aparece notificação nova não lida.
-      const naoLidasAgora = lista.filter(isNaoLida).map((item) => item.id);
-      if (avaliarNotificacoesNovas(naoLidasAgora)) tocarNotificacao();
+      // Pendências que já estavam abertas quando a página carregou não soam.
+      const naoLidasAgora = lista
+        .filter(isNaoLida)
+        .map((item) => ({ id: item.id, created_date: item.created_date }));
+      if (avaliarNotificacoesNovas(naoLidasAgora, aberturaRef.current)) tocarNotificacao();
 
       setItems(lista);
     } catch (error) {
