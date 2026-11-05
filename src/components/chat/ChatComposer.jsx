@@ -8,6 +8,7 @@ import {
   SendIcon,
 } from '@/components/chat/chatIcons';
 import EmojiPicker from '@/components/chat/EmojiPicker';
+import GifPicker from '@/components/chat/GifPicker';
 import GravadorAudio from '@/components/chat/GravadorAudio';
 import { inserirEmoji } from '@/lib/emojis';
 import { SmileIcon } from '@/components/chat/chatIcons';
@@ -31,6 +32,7 @@ export default function ChatComposer({
   editando,
   onEnviar,
   onEnviarAnexo,
+  onEnviarGif,
   onCancelarEdicao,
   ocupado,
   falha,
@@ -38,6 +40,7 @@ export default function ChatComposer({
 }) {
   const [gravando, setGravando] = useState(false);
   const [emojisAbertos, setEmojisAbertos] = useState(false);
+  const [gifsAbertos, setGifsAbertos] = useState(false);
   const areaRef = useRef(null);
   const arquivoRef = useRef(null);
 
@@ -200,6 +203,16 @@ export default function ChatComposer({
           <EmojiPicker onEscolher={escolherEmoji} onFechar={() => setEmojisAbertos(false)} />
         )}
 
+        {gifsAbertos && !gravando && (
+          <GifPicker
+            onEscolher={(gif) => {
+              setGifsAbertos(false);
+              onEnviarGif?.(gif);
+            }}
+            onFechar={() => setGifsAbertos(false)}
+          />
+        )}
+
         <input
           ref={arquivoRef}
           type="file"
@@ -337,6 +350,40 @@ export default function ChatComposer({
 
             <button
               type="button"
+              onClick={() => {
+                setEmojisAbertos(false);
+                setGifsAbertos((aberto) => !aberto);
+              }}
+              disabled={Boolean(editando)}
+              aria-label="Enviar GIF"
+              title="Enviar GIF"
+              className="chat-gif"
+              style={{
+                height: 22,
+                minWidth: 30,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 7,
+                border: '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
+                background: gifsAbertos
+                  ? 'color-mix(in srgb, var(--c1) 18%, transparent)'
+                  : 'color-mix(in srgb, var(--c8) 55%, transparent)',
+                color: gifsAbertos ? 'var(--c1)' : editando ? 'var(--c12)' : 'var(--c2)',
+                cursor: editando ? 'default' : 'pointer',
+                fontSize: 8.5,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                fontFamily: 'var(--font-main)',
+                padding: '0 5px',
+              }}
+            >
+              GIF
+            </button>
+
+            <button
+              type="button"
               onClick={() => setEmojisAbertos((aberto) => !aberto)}
               disabled={Boolean(editando)}
               aria-label="Emojis"
@@ -365,6 +412,7 @@ export default function ChatComposer({
               type="button"
               onClick={() => {
                 setEmojisAbertos(false);
+                setGifsAbertos(false);
                 setGravando(true);
               }}
               disabled={Boolean(editando)}

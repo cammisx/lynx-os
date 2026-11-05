@@ -17,6 +17,7 @@ export default function StartMenu({ open, onClose, onOpenApp, onOpenConfig }) {
   const { user, logout } = useAuth();
   const perfil = usePerfil(user);
   const [mounted, setMounted] = useState(open);
+  const [confirmarSair, setConfirmarSair] = useState(false);
   const [closing, setClosing] = useState(false);
 
   useEffect(() => {
@@ -218,7 +219,7 @@ export default function StartMenu({ open, onClose, onOpenApp, onOpenConfig }) {
           <button
             type="button"
             aria-label="Sair"
-            onClick={() => logout()}
+            onClick={() => setConfirmarSair(true)}
             style={powerStyle}
             className="start-power"
           >
@@ -239,6 +240,134 @@ export default function StartMenu({ open, onClose, onOpenApp, onOpenConfig }) {
           </button>
         </div>
       </div>
+
+      {confirmarSair && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+            background: 'rgba(10,10,16,0.38)',
+            backdropFilter: 'blur(3px)',
+            WebkitBackdropFilter: 'blur(3px)',
+          }}
+          onClick={() => setConfirmarSair(false)}
+        >
+          <div
+            onClick={(evento) => evento.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sair-titulo"
+            style={{
+              width: 380,
+              maxHeight: '94vh',
+              display: 'flex',
+              flexDirection: 'column',
+              background: 'color-mix(in srgb, var(--c8) 72%, transparent)',
+              backdropFilter: 'blur(22px)',
+              WebkitBackdropFilter: 'blur(22px)',
+              border: '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
+              borderRadius: 14,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.55)',
+              overflow: 'hidden',
+              fontFamily: 'var(--font-main)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                borderBottom: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
+              }}
+            >
+              <span
+                id="sair-titulo"
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: 14,
+                  color: 'var(--c1)',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                Sair da conta
+              </span>
+              <button
+                type="button"
+                onClick={() => setConfirmarSair(false)}
+                aria-label="Fechar"
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 6,
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--c2)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 14,
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: '16px 16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <p style={{ margin: 0, fontSize: 11.5, color: 'var(--c2)', lineHeight: 1.6 }}>
+                Você vai sair do Lyxn OS e voltar para a tela de entrada. Quer mesmo encerrar a
+                sessão?
+              </p>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <button
+                  type="button"
+                  className="md-btn"
+                  onClick={() => setConfirmarSair(false)}
+                  style={{
+                    height: 30,
+                    padding: '0 14px',
+                    borderRadius: 8,
+                    border: '1px solid color-mix(in srgb, var(--c2) 22%, transparent)',
+                    color: 'var(--c2)',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-main)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="md-primary"
+                  onClick={() => {
+                    setConfirmarSair(false);
+                    logout();
+                  }}
+                  style={{
+                    height: 30,
+                    padding: '0 14px',
+                    borderRadius: 8,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-main)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Sair
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>,
     document.body
   );

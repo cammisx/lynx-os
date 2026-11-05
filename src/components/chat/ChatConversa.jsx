@@ -232,6 +232,26 @@ export default function ChatConversa({ onVoltar }) {
     }
   };
 
+  /** GIF: a mensagem guarda o endereço do Giphy, sem upload de arquivo. */
+  const enviarGif = async (gif) => {
+    if (!gif?.url || !canalAtivo?.id) return;
+    setFalha('');
+    setOcupado(true);
+    try {
+      await enviar(canalAtivo.id, '', {
+        url: gif.url,
+        nome: gif.titulo ? `${gif.titulo}.gif` : 'giphy.gif',
+        tipo: 'image/gif',
+        tamanho: 0,
+        imagem: true,
+      });
+    } catch (erro) {
+      setFalha('Não consegui enviar o GIF. Tenta de novo.');
+    } finally {
+      setOcupado(false);
+    }
+  };
+
   const voltar = () => {
     if (onVoltar) onVoltar();
     else fecharCanal();
@@ -692,6 +712,7 @@ export default function ChatConversa({ onVoltar }) {
         editando={editando}
         onEnviar={submeter}
         onEnviarAnexo={enviarAudio}
+        onEnviarGif={enviarGif}
         onCancelarEdicao={cancelarEdicao}
         ocupado={ocupado || enviando}
         falha={falha}
