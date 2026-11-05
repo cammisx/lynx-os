@@ -47,6 +47,8 @@ export default function Taskbar({ onOpenApp }) {
     }
 
     if (notification.tipo === 'novo_shift') {
+      // Já respondida: abre nada, só marca como lida.
+      if (notification.status === 'resolvida') return;
       setConfirmacao(notification);
       return;
     }

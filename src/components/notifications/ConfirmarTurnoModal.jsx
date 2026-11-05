@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { emitShiftsChanged } from '@/lib/desktopEvents';
 import { daysLabel, sortDays } from '@/lib/shiftRepeat';
-import { nextOccurrence } from '@/lib/aceite';
+import { ACEITE_LABEL, aceiteOf, nextOccurrence } from '@/lib/aceite';
 import { buildTurnoRecusadoMessage, notificarAdmins } from '@/lib/notificacoes';
 
 const pad = (value) => String(value).padStart(2, '0');
@@ -138,6 +138,8 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
 
   const proxima = shift ? nextOccurrence(shift) : null;
   const dias = sortDays(shift?.dias_semana);
+  const aceite = aceiteOf(shift);
+  const pendente = aceite === 'pendente';
 
   return createPortal(
     <div
@@ -170,10 +172,12 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--c3)' }}>
-            Confirmar turno
+            {pendente ? 'Confirmar turno' : 'Turno já respondido'}
           </span>
           <span style={hintStyle}>
-            Você precisa aceitar ou recusar este turno para o admin saber que está de acordo.
+            {pendente
+              ? 'Você precisa aceitar ou recusar este turno para o admin saber que está de acordo.'
+              : 'Este turno já foi respondido. Só o admin pode alterar a escala agora.'}
           </span>
         </div>
 
@@ -188,6 +192,15 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
         {shift && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <InfoRow label="Modelo" value={shift.modelo_nome || '—'} />
+            {!pendente && (
+              <InfoRow
+                label="Situação"
+                value={`${ACEITE_LABEL[aceite]}${shift.aceite_em ? ` em ${momentLabel(shift.aceite_em)}` : ''}`}
+              />
+            )}
+            {!pendente && shift.motivo_recusa && (
+              <InfoRow label="Motivo" value={shift.motivo_recusa} />
+            )}
             <InfoRow
               label="Dias"
               value={dias.length ? daysLabel(dias) : `Único em ${momentLabel(shift.inicio)}`}
@@ -260,7 +273,23 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
             </button>
           )}
 
-          {shift && !recusando && (
+          {shift && !pendente && (
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                ...baseButton,
+                background: 'color-mix(in srgb, var(--c1) 20%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--c1) 45%, transparent)',
+                color: 'var(--c1)',
+                fontWeight: 700,
+              }}
+            >
+              Fechar
+            </button>
+          )}
+
+          {shift && pendente && !recusando && (
             <>
               <button
                 type="button"
@@ -294,7 +323,7 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
             </>
           )}
 
-          {shift && recusando && (
+          {shift && pendente && recusando && (
             <>
               <button
                 type="button"
