@@ -7,6 +7,7 @@ import { MODELS_CHANGED, SHIFTS_CHANGED } from '@/lib/desktopEvents';
 import { expandShift } from '@/lib/shiftRepeat';
 import { isRecusado } from '@/lib/aceite';
 import { buildPontoIndex, clockLabel, localDateKey, occurrenceKey } from '@/lib/ponto';
+import { notificarPonto } from '@/lib/notificacoes';
 
 const DAY_MS = 86400000;
 const REFRESH_MS = 60000;
@@ -245,6 +246,24 @@ export default function useTurnoPonto() {
       timestamp,
     });
 
+  /* Avisa os admins de cada entrada e saída, só para leitura no sino. */
+  const avisarPonto = (occurrence, tipo, timestamp) => {
+    if (!occurrence) return;
+    notificarPonto(base44, {
+      tipo,
+      usuario: {
+        id: userId,
+        full_name: chatterNames[userId] || user?.full_name || '',
+        email: user?.email || '',
+      },
+      modeloNome: occurrence.modeloNome || '',
+      modeloId: occurrence.modeloId || '',
+      shiftId: occurrence.shiftId || '',
+      ocorrenciaData: occurrence.dateKey || '',
+      timestamp,
+    }).catch((erro) => console.warn('[Ponto] aviso para os admins falhou', erro));
+  };
+
   const closeOccurrence = async (occurrence) => {
     const timestamp = new Date().toISOString();
     if (occurrence.pausaAbertaAt) await createRegistro(occurrence, 'retorno', timestamp);
@@ -282,6 +301,7 @@ export default function useTurnoPonto() {
           modeloId: ponto.modeloId,
           shiftId: ponto.shiftId,
         });
+        avisarPonto(ponto, 'entrada', timestamp);
         showFeedback(`Entrada registrada às ${clockLabel(timestamp)}`);
       } else if (tipo === 'pausa') {
         const timestamp = new Date().toISOString();
@@ -293,6 +313,7 @@ export default function useTurnoPonto() {
         showFeedback(`Retorno registrado às ${clockLabel(timestamp)}`);
       } else if (tipo === 'saida') {
         const timestamp = await closeOccurrence(activeEntry);
+        avisarPonto(activeEntry, 'saida', timestamp);
         showFeedback(`Turno encerrado às ${clockLabel(timestamp)}`);
       }
       setTick((n) => n + 1);

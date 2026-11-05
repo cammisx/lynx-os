@@ -1,5 +1,5 @@
 import { emitNotificationsChanged } from '@/lib/desktopEvents';
-import { listarAdmins } from '@/lib/solicitacoes';
+import notificarAdminsSolicitacao, { listarAdmins } from '@/lib/solicitacoes';
 import { nextOccurrence } from '@/lib/aceite';
 /** Não lida = ainda não abriu e não está resolvida. */
 export const isNaoLida = (notification) =>
@@ -92,6 +92,41 @@ export const notificarNovoShift = async (base44, shift, shiftId, { force = false
 };
 
 export { weekdayOf };
+
+/**
+ * Aviso de ponto para os admins: só informa que a pessoa entrou ou saiu.
+ * Não pede resposta: no sino basta abrir e ler.
+ */
+export const notificarPonto = async (
+  base44,
+  { tipo, usuario, modeloNome = '', modeloId = '', shiftId = '', ocorrenciaData = '', timestamp }
+) => {
+  const nome = usuario?.full_name || usuario?.email || 'Alguém';
+  const quando = timestamp ? new Date(timestamp) : new Date();
+  const hora = Number.isNaN(quando.getTime())
+    ? ''
+    : quando.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const onde = modeloNome ? ` em ${modeloNome}` : '';
+  const verbo = tipo === 'saida' ? 'bateu saída' : 'bateu entrada';
+
+  try {
+    return await notificarAdminsSolicitacao(base44, {
+      titulo: tipo === 'saida' ? 'Saída registrada' : 'Entrada registrada',
+      mensagem: `${nome} ${verbo}${onde}${hora ? ` às ${hora}` : ''}.`,
+      tipo: tipo === 'saida' ? 'ponto_saida' : 'ponto_entrada',
+      extra: {
+        shift_id: shiftId,
+        modelo_id: modeloId,
+        ocorrencia_data: ocorrenciaData,
+        registrado_em: timestamp || '',
+        registrado_por: usuario?.id || '',
+      },
+    });
+  } catch (error) {
+    console.warn('[notificarPonto]', error);
+    return [];
+  }
+};
 
 /** Horário legível de uma ocorrência concreta (data + faixa). */
 const occurrencePhrase = (occurrence) => {
