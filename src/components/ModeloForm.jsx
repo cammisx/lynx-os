@@ -2,6 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import ChatterRow from '@/components/models/ChatterRow';
 
+// Menor centavo (01–99) livre na modelo, para o novo chatter já entrar válido.
+const proximoLivre = (ocupados) => {
+  const usados = new Set((ocupados || []).filter(Boolean));
+  for (let numero = 1; numero <= 99; numero += 1) {
+    const codigo = String(numero).padStart(2, '0');
+    if (!usados.has(codigo)) return codigo;
+  }
+  return '';
+};
+
 const inputStyle = {
   width: '100%',
   boxSizing: 'border-box',
@@ -41,16 +51,25 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
 
   useEffect(() => {
     if (model || adminIds.length === 0) return;
-    setSelected((prev) => {
-      const next = new Set(prev);
-      let changed = false;
-      adminIds.forEach((id) => {
-        if (!next.has(id)) {
-          next.add(id);
-          changed = true;
-        }
+    const faltando = adminIds.filter((id) => !selected.has(id));
+    if (faltando.length === 0) return;
+
+    const proximo = new Set(selected);
+    faltando.forEach((id) => proximo.add(id));
+    setSelected(proximo);
+
+    // Admin entra em todas as modelos já com um centavo livre.
+    setIds((prev) => {
+      const atual = { ...prev };
+      const ocupados = [...proximo].map((id) => atual[id] || '');
+      faltando.forEach((id) => {
+        if (atual[id]) return;
+        const livre = proximoLivre(ocupados);
+        if (!livre) return;
+        atual[id] = livre;
+        ocupados.push(livre);
       });
-      return changed ? next : prev;
+      return atual;
     });
   }, [adminIds, model]);
   const [errors, setErrors] = useState({});
@@ -58,12 +77,17 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
 
   const toggle = (id) => {
     if (adminIds.includes(id)) return;
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    const estavaMarcado = selected.has(id);
+    const proximo = new Set(selected);
+    if (estavaMarcado) proximo.delete(id);
+    else proximo.add(id);
+    setSelected(proximo);
+
+    // Quem entra agora ganha o próximo centavo livre (pode trocar depois).
+    if (!estavaMarcado && !ids[id]) {
+      const livre = proximoLivre([...proximo].map((chave) => ids[chave] || ''));
+      if (livre) setIds((prev) => ({ ...prev, [id]: livre }));
+    }
   };
 
   const setIdentificador = (id, value) => {

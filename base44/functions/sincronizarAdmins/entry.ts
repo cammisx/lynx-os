@@ -28,6 +28,17 @@ const paginado = async (entidade: any, query: any = {}, sort = 'created_date') =
 const nomeDe = (usuario: any) =>
   usuario?.nome_exibicao || usuario?.full_name || usuario?.email || '';
 
+// Menor centavo (01–99) que ninguém usa nesta modelo: o admin novo já entra
+// com um identificador válido em vez de travar a edição.
+const proximoLivre = (usados: string[]) => {
+  const ocupados = new Set(usados.filter(Boolean));
+  for (let numero = 1; numero <= 99; numero += 1) {
+    const codigo = String(numero).padStart(2, '0');
+    if (!ocupados.has(codigo)) return codigo;
+  }
+  return '';
+};
+
 Deno.serve(async (req: Request) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -56,20 +67,24 @@ Deno.serve(async (req: Request) => {
       if (modelo?.arquivada && atuais.length === 0) continue;
       if (faltando.length === 0) continue;
 
-      const proximos = [
-        ...atuais,
-        ...faltando.map((admin: any) => ({
+      const usados = atuais.map((chatter: any) => chatter?.identificador || '');
+      const novos = faltando.map((admin: any) => {
+        const identificador = proximoLivre(usados);
+        if (identificador) usados.push(identificador);
+        return {
           usuario_id: admin.id,
           usuario_nome: nomeDe(admin),
-          identificador: '',
-        })),
-      ];
+          identificador,
+        };
+      });
+
+      const proximos = [...atuais, ...novos];
 
       await base44.asServiceRole.entities.Modelo.update(modelo.id, { chatters: proximos });
       ajustes.push({
         modelo_id: modelo.id,
         modelo_nome: modelo.nome || '',
-        incluidos: faltando.map((admin: any) => nomeDe(admin)),
+        incluidos: novos.map((novo: any) => `${novo.usuario_nome} (${novo.identificador || 'sem centavo'})`),
       });
     }
 
