@@ -118,18 +118,50 @@ const paraBase64 = (buffer) => {
   return btoa(binario);
 };
 
+const TAMANHO_MINIMO_FONTE = 20000;
+
+/** Confere a assinatura do arquivo: se o servidor devolver o index.html no lugar
+ *  da fonte, o jsPDF quebra ao desenhar o texto. */
+const pareceFonte = (buffer) => {
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length < TAMANHO_MINIMO_FONTE) return false;
+  const assinatura = String.fromCharCode(...bytes.subarray(0, 4));
+  if (assinatura === 'OTTO' || assinatura === 'true' || assinatura === 'ttcf') return true;
+  return bytes[0] === 0 && bytes[1] === 1 && bytes[2] === 0 && bytes[3] === 0;
+};
+
+const caminhosDaFonte = (arquivo) => {
+  const base = import.meta?.env?.BASE_URL || '/';
+  const caminhos = [
+    `${base}fonts/${arquivo}`,
+    `fonts/${arquivo}`,
+    `/fonts/${arquivo}`,
+  ];
+  return [...new Set(caminhos.map((caminho) => caminho.replace(/\/{2,}/g, '/')))];
+};
+
+const baixarFonte = async (arquivo) => {
+  let ultimoErro = null;
+  for (const caminho of caminhosDaFonte(arquivo)) {
+    try {
+      const resposta = await fetch(caminho);
+      if (!resposta.ok) throw new Error(`fonte indisponível (${resposta.status})`);
+      const buffer = await resposta.arrayBuffer();
+      if (!pareceFonte(buffer)) throw new Error('arquivo não é uma fonte válida');
+      return paraBase64(buffer);
+    } catch (erro) {
+      ultimoErro = erro;
+    }
+  }
+  throw ultimoErro || new Error('fonte indisponível');
+};
+
 const carregarFontes = async (doc) => {
   try {
     if (!fontesEmCache) {
-      const base = import.meta?.env?.BASE_URL || '/';
-      const baixar = async (arquivo) => {
-        const resposta = await fetch(`${base}fonts/${arquivo}`);
-        if (!resposta.ok) throw new Error('fonte indisponível');
-        return paraBase64(await resposta.arrayBuffer());
-      };
       const [normal, negrito] = await Promise.all([
-        baixar('RobotoMono-Regular.ttf'),
-        baixar('RobotoMono-Bold.ttf'),
+        baixarFonte('RobotoMono-Regular.ttf'),
+        baixarFonte('RobotoMono-Bold.ttf'),
       ]);
       fontesEmCache = { normal, negrito };
     }
@@ -137,8 +169,16 @@ const carregarFontes = async (doc) => {
     doc.addFont('RobotoMono-Regular.ttf', FONTE, 'normal');
     doc.addFileToVFS('RobotoMono-Bold.ttf', fontesEmCache.negrito);
     doc.addFont('RobotoMono-Bold.ttf', FONTE, 'bold');
+    // testa de verdade: se a fonte não servir, o PDF inteiro ia embora
+    doc.setFont(FONTE, 'normal');
+    doc.getStringUnitWidth('Aa');
+    doc.setFont(FONTE, 'bold');
+    doc.getStringUnitWidth('Aa');
+    doc.setFont(FONTE, 'normal');
     return FONTE;
   } catch (erro) {
+    fontesEmCache = null;
+    doc.setFont(FONTE_ALTERNATIVA, 'normal');
     return FONTE_ALTERNATIVA;
   }
 };
@@ -176,13 +216,23 @@ const painel = (doc, x, y, largura, altura, { destaque = false, raio = 2.4 } = {
 
 const texto = (doc, valor, x, y, opcoes = {}) => {
   const { tamanho = 9, cor = PAPEL.texto, negrito = false, alinhamento = 'left', espaco = 0 } = opcoes;
+  const conteudo = String(valor ?? '');
   doc.setFont(undefined, negrito ? 'bold' : 'normal');
   doc.setFontSize(tamanho);
   doc.setTextColor(...cor);
-  const config = { align: alinhamento };
-  if (espaco) config.charSpace = espaco;
-  doc.text(String(valor ?? ''), x, y, config);
-  if (espaco) doc.setCharSpace(0);
+
+  if (espaco) {
+    // O jsPDF mede a largura sem o espaçamento extra das letras, então o texto
+    // com charSpace e alinhamento à direita vazava pela borda do painel.
+    const largura = doc.getTextWidth(conteudo) + espaco * Math.max(0, conteudo.length - 1);
+    const deslocamento = alinhamento === 'right' ? -largura : alinhamento === 'center' ? -largura / 2 : 0;
+    doc.setCharSpace(espaco);
+    doc.text(conteudo, x + deslocamento, y, { align: 'left' });
+    doc.setCharSpace(0);
+    return;
+  }
+
+  doc.text(conteudo, x, y, { align: alinhamento });
 };
 
 const corta = (valor, limite) => {

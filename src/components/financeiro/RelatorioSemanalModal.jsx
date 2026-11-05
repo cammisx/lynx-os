@@ -98,7 +98,11 @@ export default function RelatorioSemanalModal({ modelos, chatters, onClose }) {
         texto: `PDF gerado com ${vendas.length} venda(s) em ${paginas} página(s).`,
       });
     } catch (erro) {
-      setAviso({ erro: true, texto: 'Não consegui gerar o PDF. Tenta de novo.' });
+      const detalhe = String(erro?.message || erro || '').slice(0, 90);
+      setAviso({
+        erro: true,
+        texto: detalhe ? `Não consegui gerar o PDF: ${detalhe}` : 'Não consegui gerar o PDF. Tenta de novo.',
+      });
     } finally {
       setGerando(false);
     }
