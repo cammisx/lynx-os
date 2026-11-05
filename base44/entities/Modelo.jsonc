@@ -22,6 +22,10 @@
         }
       }
     },
+    "comissao_agencia": {
+      "type": "number",
+      "default": 50
+    },
     "arquivada": {
       "type": "boolean",
       "default": false

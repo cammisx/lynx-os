@@ -53,6 +53,24 @@
       "type": "string",
       "format": "date-time"
     },
+    "identificador": {
+      "type": "string"
+    },
+    "origem": {
+      "type": "string",
+      "enum": [
+        "mimo",
+        "extrato"
+      ],
+      "enumColors": [
+        "blue",
+        "purple"
+      ],
+      "default": "mimo"
+    },
+    "lote": {
+      "type": "string"
+    },
     "print_url": {
       "type": "string"
     },
@@ -90,7 +108,6 @@
   "required": [
     "usuario_id",
     "plataforma",
-    "bruto",
-    "print_url"
+    "bruto"
   ]
 }

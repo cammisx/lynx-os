@@ -21,6 +21,11 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
     () => new Set((model?.chatters || []).map((chatter) => chatter.usuario_id))
   );
   const [saving, setSaving] = useState(false);
+  const [comissaoAgencia, setComissaoAgencia] = useState(
+    model?.comissao_agencia === null || model?.comissao_agencia === undefined
+      ? '50'
+      : String(model.comissao_agencia)
+  );
   const [ids, setIds] = useState(() =>
     Object.fromEntries(
       (model?.chatters || []).map((chatter) => [chatter.usuario_id, chatter.identificador || ''])
@@ -104,10 +109,19 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
         usuario_nome: chatter.nome,
         identificador: ids[chatter.usuario_id] || '',
       }));
+      const percentual = Math.min(100, Math.max(0, Number(comissaoAgencia.replace(',', '.')) || 0));
       if (model) {
-        await base44.entities.Modelo.update(model.id, { nome: cleanName, chatters: members });
+        await base44.entities.Modelo.update(model.id, {
+          nome: cleanName,
+          chatters: members,
+          comissao_agencia: percentual,
+        });
       } else {
-        await base44.entities.Modelo.create({ nome: cleanName, chatters: members });
+        await base44.entities.Modelo.create({
+          nome: cleanName,
+          chatters: members,
+          comissao_agencia: percentual,
+        });
       }
       await onSaved();
     } finally {
@@ -126,6 +140,24 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
           placeholder="Ex.: Modelo Aurora"
         />
         {nomeError && <span style={{ fontSize: 10, color: '#ff6b6b' }}>{nomeError}</span>}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <span style={{ fontSize: 10, color: 'var(--c2)', opacity: 0.7 }}>
+          Comissão da agência sobre as vendas (% do líquido)
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input
+            style={{ ...inputStyle, width: 86 }}
+            value={comissaoAgencia}
+            onChange={(event) => setComissaoAgencia(event.target.value.replace(/[^\d.,]/g, ''))}
+            placeholder="50"
+            inputMode="numeric"
+          />
+          <span style={{ fontSize: 10.5, color: 'var(--c2)', lineHeight: 1.5 }}>
+            Padrão 50%. A comissão do chatter sai de dentro dessa parte.
+          </span>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

@@ -145,6 +145,19 @@ const lerBloco = (linhas) => {
   } else {
     const rotulo = linhas.find((linha) => /mimo|venda/i.test(linha) && !VALOR.test(linha));
     if (rotulo) resultado.tipo = rotulo;
+    // Extrato do Privacy rotula o tipo na última linha ("Assinatura", "Ppv"...).
+    if (!resultado.tipo) {
+      const sobra = linhas
+        .slice(1)
+        .reverse()
+        .find(
+          (linha) =>
+            !VALOR.test(linha) &&
+            !METODOS.test(linha) &&
+            linha !== resultado.usuario_plataforma
+        );
+      if (sobra) resultado.tipo = sobra;
+    }
   }
 
   if (!resultado.ocorrido_em) resultado.faltando.push('data');

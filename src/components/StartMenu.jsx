@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/lib/AuthContext';
-import { UsersIcon, CalendarIcon } from '@/components/icons';
+import { UsersIcon, CalendarIcon, MoneyIcon } from '@/components/icons';
 
 const ANIM_MS = 180;
 
@@ -9,6 +9,7 @@ const APPS = [
   { id: 'chatters', Icon: UsersIcon, title: 'Chatters', desc: 'Comissões e nomes de exibição' },
   { id: 'modelos', Icon: UsersIcon, title: 'Modelos', desc: 'Gerenciar modelos e chatters' },
   { id: 'turnos', Icon: CalendarIcon, title: 'Turnos', desc: 'Escala e turnos da equipe' },
+  { id: 'financeiro', Icon: MoneyIcon, title: 'Financeiro', desc: 'Extratos, comissões e repasses' },
 ];
 
 export default function StartMenu({ open, onClose, onOpenApp }) {

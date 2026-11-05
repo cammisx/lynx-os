@@ -6,6 +6,7 @@ import Taskbar from '@/components/Taskbar';
 import ChattersWindow from '@/components/ChattersWindow';
 import ModelosWindow from '@/components/ModelosWindow';
 import TurnosWindow from '@/components/TurnosWindow';
+import FinanceiroWindow from '@/components/FinanceiroWindow';
 import useFecharTurnosEsquecidos from '@/hooks/useFecharTurnosEsquecidos';
 import useAvisarTurnosPendentes from '@/hooks/useAvisarTurnosPendentes';
 
@@ -42,6 +43,8 @@ export default function Dashboard() {
       {openApp === 'modelos' && <ModelosWindow onClose={() => setOpenApp(null)} />}
 
       {openApp === 'turnos' && <TurnosWindow onClose={() => setOpenApp(null)} />}
+
+      {openApp === 'financeiro' && <FinanceiroWindow onClose={() => setOpenApp(null)} />}
     </div>
   );
 }

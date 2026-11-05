@@ -202,6 +202,16 @@ export function VolumeIcon({ size = 16, className }) {
   );
 }
 
+export function MoneyIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v10" />
+      <path d="M15 9.5a3 3 0 0 0-3-1.5c-1.66 0-3 .9-3 2s1.34 2 3 2 3 .9 3 2-1.34 2-3 2a3 3 0 0 1-3-1.5" />
+    </Svg>
+  );
+}
+
 export function CheckIcon({ size = 16, className }) {
   return (
     <Svg size={size} className={className}>
