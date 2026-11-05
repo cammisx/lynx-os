@@ -1,0 +1,49 @@
+{
+  "name": "ChatCanal",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "geral",
+        "modelo",
+        "privado",
+        "grupo"
+      ],
+      "enumColors": [
+        "orange",
+        "purple",
+        "blue",
+        "green"
+      ],
+      "default": "privado"
+    },
+    "modelo_id": {
+      "type": "string"
+    },
+    "participantes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "criado_por": {
+      "type": "string"
+    },
+    "ultima_mensagem_em": {
+      "type": "string"
+    },
+    "ultima_mensagem_preview": {
+      "type": "string"
+    },
+    "ultima_mensagem_autor": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tipo"
+  ]
+}

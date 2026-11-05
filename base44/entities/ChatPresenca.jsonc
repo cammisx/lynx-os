@@ -1,0 +1,24 @@
+{
+  "name": "ChatPresenca",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string"
+    },
+    "nome": {
+      "type": "string"
+    },
+    "canal_id": {
+      "type": "string"
+    },
+    "ultimo_visto_em": {
+      "type": "string"
+    },
+    "digitando_em": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "usuario_id"
+  ]
+}

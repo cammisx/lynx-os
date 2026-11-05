@@ -7,6 +7,8 @@ import ChattersWindow from '@/components/ChattersWindow';
 import ModelosWindow from '@/components/ModelosWindow';
 import TurnosWindow from '@/components/TurnosWindow';
 import FinanceiroWindow from '@/components/FinanceiroWindow';
+import { ChatProvider } from '@/components/chat/ChatProvider';
+import ChatSidebar from '@/components/chat/ChatSidebar';
 import useFecharTurnosEsquecidos from '@/hooks/useFecharTurnosEsquecidos';
 import useAvisarTurnosPendentes from '@/hooks/useAvisarTurnosPendentes';
 
@@ -35,8 +37,11 @@ export default function Dashboard() {
       }}
     >
       <DesktopBackground />
-      <DesktopWidgets />
-      <Taskbar onOpenApp={setOpenApp} />
+      <ChatProvider>
+        <DesktopWidgets />
+        <Taskbar onOpenApp={setOpenApp} />
+        <ChatSidebar />
+      </ChatProvider>
 
       {openApp === 'chatters' && <ChattersWindow onClose={() => setOpenApp(null)} />}
 

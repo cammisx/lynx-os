@@ -1,0 +1,66 @@
+{
+  "name": "ChatMensagem",
+  "type": "object",
+  "properties": {
+    "canal_id": {
+      "type": "string"
+    },
+    "autor_id": {
+      "type": "string"
+    },
+    "autor_nome": {
+      "type": "string"
+    },
+    "autor_cargo": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "texto",
+        "imagem",
+        "audio",
+        "sistema"
+      ],
+      "enumColors": [
+        "gray",
+        "blue",
+        "purple",
+        "orange"
+      ],
+      "default": "texto"
+    },
+    "texto": {
+      "type": "string"
+    },
+    "anexo_url": {
+      "type": "string"
+    },
+    "audio_url": {
+      "type": "string"
+    },
+    "audio_duracao": {
+      "type": "number"
+    },
+    "transcricao": {
+      "type": "string"
+    },
+    "editada_em": {
+      "type": "string"
+    },
+    "apagada": {
+      "type": "boolean",
+      "default": false
+    },
+    "oculta_para": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "canal_id",
+    "autor_id"
+  ]
+}

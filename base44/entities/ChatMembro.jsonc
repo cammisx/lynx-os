@@ -1,0 +1,23 @@
+{
+  "name": "ChatMembro",
+  "type": "object",
+  "properties": {
+    "canal_id": {
+      "type": "string"
+    },
+    "usuario_id": {
+      "type": "string"
+    },
+    "ultima_leitura_em": {
+      "type": "string"
+    },
+    "arquivado": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "canal_id",
+    "usuario_id"
+  ]
+}

@@ -572,3 +572,65 @@ body {
   border-radius: 50%;
   background: var(--c1);
 }
+
+/* ---------------- Chat interno ---------------- */
+
+@keyframes chat-in {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.chat-painel {
+  animation: chat-in 180ms ease-out;
+}
+
+.chat-canal:hover {
+  background: color-mix(in srgb, var(--c2) 8%, transparent);
+}
+
+.chat-canal.is-ativo {
+  background: color-mix(in srgb, var(--c1) 12%, transparent);
+  border-color: color-mix(in srgb, var(--c1) 32%, transparent) !important;
+}
+
+.chat-canal.tem-novidade:not(.is-ativo) {
+  background: color-mix(in srgb, var(--c1) 6%, transparent);
+}
+
+.chat-icone:hover,
+.chat-novo:hover {
+  color: var(--c1);
+  background: color-mix(in srgb, var(--c1) 12%, transparent);
+}
+
+.chat-campo::placeholder {
+  color: var(--c12);
+}
+
+.chat-campo:focus {
+  border-color: color-mix(in srgb, var(--c1) 45%, transparent) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c1) 12%, transparent);
+}
+
+.chat-enviar:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--c1) 30%, transparent) !important;
+}
+
+.taskbar-chat-badge {
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8.5px;
+  font-weight: 700;
+  font-family: var(--font-main);
+  color: var(--c8);
+  background: var(--c1);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c8) 65%, transparent);
+}

@@ -10,12 +10,15 @@ import FolgaPendenteModal from '@/components/solicitacoes/FolgaPendenteModal';
 import HorarioDisponivelModal from '@/components/solicitacoes/HorarioDisponivelModal';
 import useNotifications from '@/hooks/useNotifications';
 import usePreferenciaSom from '@/hooks/usePreferenciaSom';
+import ChatIcon from '@/components/icons/ChatIcon';
+import { useChatPanel } from '@/components/chat/ChatProvider';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function Taskbar({ onOpenApp }) {
   const { user } = useAuth();
   const { items, naoLidas, markRead, reload } = useNotifications(user?.id, user?.role === 'admin');
   const preferenciaSom = usePreferenciaSom();
+  const chat = useChatPanel();
   const [now, setNow] = useState(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
   const [clockOpen, setClockOpen] = useState(false);
@@ -109,6 +112,25 @@ export default function Taskbar({ onOpenApp }) {
       />
 
       <div className="taskbar-right">
+        <button
+          type="button"
+          className="taskbar-bell"
+          aria-label="Chat interno"
+          onClick={() => {
+            chat.alternar();
+            setBellOpen(false);
+            setClockOpen(false);
+          }}
+          style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <ChatIcon size={19} />
+          {chat.totalNaoLidas > 0 && (
+            <span className="taskbar-chat-badge">
+              {chat.totalNaoLidas > 9 ? '9+' : chat.totalNaoLidas}
+            </span>
+          )}
+        </button>
+
         <button
           ref={bellRef}
           type="button"
