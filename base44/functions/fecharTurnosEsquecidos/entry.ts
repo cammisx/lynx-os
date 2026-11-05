@@ -253,19 +253,10 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    const user = await base44.auth.me().catch((error) =>
-      error?.status === 401 ? null : Promise.reject(error)
-    );
-
-    if (!user) {
-      return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Admin varre a equipe toda; chatter só fecha as próprias ocorrências.
-    let scopeUserId = null;
-    if (user.role !== 'admin') {
-      scopeUserId = user.id;
-    }
+    const user = await base44.auth.me().catch(() => null);
+    // Sem usuário = execução por automação agendada. Admin varre a equipe toda.
+    // Qualquer outro usuário só pode fechar as próprias ocorrências.
+    const scopeUserId = user && user.role !== 'admin' ? user.id : null;
 
     const fetchAll = async (entity) => {
       const out = [];

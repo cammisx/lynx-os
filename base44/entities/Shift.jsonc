@@ -154,37 +154,5 @@
     "usuario_id",
     "inicio",
     "fim"
-  ],
-  "rls": {
-    "create": {
-      "$or": [
-        {
-          "data.usuario_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
-    "read": null,
-    "update": {
-      "$or": [
-        {
-          "data.usuario_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
-    "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
-    }
-  }
+  ]
 }
