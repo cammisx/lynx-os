@@ -39,20 +39,22 @@ export default function useTurnoPonto() {
 
   useEffect(() => () => clearTimeout(feedbackTimer.current), []);
 
+  // A janela olha para a frente: turno semanal criado meses atrás continua valendo
+  // mesmo com o fim original no passado, então filtrar por fim perderia ele.
   const loadShifts = useCallback(() => {
     if (!userId) return undefined;
     let active = true;
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const janelaFim = new Date(startOfDay(new Date()).getTime() + (7 + 1) * DAY_MS);
     base44.entities.Shift.filter(
-      { usuario_id: userId, fim: { $gte: monthStart.toISOString() } },
-      { sort: 'inicio', limit: 100 }
+      { usuario_id: userId, inicio: { $lte: janelaFim.toISOString() } },
+      { sort: '-inicio', limit: 300 }
     )
       .then((result) => {
         if (active) setOwnShifts(asList(result));
       })
       .catch(() => {
-        if (active) setOwnShifts([]);
+        // Falha de rede não pode zerar o contador: mantém a última leitura boa.
+        console.warn('[useTurnoPonto] falha ao carregar turnos');
       });
     return () => {
       active = false;
@@ -66,7 +68,7 @@ export default function useTurnoPonto() {
         if (active) setModels(asList(result));
       })
       .catch(() => {
-        if (active) setModels([]);
+        console.warn('[useTurnoPonto] falha ao carregar modelos');
       });
     return () => {
       active = false;
@@ -80,7 +82,7 @@ export default function useTurnoPonto() {
         if (active) setChatters(asList(result));
       })
       .catch(() => {
-        if (active) setChatters([]);
+        console.warn('[useTurnoPonto] falha ao carregar chatters');
       });
     return () => {
       active = false;
@@ -98,7 +100,7 @@ export default function useTurnoPonto() {
         if (active) setRegistros(asList(result));
       })
       .catch(() => {
-        if (active) setRegistros([]);
+        console.warn('[useTurnoPonto] falha ao carregar registros');
       });
     return () => {
       active = false;
@@ -111,8 +113,26 @@ export default function useTurnoPonto() {
   useEffect(() => loadRegistros(), [loadRegistros, tick]);
 
   useEffect(() => {
-    const id = setInterval(() => setTick((n) => n + 1), REFRESH_MS);
+    const id = setInterval(() => {
+      // Aba em segundo plano tem o timer estrangulado pelo navegador; quem
+      // atualiza de verdade nesse caso é o foco.
+      if (document.hidden) return;
+      setTick((n) => n + 1);
+    }, REFRESH_MS);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const acordar = () => {
+      if (document.hidden) return;
+      setTick((n) => n + 1);
+    };
+    window.addEventListener('focus', acordar);
+    document.addEventListener('visibilitychange', acordar);
+    return () => {
+      window.removeEventListener('focus', acordar);
+      document.removeEventListener('visibilitychange', acordar);
+    };
   }, []);
 
   useEffect(() => {
