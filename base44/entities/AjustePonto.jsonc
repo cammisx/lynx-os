@@ -36,6 +36,50 @@
       "type": "string",
       "format": "date-time"
     },
+    "pausas_atuais": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pausa_id": {
+            "type": "string"
+          },
+          "retorno_id": {
+            "type": "string"
+          },
+          "inicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fim": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "pausas_solicitadas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pausa_id": {
+            "type": "string"
+          },
+          "retorno_id": {
+            "type": "string"
+          },
+          "inicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fim": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
     "motivo": {
       "type": "string"
     },

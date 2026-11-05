@@ -68,6 +68,7 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
   const [registros, setRegistros] = useState([]);
   const [entrada, setEntrada] = useState(null);
   const [saida, setSaida] = useState(null);
+  const [pausas, setPausas] = useState([]);
   const [motivo, setMotivo] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -119,6 +120,7 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
     setRegistros([]);
     setEntrada(null);
     setSaida(null);
+    setPausas([]);
     base44.entities.RegistroPonto.filter(
       { shift_id: ocorrencia.shiftId, ocorrencia_data: ocorrencia.dateKey },
       { sort: 'timestamp', limit: 50 }
@@ -131,6 +133,31 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
         const saidaAtual = [...lista].reverse().find((registro) => registro.tipo === 'saida');
         if (entradaAtual?.timestamp) setEntrada(new Date(entradaAtual.timestamp));
         if (saidaAtual?.timestamp) setSaida(new Date(saidaAtual.timestamp));
+
+        // Cada pausa é seguida pelo retorno. Pausa sem retorno fica com fim vazio.
+        const pares = [];
+        let aberta = null;
+        lista.forEach((registro) => {
+          if (registro.tipo === 'pausa') {
+            if (aberta) pares.push(aberta);
+            aberta = {
+              pausaId: registro.id,
+              retornoId: '',
+              inicio: registro.timestamp ? new Date(registro.timestamp) : null,
+              fim: null,
+              inicioOriginal: registro.timestamp ? new Date(registro.timestamp).getTime() : null,
+              fimOriginal: null,
+            };
+          } else if (registro.tipo === 'retorno' && aberta) {
+            aberta.retornoId = registro.id;
+            aberta.fim = registro.timestamp ? new Date(registro.timestamp) : null;
+            aberta.fimOriginal = registro.timestamp ? new Date(registro.timestamp).getTime() : null;
+            pares.push(aberta);
+            aberta = null;
+          }
+        });
+        if (aberta) pares.push(aberta);
+        setPausas(pares);
       })
       .catch(() => setRegistros([]));
     return () => {
@@ -152,12 +179,60 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
     return base;
   })();
 
-  const mudouAlgo =
-    !!ocorrencia &&
-    ((entradaFinal && (!entradaAtual || entradaFinal.getTime() !== new Date(entradaAtual.timestamp).getTime())) ||
-      (saidaFinal && (!saidaAtual || saidaFinal.getTime() !== new Date(saidaAtual.timestamp).getTime())));
+  // Pausa usa o mesmo dia do turno; se o horário vier antes do início, cai no dia seguinte.
+  const inicioDaPausa = (item) => {
+    if (!ocorrencia || !item?.inicio) return null;
+    return juntar(new Date(ocorrencia.start), item.inicio);
+  };
 
-  const podeEnviar = !!ocorrencia && !!mudouAlgo && motivo.trim().length >= 3 && !salvando;
+  const fimDaPausa = (item) => {
+    if (!ocorrencia || !item?.fim) return null;
+    const base = juntar(new Date(ocorrencia.start), item.fim);
+    const inicio = inicioDaPausa(item);
+    if (base && inicio && base.getTime() <= inicio.getTime()) {
+      return new Date(base.getTime() + DAY_MS);
+    }
+    return base;
+  };
+
+  const pausaInvalida = pausas.some((item) => {
+    if (!item.inicio) return true;
+    const inicio = inicioDaPausa(item);
+    const fim = fimDaPausa(item);
+    if (item.fim && !fim) return true;
+    if (inicio && fim && fim.getTime() <= inicio.getTime()) return true;
+    return false;
+  });
+
+  const alterarPausa = (indice, campo, valor) => {
+    setPausas((atual) =>
+      atual.map((item, posicao) => (posicao === indice ? { ...item, [campo]: valor } : item))
+    );
+  };
+
+  const pausaMudou = (item) => {
+    const inicio = inicioDaPausa(item);
+    const fim = fimDaPausa(item);
+    if (item.inicio && !inicio) return true;
+    if (item.fim && !fim) return true;
+    if (inicio && (!item.inicioOriginal || inicio.getTime() !== item.inicioOriginal)) return true;
+    if (fim && (!item.fimOriginal || fim.getTime() !== item.fimOriginal)) return true;
+    return false;
+  };
+
+  const pausasMudaram = pausas.some(pausaMudou);
+
+  const entradaMudou =
+    !!entradaFinal &&
+    (!entradaAtual || entradaFinal.getTime() !== new Date(entradaAtual.timestamp).getTime());
+  const saidaMudou =
+    !!saidaFinal &&
+    (!saidaAtual || saidaFinal.getTime() !== new Date(saidaAtual.timestamp).getTime());
+
+  const mudouAlgo = !!ocorrencia && (entradaMudou || saidaMudou || pausasMudaram);
+
+  const podeEnviar =
+    !!ocorrencia && !!mudouAlgo && !pausaInvalida && motivo.trim().length >= 3 && !salvando;
 
   const enviar = async () => {
     if (!podeEnviar) return;
@@ -175,6 +250,18 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
         saida_atual: saidaAtual?.timestamp || '',
         entrada_solicitada: entradaFinal ? entradaFinal.toISOString() : '',
         saida_solicitada: saidaFinal ? saidaFinal.toISOString() : '',
+        pausas_atuais: pausas.map((item) => ({
+          pausa_id: item.pausaId,
+          retorno_id: item.retornoId,
+          inicio: item.inicioOriginal ? new Date(item.inicioOriginal).toISOString() : '',
+          fim: item.fimOriginal ? new Date(item.fimOriginal).toISOString() : '',
+        })),
+        pausas_solicitadas: pausas.map((item) => ({
+          pausa_id: item.pausaId,
+          retorno_id: item.retornoId,
+          inicio: inicioDaPausa(item) ? inicioDaPausa(item).toISOString() : '',
+          fim: fimDaPausa(item) ? fimDaPausa(item).toISOString() : '',
+        })),
         motivo: motivo.trim(),
         status: 'pendente',
       });
@@ -182,6 +269,17 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
       const pedacos = [];
       if (entradaFinal) pedacos.push(`entrada ${clockLabel(entradaFinal.toISOString())}`);
       if (saidaFinal) pedacos.push(`saída ${clockLabel(saidaFinal.toISOString())}`);
+      pausas.forEach((item, indice) => {
+        if (!pausaMudou(item)) return;
+        const inicio = inicioDaPausa(item);
+        const fim = fimDaPausa(item);
+        if (!inicio) return;
+        const de = `${clockLabel(
+          item.inicioOriginal ? new Date(item.inicioOriginal).toISOString() : ''
+        )}–${item.fimOriginal ? clockLabel(new Date(item.fimOriginal).toISOString()) : 'sem retorno'}`;
+        const para = `${clockLabel(inicio.toISOString())}–${fim ? clockLabel(fim.toISOString()) : 'sem retorno'}`;
+        pedacos.push(`pausa ${indice + 1} ${de} para ${para}`);
+      });
 
       await notificarAdminsSolicitacao(base44, {
         titulo: 'Ajuste de ponto',
@@ -275,7 +373,17 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
           </button>
         </div>
 
-        <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div
+          className="glass-scroll"
+          style={{
+            padding: 14,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12,
+            overflowY: 'auto',
+            minHeight: 0,
+          }}
+        >
           <GlassSelect
             label="Turno"
             value={selecionada}
@@ -311,6 +419,22 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
                 Saída registrada:{' '}
                 <span style={{ color: 'var(--c3)' }}>{clockLabel(saidaAtual?.timestamp)}</span>
               </span>
+              {pausas.length > 0 && (
+                <span>
+                  Pausas:{' '}
+                  <span style={{ color: 'var(--c3)' }}>
+                    {pausas
+                      .map((item) => {
+                        const inicio = inicioDaPausa(item);
+                        const fim = fimDaPausa(item);
+                        return `${inicio ? clockLabel(inicio.toISOString()) : '--'}–${
+                          fim ? clockLabel(fim.toISOString()) : 'aberta'
+                        }`;
+                      })
+                      .join(' · ')}
+                  </span>
+                </span>
+              )}
             </div>
           )}
 
@@ -327,6 +451,56 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
               <DateTimePicker value={saida} onChange={setSaida} mode="time" label="Saída correta" />
             </div>
           </div>
+
+          {ocorrencia && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <span style={rotulo}>Pausas do turno</span>
+              {pausas.length === 0 && (
+                <span style={{ fontSize: 11, color: 'var(--c2)' }}>
+                  Nenhuma pausa registrada nesse turno.
+                </span>
+              )}
+              {pausas.map((item, indice) => (
+                <div
+                  key={item.pausaId || indice}
+                  style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}
+                >
+                  <span
+                    style={{
+                      width: 46,
+                      flexShrink: 0,
+                      fontSize: 10,
+                      color: 'var(--c2)',
+                      paddingBottom: 10,
+                    }}
+                  >
+                    {`Pausa ${indice + 1}`}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <DateTimePicker
+                      value={item.inicio}
+                      onChange={(valor) => alterarPausa(indice, 'inicio', valor)}
+                      mode="time"
+                      label="Início"
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <DateTimePicker
+                      value={item.fim}
+                      onChange={(valor) => alterarPausa(indice, 'fim', valor)}
+                      mode="time"
+                      label="Retorno"
+                    />
+                  </div>
+                </div>
+              ))}
+              {pausaInvalida && (
+                <span style={{ fontSize: 10.5, color: '#e8b93b' }}>
+                  O retorno da pausa precisa ser depois do início.
+                </span>
+              )}
+            </div>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <span style={rotulo}>Motivo</span>
