@@ -9,9 +9,47 @@
  * Repasse   = líquido menos a parte da agência.
  */
 
-import { valorNumerico } from '@/lib/extrato';
+import { centavoDe, mapaIdentificadores, valorNumerico } from '@/lib/extrato';
 
 export const COMISSAO_AGENCIA_PADRAO = 50;
+
+const semAcento = (valor) =>
+  String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+/**
+ * Venda de chat: a que o extrato rotula como "Chat".
+ * Mimo de chat ("Mimo - Chat") fica de fora: mimo já entra pelo widget e
+ * não é venda de conversa.
+ */
+export const ehVendaDeChat = (venda) => semAcento(venda?.tipo) === 'chat';
+
+/**
+ * A venda foi atribuída pelo centavo do bruto?
+ * Vale só quando o centavo casa com o identificador de um chatter daquela
+ * modelo (R$ 14,07 -> chatter 07). Sem isso, a venda não é de ninguém.
+ */
+export const atribuidaPorCentavo = (venda, modelo) => {
+  const mapa = mapaIdentificadores(modelo);
+  if (!mapa.size) return false;
+  return mapa.has(centavoDe(venda?.bruto));
+};
+
+/**
+ * O que entra no relatório de vendas: só transação do tipo Chat, aprovada e
+ * atribuída pelo centavo do bruto ao chatter da modelo.
+ */
+export const filtrarVendasDoRelatorio = (vendas = [], modelos = []) => {
+  const porId = new Map((modelos || []).map((modelo) => [modelo.id, modelo]));
+  return (vendas || []).filter((venda) => {
+    if ((venda?.status || 'aprovada') !== 'aprovada') return false;
+    if (!ehVendaDeChat(venda)) return false;
+    return atribuidaPorCentavo(venda, porId.get(venda?.modelo_id));
+  });
+};
 
 export const pctAgencia = (modelo) => {
   const valor = Number(modelo?.comissao_agencia);

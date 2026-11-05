@@ -4,6 +4,7 @@ import GlassSelect from '@/components/GlassSelect';
 import RelatorioSemanalModal from '@/components/financeiro/RelatorioSemanalModal';
 import { DownloadIcon } from '@/components/icons';
 import {
+  filtrarVendasDoRelatorio,
   fimDoMes,
   inicioDoMes,
   mesLabel,
@@ -89,10 +90,15 @@ export default function RelatorioFinanceiro({ modelos, chatters }) {
     };
   }, [inicio, fim]);
 
+  /* Relatório só conta venda de chat atribuída pelo centavo do bruto ao
+     chatter da modelo. Assinatura, postagem e mimo ficam fora. */
   const filtradas = useMemo(
     () =>
-      vendas.filter((venda) => !modeloId || venda.modelo_id === modeloId),
-    [vendas, modeloId]
+      filtrarVendasDoRelatorio(
+        vendas.filter((venda) => !modeloId || venda.modelo_id === modeloId),
+        modelos
+      ),
+    [vendas, modeloId, modelos]
   );
 
   const resumo = useMemo(
@@ -146,7 +152,7 @@ export default function RelatorioFinanceiro({ modelos, chatters }) {
         </div>
 
         <span style={{ fontSize: 11, color: 'var(--c2)', marginLeft: 2 }}>
-          {carregando ? 'Carregando...' : `${filtradas.length} venda(s) aprovada(s)`}
+          {carregando ? 'Carregando...' : `${filtradas.length} venda(s) de chat`}
         </span>
 
         <button
@@ -175,6 +181,11 @@ export default function RelatorioFinanceiro({ modelos, chatters }) {
       </div>
 
       {erro && <span style={{ fontSize: 11, color: '#ff6b6b' }}>{erro}</span>}
+
+      <span style={{ fontSize: 9.5, color: 'var(--c2)', opacity: 0.8, marginTop: -4 }}>
+        Entram só as transações do tipo Chat cujo centavo do valor bruto é o identificador do
+        chatter na modelo.
+      </span>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 8 }}>
         {cards.map((card) => (
