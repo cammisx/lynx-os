@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.27';
+import { secrets } from 'base44:runtime';
 
 // Notifica o chatter quando um turno é inserido para ele.
 // Chamada pelo formulário de turno logo após criar (ou reatribuir) um shift.
@@ -83,16 +84,32 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Automação de entidade roda sem sessão; nesse caso o payload traz o shift.
-    const user = await base44.auth.me().catch(() => null);
-    if (user && user.role !== 'admin') {
+    const user = await base44.auth.me().catch((error) =>
+      error?.status === 401 ? null : Promise.reject(error)
+    );
+
+    // Sem sessão, apenas a automação que apresenta o segredo combinado pode avisar.
+    if (!user) {
+      const enviado = req.headers.get('x-automacao-secret') || '';
+      const esperado = secrets.get('AUTOMACAO_SECRET') || '';
+      if (!esperado || enviado !== esperado) {
+        return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+      }
+    } else if (user.role !== 'admin') {
       return Response.json({ ok: false, error: 'Apenas admin pode notificar turnos' }, { status: 403 });
     }
 
     const body = await req.json().catch(() => ({}));
-    const shift = body?.shift_id
-      ? await base44.asServiceRole.entities.Shift.get(body.shift_id).catch(() => null)
-      : body?.shift;
+    // O turno vem sempre do banco: o texto da notificação nunca é montado a
+    // partir de um objeto enviado pelo cliente.
+    const shiftId = String(body?.shift_id || body?.shift?.id || body?.record?.id || '').trim();
+    if (!shiftId) {
+      return Response.json({ ok: false, error: 'shift_id é obrigatório' }, { status: 400 });
+    }
+
+    const shift = await base44.asServiceRole.entities.Shift.get(shiftId).catch((error) =>
+      error?.status === 404 ? null : Promise.reject(error)
+    );
 
     if (!shift) {
       return Response.json({ ok: false, error: 'Turno não encontrado' }, { status: 404 });

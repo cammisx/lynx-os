@@ -89,9 +89,12 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const modeloId = String(body?.modelo_id || '').trim();
     const shiftId = String(body?.shift_id || '').trim();
-    const momento = body?.momento ? new Date(body.momento) : new Date();
+    const agora = Date.now();
+    const momento = body?.momento ? new Date(body.momento).getTime() : agora;
+    // Carimbo de horário forjado não entra no ponto de ninguém: só vale se
+    // estiver perto de agora.
     const fechamento = new Date(
-      Number.isNaN(momento.getTime()) ? Date.now() : momento.getTime()
+      Number.isNaN(momento) || Math.abs(momento - agora) > 10 * 60 * 1000 ? agora : momento
     ).toISOString();
 
     const fetchWhere = async (entity: string, query: any, sort = '-created_date') => {
@@ -107,11 +110,42 @@ Deno.serve(async (req: Request) => {
       return out;
     };
 
+    // Só quem acabou de bater a entrada no próprio turno (ou um admin) tira os
+    // espontâneos do ar, e a varredura fica presa ao modelo do próprio turno.
+    let escopoModelo = modeloId;
+    if (user.role !== 'admin') {
+      const proprio = shiftId
+        ? await base44.asServiceRole.entities.Shift.get(shiftId).catch(() => null)
+        : null;
+
+      if (!proprio || proprio.usuario_id !== user.id) {
+        return Response.json({ ok: false, error: 'Sem permissão' }, { status: 403 });
+      }
+
+      const entradas = await fetchWhere(
+        'RegistroPonto',
+        { shift_id: shiftId, usuario_id: user.id, tipo: 'entrada' },
+        '-timestamp'
+      );
+      const quando = entradas[0] ? new Date(entradas[0].timestamp).getTime() : NaN;
+
+      if (Number.isNaN(quando) || agora - quando > 15 * 60 * 1000) {
+        return Response.json({ ok: false, error: 'Sem permissão' }, { status: 403 });
+      }
+
+      escopoModelo = proprio.modelo_id || '';
+      if (!escopoModelo) {
+        return Response.json({ ok: true, encerrados: [], erros: [] });
+      }
+    }
+
     const avulsos = (await fetchWhere('Shift', { avulso: true, status: 'em_andamento' })).filter(
       (shift) => shift?.id && shift.id !== shiftId
     );
 
-    const alvos = modeloId ? avulsos.filter((shift) => shift.modelo_id === modeloId) : avulsos;
+    const alvos = escopoModelo
+      ? avulsos.filter((shift) => shift.modelo_id === escopoModelo)
+      : avulsos;
     const encerrados: any[] = [];
     const erros: any[] = [];
 

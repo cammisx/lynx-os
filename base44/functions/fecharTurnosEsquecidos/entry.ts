@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.27';
+import { secrets } from 'base44:runtime';
 
 // Fecha turnos esquecidos: ocorrências com entrada registrada e sem saída,
 // 2 horas após o fim previsto, ganham saída automática e geram uma notificação
@@ -253,10 +254,22 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    const user = await base44.auth.me().catch(() => null);
-    // Sem usuário = execução por automação agendada. Admin varre a equipe toda.
-    // Qualquer outro usuário só pode fechar as próprias ocorrências.
-    const scopeUserId = user && user.role !== 'admin' ? user.id : null;
+    const user = await base44.auth.me().catch((error) =>
+      error?.status === 401 ? null : Promise.reject(error)
+    );
+
+    // Admin varre a equipe toda; chatter só fecha as próprias ocorrências.
+    // Sem sessão, só uma automação que apresente o segredo combinado roda a varredura.
+    let scopeUserId = null;
+    if (!user) {
+      const enviado = req.headers.get('x-automacao-secret') || '';
+      const esperado = secrets.get('AUTOMACAO_SECRET') || '';
+      if (!esperado || enviado !== esperado) {
+        return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+      }
+    } else if (user.role !== 'admin') {
+      scopeUserId = user.id;
+    }
 
     const fetchAll = async (entity) => {
       const out = [];
