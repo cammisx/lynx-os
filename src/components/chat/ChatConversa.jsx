@@ -28,7 +28,7 @@ export default function ChatConversa({ onVoltar }) {
   useEffect(() => {
     if (areaRef.current) {
       areaRef.current.style.height = 'auto';
-      areaRef.current.style.height = `${Math.min(96, Math.max(34, areaRef.current.scrollHeight))}px`;
+      areaRef.current.style.height = `${Math.min(168, Math.max(58, areaRef.current.scrollHeight))}px`;
     }
   }, [texto]);
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import {
+  CANAL_PRIVADO,
   asList,
   canalVisivel,
   chaveDoCanal,
@@ -55,6 +56,7 @@ export default function useChat() {
   const [enviando, setEnviando] = useState(false);
   const canaisVisiveisRef = useRef([]);
   const membrosRef = useRef([]);
+  const modelosRef = useRef([]);
 
   const euId = user?.id;
 
@@ -165,6 +167,21 @@ export default function useChat() {
     [euId]
   );
 
+  /* Lista os canais de novo sem mexer em pessoas e membros: é o que roda no
+     intervalo e faz a conversa criada por outra pessoa aparecer aqui. */
+  const recarregarCanais = useCallback(async () => {
+    if (!euId) return null;
+    try {
+      const brutos = asList(await base44.entities.ChatCanal.list('-created_date', 200, 0));
+      const prontos = await garantirCanais(brutos, modelosRef.current);
+      setCanais(prontos);
+      return prontos;
+    } catch (falha) {
+      console.warn('[Chat] não consegui atualizar os canais', falha);
+      return null;
+    }
+  }, [euId, garantirCanais]);
+
   const carregar = useCallback(async () => {
     if (!euId) return;
     setErro('');
@@ -220,6 +237,10 @@ export default function useChat() {
   useEffect(() => {
     canaisVisiveisRef.current = canaisVisiveis;
   }, [canaisVisiveis]);
+
+  useEffect(() => {
+    modelosRef.current = modelos;
+  }, [modelos]);
 
   useEffect(() => {
     membrosRef.current = membros;
@@ -364,6 +385,26 @@ export default function useChat() {
     async ({ tipo, nome, participantes }) => {
       if (!euId) return null;
       const lista = [...new Set([...(participantes || []), euId])];
+
+      /* Antes de criar, procura no banco uma conversa com exatamente essas
+         pessoas. Sem isso, cada lado criava a sua e a mensagem caía numa
+         conversa que o outro não estava vendo. */
+      if (tipo === CANAL_PRIVADO && lista.length === 2) {
+        const assinatura = [...lista].sort().join('|');
+        const existentes = asList(
+          await base44.entities.ChatCanal.filter({ tipo: CANAL_PRIVADO }, '-created_date', 200, 0).catch(
+            () => []
+          )
+        );
+        const igual = existentes.find(
+          (canal) => [...(canal.participantes || [])].sort().join('|') === assinatura
+        );
+        if (igual) {
+          abrirCanal(igual.id);
+          return igual;
+        }
+      }
+
       const criado = await base44.entities.ChatCanal.create({
         tipo,
         nome: nome || '',
@@ -440,6 +481,34 @@ export default function useChat() {
     }, INTERVALO_SEM_TEMPO_REAL);
     return () => clearInterval(timer);
   }, [euId, carregarMensagens]);
+
+  /* Conversa criada por outra pessoa só chegava aqui depois de recarregar a
+     página. Agora os canais são relidos no mesmo intervalo das mensagens. */
+  useEffect(() => {
+    if (!euId) return undefined;
+    const timer = setInterval(() => {
+      recarregarCanais();
+    }, INTERVALO_SEM_TEMPO_REAL);
+    return () => clearInterval(timer);
+  }, [euId, recarregarCanais]);
+
+  /* Canal novo entrando na lista precisa trazer o histórico dele. */
+  const chaveDosCanais = canaisVisiveis.map((canal) => canal.id).sort().join('|');
+  useEffect(() => {
+    if (!chaveDosCanais) return undefined;
+    let ativo = true;
+    carregarMensagens(canaisVisiveisRef.current).then((lista) => {
+      if (!ativo || !lista.length) return;
+      setMensagens((anterior) => {
+        const mapa = new Map(anterior.map((mensagem) => [mensagem.id, mensagem]));
+        lista.forEach((mensagem) => mapa.set(mensagem.id, mensagem));
+        return [...mapa.values()].sort(porData);
+      });
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [chaveDosCanais, carregarMensagens]);
 
   /* Canal aberto na tela não acumula badge: o que chega enquanto a pessoa
      está olhando já conta como lido. */
