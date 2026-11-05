@@ -255,9 +255,9 @@ const COLUNAS = [
   { titulo: 'COMISSÃO', largura: 22, alinhamento: 'right' },
 ];
 
-const cabecalho = (doc, { modelo, chatter, inicio, compacto = false }) => {
+const cabecalho = (doc, { modelo, chatter, inicio, compacto = false, titulo = 'Relatório semanal' }) => {
   if (compacto) {
-    texto(doc, 'RELATÓRIO SEMANAL', MARGEM, 16, {
+    texto(doc, titulo.toUpperCase(), MARGEM, 16, {
       tamanho: 8,
       cor: PAPEL.ouro,
       negrito: true,
@@ -281,7 +281,7 @@ const cabecalho = (doc, { modelo, chatter, inicio, compacto = false }) => {
   });
   texto(doc, 'financeiro', MARGEM + 17, 13, { tamanho: 7.5, cor: PAPEL.fraco, espaco: 0.4 });
 
-  texto(doc, 'Relatório semanal', MARGEM, 26, {
+  texto(doc, titulo, MARGEM, 26, {
     tamanho: 21,
     cor: PAPEL.tinta,
     negrito: true,
@@ -364,83 +364,9 @@ const cabecalhoDaTabela = (doc, y) => {
   return y + 8;
 };
 
-/**
- * Monta e salva o PDF. `vendas` já deve vir filtrada pela semana.
- */
-export const gerarRelatorioSemanal = async ({ modelo, chatter, inicio, vendas }) => {
-  const resumo = resumoSemana(vendas, modelo, chatter);
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const fonte = await carregarFontes(doc);
-  if (fonte !== FONTE_ALTERNATIVA) doc.setFont(fonte);
-
-  let pagina = 1;
-  fundoDoCrepusculo(doc);
-  let y = cabecalho(doc, { modelo, chatter, inicio });
-  y = cartoesDoResumo(doc, y + 6, resumo) + 12;
-
-  const novaPagina = () => {
-    doc.addPage();
-    pagina += 1;
-    fundoDoCrepusculo(doc);
-    y = cabecalho(doc, { modelo, chatter, inicio, compacto: true });
-    y = cabecalhoDaTabela(doc, y + 2);
-  };
-
-  y = cabecalhoDaTabela(doc, y);
-
-  const alturaDaLinha = 7.2;
-
-  if (!vendas.length) {
-    painel(doc, MARGEM, y + 2, CONTEUDO, 18);
-    texto(doc, 'Nenhuma venda registrada nesta semana.', MARGEM + 5, y + 12, {
-      tamanho: 9,
-      cor: PAPEL.suave,
-    });
-    y += 24;
-  }
-
-  vendas.forEach((venda, indice) => {
-    if (y + alturaDaLinha > 246) {
-      novaPagina();
-    }
-
-    const contas = calcularVenda(venda, modelo, chatter);
-    if (indice % 2 === 0) {
-      doc.setFillColor(...mistura([30, 9, 24], [255, 255, 255], 0.035));
-      doc.rect(MARGEM - 2, y - 4.6, CONTEUDO + 4, alturaDaLinha, 'F');
-    }
-
-    const valores = [
-      dataHoraCurta(venda.ocorrido_em),
-      corta(venda.usuario_plataforma, 25),
-      corta(venda.tipo || '—', 16),
-      moeda(contas.bruto),
-      moeda(contas.liquido),
-      moeda(contas.chatter),
-    ];
-
-    let x = MARGEM;
-    valores.forEach((valor, indice) => {
-      const coluna = COLUNAS[indice];
-      const posicao = coluna.alinhamento === 'right' ? x + coluna.largura - 1 : x;
-      const ultima = indice === valores.length - 1;
-      texto(doc, valor, posicao, y, {
-        tamanho: 8.2,
-        cor: ultima ? PAPEL.ouro : indice === 0 ? PAPEL.fraco : PAPEL.texto,
-        negrito: ultima,
-        alinhamento: coluna.alinhamento,
-      });
-      x += coluna.largura;
-    });
-
-    y += alturaDaLinha;
-  });
-
-  // Totais
+/** Painel final de totais, igual para uma modelo ou para o total geral. */
+const painelDeTotais = (doc, y, resumo, inicio) => {
   const alturaTotais = 34;
-  if (y + alturaTotais + 10 > ALTURA - 16) novaPagina();
-  y += 8;
-
   painel(doc, MARGEM, y, CONTEUDO, alturaTotais, { destaque: true });
 
   // coluna esquerda: comissão do chatter
@@ -459,7 +385,7 @@ export const gerarRelatorioSemanal = async ({ modelo, chatter, inicio, vendas })
     tamanho: 7,
     cor: PAPEL.suave,
   });
- 
+
   // divisória
   doc.setDrawColor(...mistura([70, 30, 55], [255, 255, 255], 0.14));
   doc.setLineWidth(0.15);
@@ -489,6 +415,207 @@ export const gerarRelatorioSemanal = async ({ modelo, chatter, inicio, vendas })
     cor: PAPEL.fraco,
     alinhamento: 'right',
   });
+
+  return y + alturaTotais;
+};
+
+/**
+ * Uma seção = uma modelo com as vendas daquele chatter na semana.
+ * Desenha na página atual; quem chama decide se precisa de página nova.
+ */
+const desenharSecao = (doc, { modelo, chatter, inicio, vendas }) => {
+  const resumo = resumoSemana(vendas, modelo, chatter);
+
+  fundoDoCrepusculo(doc);
+  let y = cabecalho(doc, { modelo, chatter, inicio });
+  y = cartoesDoResumo(doc, y + 6, resumo) + 12;
+
+  const novaPagina = () => {
+    doc.addPage();
+    fundoDoCrepusculo(doc);
+    y = cabecalho(doc, { modelo, chatter, inicio, compacto: true });
+    y = cabecalhoDaTabela(doc, y + 2);
+  };
+
+  y = cabecalhoDaTabela(doc, y);
+  const alturaDaLinha = 7.2;
+
+  if (!vendas.length) {
+    painel(doc, MARGEM, y + 2, CONTEUDO, 18);
+    texto(doc, 'Nenhuma venda registrada nesta semana.', MARGEM + 5, y + 12, {
+      tamanho: 9,
+      cor: PAPEL.suave,
+    });
+    y += 24;
+  }
+
+  vendas.forEach((venda, indice) => {
+    if (y + alturaDaLinha > 246) novaPagina();
+
+    const contas = calcularVenda(venda, modelo, chatter);
+    if (indice % 2 === 0) {
+      doc.setFillColor(...mistura([30, 9, 24], [255, 255, 255], 0.035));
+      doc.rect(MARGEM - 2, y - 4.6, CONTEUDO + 4, alturaDaLinha, 'F');
+    }
+
+    const valores = [
+      dataHoraCurta(venda.ocorrido_em),
+      corta(venda.usuario_plataforma, 25),
+      corta(venda.tipo || '—', 16),
+      moeda(contas.bruto),
+      moeda(contas.liquido),
+      moeda(contas.chatter),
+    ];
+
+    let x = MARGEM;
+    valores.forEach((valor, indiceColuna) => {
+      const coluna = COLUNAS[indiceColuna];
+      const posicao = coluna.alinhamento === 'right' ? x + coluna.largura - 1 : x;
+      const ultima = indiceColuna === valores.length - 1;
+      texto(doc, valor, posicao, y, {
+        tamanho: 8.2,
+        cor: ultima ? PAPEL.ouro : indiceColuna === 0 ? PAPEL.fraco : PAPEL.texto,
+        negrito: ultima,
+        alinhamento: coluna.alinhamento,
+      });
+      x += coluna.largura;
+    });
+
+    y += alturaDaLinha;
+  });
+
+  if (y + 34 + 10 > ALTURA - 16) novaPagina();
+  y = painelDeTotais(doc, y + 8, resumo, inicio);
+
+  return resumo;
+};
+
+const COLUNAS_TOTAL = [
+  { titulo: 'MODELO', largura: 58, alinhamento: 'left' },
+  { titulo: 'VENDAS', largura: 22, alinhamento: 'right' },
+  { titulo: 'BRUTO', largura: 34, alinhamento: 'right' },
+  { titulo: 'LÍQUIDO', largura: 34, alinhamento: 'right' },
+  { titulo: 'COMISSÃO', largura: 34, alinhamento: 'right' },
+];
+
+/** Página final: soma de tudo que o chatter recebe, com a quebra por modelo. */
+const desenharTotal = (doc, { chatter, inicio, resumos }) => {
+  const total = resumos.reduce(
+    (soma, item) => ({
+      vendas: soma.vendas + item.vendas,
+      bruto: soma.bruto + item.bruto,
+      liquido: soma.liquido + item.liquido,
+      comissao: soma.comissao + item.comissao,
+      pct: item.pct,
+    }),
+    { vendas: 0, bruto: 0, liquido: 0, comissao: 0, pct: pctChatter(chatter) }
+  );
+
+  doc.addPage();
+  fundoDoCrepusculo(doc);
+  let y = cabecalho(doc, {
+    modelo: { nome: 'Todas as modelos' },
+    chatter,
+    inicio,
+    titulo: 'Total geral',
+  });
+  y = cartoesDoResumo(doc, y + 6, total) + 12;
+
+  let x = MARGEM;
+  COLUNAS_TOTAL.forEach((coluna) => {
+    const posicao = coluna.alinhamento === 'right' ? x + coluna.largura - 1 : x;
+    texto(doc, coluna.titulo, posicao, y, {
+      tamanho: 6.4,
+      cor: PAPEL.ouro,
+      negrito: true,
+      alinhamento: coluna.alinhamento,
+      espaco: 0.6,
+    });
+    x += coluna.largura;
+  });
+  doc.setDrawColor(...mistura([70, 30, 55], [255, 255, 255], 0.16));
+  doc.setLineWidth(0.15);
+  doc.line(MARGEM, y + 2.6, LARGURA - MARGEM, y + 2.6);
+  y += 8;
+
+  const alturaDaLinha = 7.2;
+  resumos.forEach((item, indice) => {
+    if (y + alturaDaLinha > 246) {
+      doc.addPage();
+      fundoDoCrepusculo(doc);
+      y = cabecalho(doc, {
+        modelo: { nome: 'Todas as modelos' },
+        chatter,
+        inicio,
+        compacto: true,
+        titulo: 'Total geral',
+      });
+      y += 8;
+    }
+
+    if (indice % 2 === 0) {
+      doc.setFillColor(...mistura([30, 9, 24], [255, 255, 255], 0.035));
+      doc.rect(MARGEM - 2, y - 4.6, CONTEUDO + 4, alturaDaLinha, 'F');
+    }
+
+    const valores = [
+      corta(item.modelo?.nome || '—', 28),
+      String(item.vendas),
+      moeda(item.bruto),
+      moeda(item.liquido),
+      moeda(item.comissao),
+    ];
+
+    let colunaX = MARGEM;
+    valores.forEach((valor, indiceColuna) => {
+      const coluna = COLUNAS_TOTAL[indiceColuna];
+      const posicao = coluna.alinhamento === 'right' ? colunaX + coluna.largura - 1 : colunaX;
+      const ultima = indiceColuna === valores.length - 1;
+      texto(doc, valor, posicao, y, {
+        tamanho: 8.2,
+        cor: ultima ? PAPEL.ouro : indiceColuna === 0 ? PAPEL.texto : PAPEL.texto,
+        negrito: ultima,
+        alinhamento: coluna.alinhamento,
+      });
+      colunaX += coluna.largura;
+    });
+
+    y += alturaDaLinha;
+  });
+
+  if (y + 34 + 10 > ALTURA - 16) {
+    doc.addPage();
+    fundoDoCrepusculo(doc);
+    y = cabecalho(doc, {
+      modelo: { nome: 'Todas as modelos' },
+      chatter,
+      inicio,
+      compacto: true,
+      titulo: 'Total geral',
+    });
+  }
+  y = painelDeTotais(doc, y + 8, total, inicio);
+
+  return total;
+};
+
+/**
+ * Monta e salva o PDF. Cada seção traz uma modelo e as vendas daquele chatter
+ * na semana, já filtradas. Com mais de uma seção, entra a página de total.
+ */
+export const gerarRelatorioSemanal = async ({ modelo, chatter, inicio, vendas, secoes }) => {
+  const lista = (secoes && secoes.length ? secoes : [{ modelo, vendas }]).filter(Boolean);
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const fonte = await carregarFontes(doc);
+  if (fonte !== FONTE_ALTERNATIVA) doc.setFont(fonte);
+
+  const resumos = lista.map((secao, indice) => {
+    if (indice > 0) doc.addPage();
+    const resumo = desenharSecao(doc, { ...secao, chatter, inicio });
+    return { ...resumo, modelo: secao.modelo };
+  });
+
+  const total = lista.length > 1 ? desenharTotal(doc, { chatter, inicio, resumos }) : null;
 
   // Rodapé em todas as páginas
   const totalPaginas = doc.getNumberOfPages();
@@ -523,12 +650,13 @@ export const gerarRelatorioSemanal = async ({ modelo, chatter, inicio, vendas })
       .replace(/^-|-$/g, '')
       .toLowerCase();
 
+  const escopo = lista.length > 1 ? 'todas-as-modelos' : slug(lista[0]?.modelo?.nome);
+
   doc.save(
-    `relatorio-semanal-${slug(modelo?.nome)}-${slug(chatter?.nome)}-${inicio.getFullYear()}-${dd(
+    `relatorio-semanal-${escopo}-${slug(chatter?.nome)}-${inicio.getFullYear()}-${dd(
       inicio.getMonth() + 1
     )}-${dd(inicio.getDate())}.pdf`
   );
 
-  return { paginas: totalPaginas, resumo };
+  return { paginas: totalPaginas, resumo: resumos[0], resumos, total };
 };
-

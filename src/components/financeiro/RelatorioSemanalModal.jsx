@@ -14,6 +14,9 @@ import {
 
 const asList = (resultado) => (Array.isArray(resultado) ? resultado : resultado?.items || []);
 
+/** Valor do seletor de modelo que dispara o relatório de todas as modelos. */
+const TODAS = 'todas';
+
 const botaoNavegar = {
   width: 26,
   height: 26,
@@ -37,6 +40,7 @@ export default function RelatorioSemanalModal({ modelos, chatters, onClose }) {
   const [gerando, setGerando] = useState(false);
   const [aviso, setAviso] = useState(null);
 
+  const todasAsModelos = modeloId === TODAS;
   const modelo = modelos.find((item) => item.id === modeloId) || null;
 
   const nomeDoChatter = useMemo(
@@ -45,14 +49,19 @@ export default function RelatorioSemanalModal({ modelos, chatters, onClose }) {
   );
 
   const opcoesModelos = useMemo(
-    () => modelos.map((item) => ({ value: item.id, label: item.nome })),
+    () => [
+      ...modelos.map((item) => ({ value: item.id, label: item.nome })),
+      { value: TODAS, label: 'Todas as modelos' },
+    ],
     [modelos]
   );
 
   const opcoesChatters = useMemo(() => {
-    if (!modelo) return [];
+    if (!modelo && !todasAsModelos) return [];
     const vistos = new Set();
-    return (modelo.chatters || [])
+    const fonte = modelo ? [modelo] : modelos;
+    return fonte
+      .flatMap((item) => item.chatters || [])
       .map((membro) => {
         const nome = nomeDoChatter.get(membro.usuario_id) || membro.usuario_nome || 'Chatter';
         if (vistos.has(membro.usuario_id) || !nome) return null;
@@ -60,7 +69,7 @@ export default function RelatorioSemanalModal({ modelos, chatters, onClose }) {
         return { value: membro.usuario_id, label: nome };
       })
       .filter(Boolean);
-  }, [modelo, nomeDoChatter]);
+  }, [modelo, todasAsModelos, modelos, nomeDoChatter]);
 
   const chatter = chatters.find((item) => item.usuario_id === chatterId) || null;
 
@@ -71,7 +80,7 @@ export default function RelatorioSemanalModal({ modelos, chatters, onClose }) {
 
   const gerar = async () => {
     if (gerando) return;
-    if (!modelo || !chatterId) {
+    if ((!modelo && !todasAsModelos) || !chatterId) {
       setAviso({ erro: true, texto: 'Escolha a modelo e o chatter.' });
       return;
     }
@@ -80,27 +89,49 @@ export default function RelatorioSemanalModal({ modelos, chatters, onClose }) {
     try {
       const de = inicio.toISOString();
       const resultado = await base44.entities.VendaMimo.filter(
-        { modelo_id: modelo.id, usuario_id: chatterId, ocorrido_em: { $gte: de } },
+        {
+          usuario_id: chatterId,
+          ocorrido_em: { $gte: de },
+          ...(modelo ? { modelo_id: modelo.id } : {}),
+        },
         { sort: 'ocorrido_em', limit: 500 }
       );
+
+      const aprovadas = vendasDaSemana(
+        asList(resultado).filter((venda) => (venda.status || 'aprovada') === 'aprovada'),
+        inicio
+      );
+
       /* Mesma regra do relatório na tela: só venda de chat atribuída pelo
          centavo do bruto ao chatter da modelo. */
-      const vendas = filtrarVendasDoRelatorio(
-        vendasDaSemana(
-          asList(resultado).filter((venda) => (venda.status || 'aprovada') === 'aprovada'),
-          inicio
-        ),
-        [modelo]
-      );
+      const secoes = (modelo ? [modelo] : modelos)
+        .map((item) => ({
+          modelo: item,
+          vendas: filtrarVendasDoRelatorio(
+            aprovadas.filter((venda) => venda.modelo_id === item.id),
+            [item]
+          ),
+        }))
+        .filter((secao) => secao.vendas.length);
+
+      if (!secoes.length) {
+        setAviso({
+          erro: true,
+          texto: 'Nenhuma venda de chat desse chatter nessa semana.',
+        });
+        return;
+      }
+
       const { paginas } = await gerarRelatorioSemanal({
-        modelo,
         chatter: { ...chatter, nome: nomeDoChatter.get(chatterId) || 'Chatter' },
         inicio,
-        vendas,
+        secoes,
       });
+      const quantasVendas = secoes.reduce((soma, secao) => soma + secao.vendas.length, 0);
+      const escopo = secoes.length > 1 ? ` em ${secoes.length} modelos` : '';
       setAviso({
         erro: false,
-        texto: `PDF gerado com ${vendas.length} venda(s) de chat em ${paginas} página(s).`,
+        texto: `PDF gerado com ${quantasVendas} venda(s) de chat${escopo} em ${paginas} página(s).`,
       });
     } catch (erro) {
       const detalhe = String(erro?.message || erro || '').slice(0, 90);
@@ -210,8 +241,8 @@ export default function RelatorioSemanalModal({ modelos, chatters, onClose }) {
                 onChange={setChatterId}
                 options={opcoesChatters}
                 label="Chatter"
-                placeholder={modelo ? 'Escolher chatter' : 'Escolha a modelo'}
-                disabled={!modelo}
+                placeholder={modelo || todasAsModelos ? 'Escolher chatter' : 'Escolha a modelo'}
+                disabled={!modelo && !todasAsModelos}
               />
             </div>
           </div>
@@ -282,7 +313,9 @@ export default function RelatorioSemanalModal({ modelos, chatters, onClose }) {
           <div style={{ fontSize: 10.5, color: 'var(--c2)', lineHeight: 1.6 }}>
             O PDF lista cada venda de chat da semana com bruto, líquido e a comissão do chatter,
             além dos totais. Entram só as transações do tipo Chat cujo centavo do bruto é o
-            identificador do chatter na modelo. A parte da agência não entra no documento.
+            identificador do chatter na modelo. Em "Todas as modelos" sai uma página por modelo
+            e uma última com a soma do que o chatter vai receber. A parte da agência não entra
+            no documento.
             {chatter && ` Comissão configurada: ${pctChatter(chatter)}%.`}
           </div>
 
