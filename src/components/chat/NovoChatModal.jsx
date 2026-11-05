@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { MODAL_CAIXA } from '@/lib/modalStyles';
 import { CheckIcon, CloseIcon, UsersIcon } from '@/components/icons';
 import { useAuth } from '@/lib/AuthContext';
-import { corDaPessoa, iniciais } from '@/lib/chat';
+import AvatarPessoa from '@/components/chat/AvatarPessoa';
 import { useChatPanel } from '@/components/chat/ChatProvider';
 
 const rotulo = {
@@ -261,23 +261,7 @@ export default function NovoChatModal({ onClose }) {
                     fontFamily: 'var(--font-main)',
                   }}
                 >
-                  <span
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 13,
-                      flexShrink: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 9.5,
-                      fontWeight: 700,
-                      color: 'var(--c8)',
-                      background: corDaPessoa(pessoa.id),
-                    }}
-                  >
-                    {iniciais(pessoa.nome)}
-                  </span>
+                  <AvatarPessoa pessoa={pessoa} size={26} />
                   <span style={{ flex: 1, minWidth: 0 }}>
                     <span
                       style={{
@@ -292,7 +276,13 @@ export default function NovoChatModal({ onClose }) {
                       {pessoa.nome}
                     </span>
                     <span style={{ display: 'block', fontSize: 9, color: 'var(--c12)' }}>
-                      {pessoa.cargo === 'admin' ? 'administração' : 'chatter'}
+                      {pessoa.subnick ? (
+                        <span style={{ fontStyle: 'italic', color: 'var(--c1)' }}>{pessoa.subnick}</span>
+                      ) : pessoa.cargo === 'admin' ? (
+                        'administração'
+                      ) : (
+                        'chatter'
+                      )}
                     </span>
                   </span>
                   {marcado && <CheckIcon size={13} style={{ color: 'var(--c1)' }} />}

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CloseIcon } from '@/components/icons';
+import { CloseIcon, UsersIcon } from '@/components/icons';
 import ChatIcon from '@/components/icons/ChatIcon';
 import { useAuth } from '@/lib/AuthContext';
 import { useChatPanel } from '@/components/chat/ChatProvider';
