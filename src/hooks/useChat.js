@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import {
   CANAL_GRUPO,
+  CANAL_MODELO,
   CANAL_PRIVADO,
   asList,
   canalVisivel,
@@ -135,6 +136,8 @@ export default function useChat() {
         faltando.push({ tipo: 'geral', nome: 'Geral', participantes: [], criado_por: euId });
       }
       listaModelos.forEach((modelo) => {
+        /* Modelo arquivada não ganha (nem recupera) conversa no chat. */
+        if (modelo?.arquivada) return;
         if (!existentes.has(`modelo:${modelo.id}`)) {
           faltando.push({
             tipo: 'modelo',
@@ -318,7 +321,16 @@ export default function useChat() {
   }, [euId]);
 
   const canaisVisiveis = useMemo(() => {
-    const lista = canais.filter((canal) => canalVisivel(canal, user, modelos));
+    const modelosProntos = modelos.length > 0;
+    const lista = canais.filter((canal) => {
+      if (!canalVisivel(canal, user, modelos)) return false;
+      /* Conversa de modelo que não existe mais (excluída, não arquivada) fica
+         fora. Só depois de as modelos carregarem, para não piscar na abertura. */
+      if (canal.tipo === CANAL_MODELO && modelosProntos) {
+        return modelos.some((modelo) => modelo.id === canal.modelo_id);
+      }
+      return true;
+    });
     // Um canal por modelo e o geral não podem aparecer duas vezes.
     const unicos = new Map();
     ordemDosCanais(lista).forEach((canal) => {

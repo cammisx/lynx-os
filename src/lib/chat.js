@@ -52,8 +52,11 @@ export const canalVisivel = (canal, usuario, modelos = []) => {
   if (!canal || !usuario) return false;
   if (canal.tipo === CANAL_GERAL) return true;
   if (canal.tipo === CANAL_MODELO) {
-    if (ehAdmin(usuario)) return true;
     const modelo = (modelos || []).find((item) => item.id === canal.modelo_id);
+    /* Modelo arquivada sai da lista do chat, inclusive para o admin. Se ela
+       for desarquivada, a conversa volta com o histórico. */
+    if (modelo?.arquivada) return false;
+    if (ehAdmin(usuario)) return true;
     if (!modelo) return false;
     return chattersDaModelo(modelo).includes(usuario.id);
   }
