@@ -21,6 +21,7 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
     () => new Set((model?.chatters || []).map((chatter) => chatter.usuario_id))
   );
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [comissaoAgencia, setComissaoAgencia] = useState(
     model?.comissao_agencia === null || model?.comissao_agencia === undefined
       ? '50'
@@ -103,27 +104,42 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
     setErrors({});
 
     setSaving(true);
+    setSaveError('');
+    const members = chosen.map((chatter) => ({
+      usuario_id: chatter.usuario_id,
+      usuario_nome: chatter.nome,
+      identificador: ids[chatter.usuario_id] || '',
+    }));
+    const percentual = Math.min(100, Math.max(0, Number(comissaoAgencia.replace(',', '.')) || 0));
+    const dados = { nome: cleanName, chatters: members, comissao_agencia: percentual };
+
     try {
-      const members = chosen.map((chatter) => ({
-        usuario_id: chatter.usuario_id,
-        usuario_nome: chatter.nome,
-        identificador: ids[chatter.usuario_id] || '',
-      }));
-      const percentual = Math.min(100, Math.max(0, Number(comissaoAgencia.replace(',', '.')) || 0));
-      if (model) {
-        await base44.entities.Modelo.update(model.id, {
-          nome: cleanName,
-          chatters: members,
-          comissao_agencia: percentual,
+      // O backend grava com service role; sem ele, o RLS deixa o formulário
+      // salvar sem nada mudar na entidade.
+      let gravou = false;
+      try {
+        const resposta = await base44.functions.invoke('salvarModelo', {
+          ...dados,
+          id: model?.id,
         });
-      } else {
-        await base44.entities.Modelo.create({
-          nome: cleanName,
-          chatters: members,
-          comissao_agencia: percentual,
-        });
+        const retorno = resposta?.data;
+        if (retorno?.ok) gravou = true;
+        else if (retorno?.error) {
+          setSaveError(retorno.error);
+          return;
+        }
+      } catch (falha) {
+        console.warn('[Modelos] gravação pelo backend falhou, tentando direto', falha?.message || falha);
       }
+
+      if (!gravou) {
+        if (model) await base44.entities.Modelo.update(model.id, dados);
+        else await base44.entities.Modelo.create(dados);
+      }
+
       await onSaved();
+    } catch (falha) {
+      setSaveError(falha?.message || 'Não consegui salvar a modelo.');
     } finally {
       setSaving(false);
     }
@@ -193,6 +209,10 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
           ))}
         </div>
       </div>
+
+      {saveError && (
+        <span style={{ fontSize: 10.5, color: '#ff6b6b', lineHeight: 1.5 }}>{saveError}</span>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
         <button type="button" className="md-btn" onClick={onCancel} style={cancelStyle}>

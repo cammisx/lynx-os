@@ -16,12 +16,19 @@ import ChatSidebar from '@/components/chat/ChatSidebar';
 import useFecharTurnosEsquecidos from '@/hooks/useFecharTurnosEsquecidos';
 import useAvisarTurnosPendentes from '@/hooks/useAvisarTurnosPendentes';
 import useVersaoPublicada from '@/hooks/useVersaoPublicada';
+import { sincronizarAdminsUmaVez } from '@/lib/admins';
 
 export default function Dashboard() {
   const [openApp, setOpenApp] = useState(null);
   const { user } = useAuth();
   // Carrega o perfil (tema, nome, foto) antes de tudo aparecer na tela.
   usePerfil(user);
+
+  // Admin recém-chegado entra em todas as modelos assim que o app abre.
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+    sincronizarAdminsUmaVez();
+  }, [user?.id, user?.role]);
 
   useFecharTurnosEsquecidos();
   useAvisarTurnosPendentes();

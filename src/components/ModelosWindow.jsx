@@ -9,6 +9,8 @@ import ArchiveDialog from '@/components/models/ArchiveDialog';
 import { UsersIcon, PlusIcon } from '@/components/icons';
 import { emitModelsChanged } from '@/lib/desktopEvents';
 import { buildChatterNames } from '@/lib/chatterNames';
+import { useAuth } from '@/lib/AuthContext';
+import { sincronizarAdminsUmaVez } from '@/lib/admins';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
@@ -32,7 +34,26 @@ export default function ModelosWindow({ onClose }) {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [falhouModelos, setFalhouModelos] = useState(false);
 
+  const { user } = useAuth();
+  const ehAdmin = user?.role === 'admin';
+
+  /* A janela pede a equipe ao backend: o RLS das entidades esconde modelos e
+     usuários de quem não é admin, e era isso que deixava a lista vazia. */
   const load = async () => {
+    try {
+      const resposta = await base44.functions.invoke('equipeModelos', {});
+      const dados = resposta?.data;
+      if (dados?.ok) {
+        setModels(dados.modelos || []);
+        setUsers(dados.usuarios || []);
+        setChatters([]);
+        setFalhouModelos(false);
+        return;
+      }
+    } catch (falha) {
+      console.warn('[Modelos] leitura da equipe falhou, tentando direto', falha?.message || falha);
+    }
+
     const [modelosLidos, chattersLidos, usuariosLidos] = await Promise.all([
       carregarLista(base44.entities.Modelo.list()),
       carregarLista(base44.entities.Chatter.list()),
@@ -43,6 +64,14 @@ export default function ModelosWindow({ onClose }) {
     setUsers(usuariosLidos.lista);
     setFalhouModelos(modelosLidos.falhou);
   };
+
+  /* Admin novo entra em todas as modelos automaticamente. */
+  useEffect(() => {
+    if (!ehAdmin) return;
+    sincronizarAdminsUmaVez().then((ajustadas) => {
+      if (ajustadas > 0) load();
+    });
+  }, [ehAdmin]);
 
   useEffect(() => {
     load();
@@ -93,10 +122,11 @@ export default function ModelosWindow({ onClose }) {
           isAdmin: false,
         }));
     }
-    return users.map((user) => ({
-      usuario_id: user.id,
-      nome: user.nome_exibicao || names[user.id] || user.full_name || user.email || '',
-      isAdmin: user.role === 'admin',
+    return users.map((pessoa) => ({
+      usuario_id: pessoa.id,
+      nome:
+        pessoa.nome_exibicao || names[pessoa.id] || pessoa.full_name || pessoa.email || '',
+      isAdmin: pessoa.role === 'admin',
     }));
   }, [users, chatters]);
 
