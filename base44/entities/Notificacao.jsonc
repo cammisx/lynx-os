@@ -21,6 +21,7 @@
         "venda_pendente",
         "folga_pendente",
         "ajuste_ponto_pendente",
+        "folga_automatica",
         "horario_disponivel"
       ],
       "enumColors": [
@@ -30,6 +31,7 @@
         "orange",
         "purple",
         "teal",
+        "green",
         "pink",
         "purple"
       ],

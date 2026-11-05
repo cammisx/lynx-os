@@ -225,28 +225,49 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
         }
       }
 
-      if (!aprovadaNaHora) {
-        const turnoTexto = `${ocorrencia.modeloNome || 'turno'} em ${diaLongo(
-          ocorrencia.start
-        )}, ${horaDe(ocorrencia.start)}–${horaDe(ocorrencia.end)}`;
-        const pedido =
-          tipo === 'folga'
-            ? `folga no turno de ${turnoTexto}`
-            : `redução no turno de ${turnoTexto}, ficando ${horaDe(entradaFinal)}–${horaDe(saidaFinal)}`;
-        const prazo = foraDoPrazo
-          ? ` Pedido fora do prazo (faltavam ${Math.max(0, Math.floor(antecedenciaHoras))}h).`
-          : '';
-        const motivoTexto = motivo.trim() ? ` Motivo: ${motivo.trim()}` : '';
+      const turnoTexto = `${ocorrencia.modeloNome || 'turno'} em ${diaLongo(
+        ocorrencia.start
+      )}, ${horaDe(ocorrencia.start)}–${horaDe(ocorrencia.end)}`;
+      const pedidoTexto =
+        tipo === 'folga'
+          ? `folga no turno de ${turnoTexto}`
+          : `redução no turno de ${turnoTexto}, ficando ${horaDe(entradaFinal)}–${horaDe(saidaFinal)}`;
+      const quem = usuario?.full_name || usuario?.email || 'Chatter';
+      const motivoTexto = motivo.trim() ? ` Motivo: ${motivo.trim()}` : '';
+      const extra = {
+        folga_id: criada?.id || '',
+        shift_id: ocorrencia.shiftId,
+        ocorrencia_data: ocorrencia.dateKey,
+        modelo_id: ocorrencia.modeloId,
+        modelo_nome: ocorrencia.modeloNome,
+        turno_inicio: new Date(ocorrencia.start).toISOString(),
+        turno_fim: new Date(ocorrencia.end).toISOString(),
+      };
 
+      if (aprovadaNaHora) {
+        // Aviso informativo: o admin não precisa decidir nada, é só ciência.
+        try {
+          await notificarAdminsSolicitacao(base44, {
+            titulo: tipo === 'folga' ? 'Folga aprovada automaticamente' : 'Redução aprovada automaticamente',
+            mensagem: `${quem} pediu ${pedidoTexto} e já foi aplicado (${Math.floor(
+              antecedenciaHoras
+            )}h de antecedência).${motivoTexto}`,
+            tipo: 'folga_automatica',
+            extra,
+            solicitante: usuario,
+          });
+        } catch (error) {
+          console.warn('[Folga] aviso aos admins', error);
+        }
+      } else {
         await notificarAdminsSolicitacao(base44, {
           titulo: tipo === 'folga' ? 'Pedido de folga' : 'Pedido de redução',
-          mensagem: `${usuario?.full_name || usuario?.email || 'Chatter'} pediu ${pedido}.${prazo}${motivoTexto}`,
+          mensagem: `${quem} pediu ${pedidoTexto}. Pedido fora do prazo (faltavam ${Math.max(
+            0,
+            Math.floor(antecedenciaHoras)
+          )}h).${motivoTexto}`,
           tipo: 'folga_pendente',
-          extra: {
-            folga_id: criada?.id || '',
-            shift_id: ocorrencia.shiftId,
-            ocorrencia_data: ocorrencia.dateKey,
-          },
+          extra,
           solicitante: usuario,
         });
       }
