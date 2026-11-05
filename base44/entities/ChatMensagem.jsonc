@@ -19,12 +19,14 @@
       "enum": [
         "texto",
         "imagem",
+        "arquivo",
         "audio",
         "sistema"
       ],
       "enumColors": [
         "gray",
         "blue",
+        "green",
         "purple",
         "orange"
       ],
@@ -35,6 +37,15 @@
     },
     "anexo_url": {
       "type": "string"
+    },
+    "anexo_nome": {
+      "type": "string"
+    },
+    "anexo_tipo": {
+      "type": "string"
+    },
+    "anexo_tamanho": {
+      "type": "number"
     },
     "audio_url": {
       "type": "string"

@@ -13,6 +13,7 @@ import {
   naoLidasDoCanal,
   ordemDosCanais,
   paraData,
+  previewDaMensagem,
 } from '@/lib/chat';
 import { avaliarMensagensChat, lerFocoDoChat, tocarSomChat } from '@/lib/sons';
 
@@ -436,9 +437,9 @@ export default function useChat() {
   );
 
   const enviar = useCallback(
-    async (canalId, texto) => {
+    async (canalId, texto, anexo) => {
       const limpo = String(texto || '').trim();
-      if (!canalId || !limpo || !euId) return null;
+      if (!canalId || (!limpo && !anexo?.url) || !euId) return null;
       setEnviando(true);
       const eu = pessoas.find((pessoa) => pessoa.id === euId);
       try {
@@ -447,8 +448,12 @@ export default function useChat() {
           autor_id: euId,
           autor_nome: eu?.nome || user?.full_name || 'Eu',
           autor_cargo: ehAdmin(user) ? 'admin' : 'chatter',
-          tipo: 'texto',
+          tipo: anexo?.url ? (anexo.imagem ? 'imagem' : 'arquivo') : 'texto',
           texto: limpo,
+          anexo_url: anexo?.url || undefined,
+          anexo_nome: anexo?.nome || undefined,
+          anexo_tipo: anexo?.tipo || undefined,
+          anexo_tamanho: anexo?.tamanho || undefined,
         });
         if (criada?.id) {
           setMensagens((anterior) =>
@@ -460,7 +465,7 @@ export default function useChat() {
         await marcarLido(canalId);
         base44.entities.ChatCanal.update(canalId, {
           ultima_mensagem_em: agora(),
-          ultima_mensagem_preview: limpo.slice(0, 80),
+          ultima_mensagem_preview: limpo ? limpo.slice(0, 80) : previewDaMensagem(criada),
           ultima_mensagem_autor: eu?.nome || user?.full_name || '',
         }).catch(() => {});
         return criada;
@@ -472,6 +477,70 @@ export default function useChat() {
       }
     },
     [euId, pessoas, user, marcarLido]
+  );
+
+  /** Sobe a imagem ou o arquivo e manda junto com o texto, se houver. */
+  const enviarAnexo = useCallback(
+    async (canalId, arquivo, texto = '') => {
+      if (!canalId || !arquivo || !euId) return null;
+      const resposta = await base44.integrations.Core.UploadFile({ file: arquivo });
+      if (!resposta?.file_url) throw new Error('O upload não devolveu o arquivo.');
+      const imagem = String(arquivo.type || '').startsWith('image/');
+      return enviar(canalId, texto, {
+        url: resposta.file_url,
+        nome: arquivo.name || (imagem ? 'imagem.png' : 'arquivo'),
+        tipo: arquivo.type || '',
+        tamanho: arquivo.size || 0,
+        imagem,
+      });
+    },
+    [euId, enviar]
+  );
+
+  const editar = useCallback(
+    async (mensagemId, texto) => {
+      const limpo = String(texto || '').trim();
+      if (!mensagemId || !limpo) return;
+      await base44.entities.ChatMensagem.update(mensagemId, {
+        texto: limpo,
+        editada_em: agora(),
+      });
+      setMensagens((anterior) =>
+        anterior.map((mensagem) =>
+          mensagem.id === mensagemId
+            ? { ...mensagem, texto: limpo, editada_em: agora() }
+            : mensagem
+        )
+      );
+    },
+    []
+  );
+
+  /** paraTodos: some do histórico de todo mundo. Sem isso, some só daqui. */
+  const apagar = useCallback(
+    async (mensagem, paraTodos) => {
+      if (!mensagem?.id || !euId) return;
+      if (paraTodos) {
+        await base44.entities.ChatMensagem.update(mensagem.id, {
+          apagada: true,
+          texto: '',
+          anexo_url: null,
+          anexo_nome: null,
+        });
+        setMensagens((anterior) =>
+          anterior.map((item) =>
+            item.id === mensagem.id
+              ? { ...item, apagada: true, texto: '', anexo_url: null, anexo_nome: null }
+              : item
+          )
+        );
+        return;
+      }
+      const oculta = [...new Set([...(mensagem.oculta_para || []), euId])];
+      await base44.entities.ChatMensagem.update(mensagem.id, { oculta_para: oculta });
+      setMensagens((anterior) => anterior.filter((item) => item.id !== mensagem.id));
+    },
+    [euId]
   );
 
   const criarCanal = useCallback(
@@ -673,6 +742,9 @@ export default function useChat() {
     abrirCanal,
     fecharCanal: () => setCanalAtivoId(null),
     enviar,
+    enviarAnexo,
+    editar,
+    apagar,
     enviando,
     criarCanal,
     marcarLido,

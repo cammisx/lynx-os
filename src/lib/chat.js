@@ -147,6 +147,7 @@ export const previewDaMensagem = (mensagem) => {
   if (!mensagem) return '';
   if (mensagem.apagada) return 'mensagem apagada';
   if (mensagem.tipo === 'imagem') return '📷 Imagem';
+  if (mensagem.tipo === 'arquivo') return `📎 ${mensagem.anexo_nome || 'Arquivo'}`;
   if (mensagem.tipo === 'audio') return '🎤 Áudio';
   const texto = String(mensagem.texto || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   return texto.length > 60 ? `${texto.slice(0, 60)}…` : texto;
@@ -212,3 +213,16 @@ export const resumoDoCanal = (canal, mensagens, pessoas) => {
   }
   return canal.ultima_mensagem_preview || 'sem mensagens ainda';
 };
+/** "12,4 MB" para o cartão do anexo. */
+export const tamanhoLegivel = (bytes) => {
+  const valor = Number(bytes) || 0;
+  if (valor <= 0) return '';
+  if (valor < 1024) return `${valor} B`;
+  if (valor < 1024 * 1024) return `${Math.round(valor / 1024)} KB`;
+  return `${(valor / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`;
+};
+
+/** Quem pode apagar para todos: o autor da mensagem e o admin. */
+export const podeApagarParaTodos = (mensagem, usuario) =>
+  Boolean(mensagem) &&
+  (mensagem.autor_id === usuario?.id || usuario?.role === 'admin');
