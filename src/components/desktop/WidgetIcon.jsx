@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import TurnoIcon from '@/components/icons/TurnoIcon';
+import { TASKBAR_SAFE, WIDGET_ICON, WIDGET_LABEL, WIDGET_TILE } from './widgetLayout';
 
-const TILE = 92;
-const ICON_SIZE = 52;
-const TASKBAR = 96;
+const TILE = WIDGET_TILE;
+const TASKBAR = TASKBAR_SAFE;
 
 const clamp = (x, y) => ({
   x: Math.min(Math.max(0, x), Math.max(0, window.innerWidth - TILE)),
@@ -17,8 +17,6 @@ const clamp = (x, y) => ({
 export default function WidgetIcon({ label, position, onOpen, onCommit, pulsando = false }) {
   const [pos, setPos] = useState(() => clamp(position.icone_x, position.icone_y));
   const [arrastando, setArrastando] = useState(false);
-  const [selecionado, setSelecionado] = useState(false);
-  const [hover, setHover] = useState(false);
   const drag = useRef(null);
   const posRef = useRef(pos);
   posRef.current = pos;
@@ -71,10 +69,6 @@ export default function WidgetIcon({ label, position, onOpen, onCommit, pulsando
         if (drag.current?.moveu) return;
         onOpen();
       }}
-      onClick={() => setSelecionado(true)}
-      onBlur={() => setSelecionado(false)}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       style={{
         position: 'absolute',
         left: pos.x,
@@ -86,27 +80,13 @@ export default function WidgetIcon({ label, position, onOpen, onCommit, pulsando
         alignItems: 'center',
         justifyContent: 'center',
         gap: 4,
-        borderRadius: 10,
-        border: `1px solid ${
-          selecionado
-            ? 'color-mix(in srgb, var(--c1) 55%, transparent)'
-            : hover
-              ? 'color-mix(in srgb, white 18%, transparent)'
-              : 'transparent'
-        }`,
-        background: selecionado
-          ? 'color-mix(in srgb, var(--c1) 16%, transparent)'
-          : hover
-            ? 'color-mix(in srgb, white 7%, transparent)'
-            : 'transparent',
         cursor: arrastando ? 'grabbing' : 'default',
         userSelect: 'none',
-        transition: 'background-color 0.12s, border-color 0.12s',
         zIndex: 1,
       }}
     >
       <div style={{ position: 'relative', display: 'flex' }}>
-        <TurnoIcon size={ICON_SIZE} />
+        <TurnoIcon size={WIDGET_ICON} />
         {pulsando && (
           <span
             style={{
@@ -125,7 +105,7 @@ export default function WidgetIcon({ label, position, onOpen, onCommit, pulsando
       </div>
       <span
         style={{
-          fontSize: 10,
+          fontSize: WIDGET_LABEL,
           color: 'var(--c3)',
           textShadow: '0 1px 3px rgba(0,0,0,0.85)',
           maxWidth: TILE,

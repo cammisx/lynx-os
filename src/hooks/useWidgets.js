@@ -1,22 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import { TASKBAR_SAFE, WIDGET_TILE } from '@/components/desktop/widgetLayout';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
-const TASKBAR_SAFE = 90;
-const ICON_SIZE = 92;
 const MARGIN = 16;
 
 /** Posição inicial do ícone: canto superior direito, longe da barra de tarefas. */
 export const posicaoPadrao = () => ({
-  icone_x: Math.max(MARGIN, window.innerWidth - ICON_SIZE - MARGIN),
+  icone_x: Math.max(MARGIN, window.innerWidth - WIDGET_TILE - MARGIN),
   icone_y: MARGIN + 24,
 });
 
 export const limiterNaTela = (x, y) => ({
-  icone_x: Math.min(Math.max(0, x), Math.max(0, window.innerWidth - ICON_SIZE)),
-  icone_y: Math.min(Math.max(0, y), Math.max(0, window.innerHeight - TASKBAR_SAFE - ICON_SIZE)),
+  icone_x: Math.min(Math.max(0, x), Math.max(0, window.innerWidth - WIDGET_TILE)),
+  icone_y: Math.min(Math.max(0, y), Math.max(0, window.innerHeight - TASKBAR_SAFE - WIDGET_TILE)),
 });
 
 /**

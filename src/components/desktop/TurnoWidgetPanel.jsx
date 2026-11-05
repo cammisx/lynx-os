@@ -3,10 +3,11 @@ import PunchButton from '@/components/shifts/PunchButton';
 import { CloseIcon, LogInIcon, PauseIcon, PlayIcon, StopIcon } from '@/components/icons';
 import TurnoIcon from '@/components/icons/TurnoIcon';
 import { countdownLabel, durationLabel } from '@/lib/ponto';
+import { TASKBAR_SAFE, WIDGET_TILE } from './widgetLayout';
 
 const WIDTH = 340;
 const HEIGHT = 236;
-const TASKBAR = 96;
+const TASKBAR = TASKBAR_SAFE;
 
 const dayLabel = (value) => {
   const date = new Date(value);
@@ -29,8 +30,8 @@ const dayLabel = (value) => {
 export const posicaoPainel = (icone) => {
   const largura = window.innerWidth;
   const altura = window.innerHeight;
-  const abreParaEsquerda = icone.icone_x + 92 + WIDTH + 12 > largura;
-  const x = abreParaEsquerda ? icone.icone_x - WIDTH - 12 : icone.icone_x + 92 + 12;
+  const abreParaEsquerda = icone.icone_x + WIDGET_TILE + WIDTH + 12 > largura;
+  const x = abreParaEsquerda ? icone.icone_x - WIDTH - 12 : icone.icone_x + WIDGET_TILE + 12;
   const y = icone.icone_y - 8;
   return {
     left: Math.min(Math.max(8, x), Math.max(8, largura - WIDTH - 8)),
