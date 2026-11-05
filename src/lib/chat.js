@@ -1,3 +1,4 @@
+import { diaCurtoLocal, horaLocal, paraData } from '@/lib/datas';
 /**
  * Regras de exibição do chat interno.
  *
@@ -5,37 +6,6 @@
  * chama para cada pessoa, contagem de não lidas e formatação de horário.
  * A conversa com o banco fica no hook useChat.
  */
-
-/**
- * O backend devolve `created_date` em UTC mas sem o sufixo de fuso
- * ("2026-11-05T15:55:12.68"). O navegador lê uma string dessas como hora local,
- * então o UTC cru aparecia na tela. Aqui a string sem fuso é marcada como UTC e
- * o horário é exibido no fuso da agência, sem depender do fuso do dispositivo.
- */
-const FUSO = 'America/Sao_Paulo';
-
-export const paraData = (valor) => {
-  if (valor instanceof Date) return valor;
-  if (!valor) return new Date(NaN);
-  const texto = String(valor).trim();
-  const semFuso = !/Z$|[+-]\d{2}:\d{2}$/.test(texto);
-  return new Date(semFuso ? `${texto.replace(' ', 'T')}Z` : texto);
-};
-
-export const horaLocal = (valor) => {
-  const data = paraData(valor);
-  if (Number.isNaN(data.getTime())) return '';
-  return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: FUSO });
-};
-
-/** Dia no fuso da agência (2026-11-05), para separar blocos e comparar dias. */
-const diaNoFuso = (data) => data.toLocaleDateString('en-CA', { timeZone: FUSO });
-
-const diaCurto = (valor) => {
-  const data = paraData(valor);
-  if (Number.isNaN(data.getTime())) return '';
-  return data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: FUSO });
-};
 
 export const CANAL_GERAL = 'geral';
 export const CANAL_MODELO = 'modelo';
@@ -161,19 +131,34 @@ export const horaDaMensagem = (iso) => horaLocal(iso);
 
 /** "Hoje", "Ontem" ou "05/11" para separar os blocos de mensagens por dia. */
 export const diaDaMensagem = (iso) => {
-  const dia = diaNoFuso(paraData(iso));
-  if (dia === diaNoFuso(new Date())) return 'Hoje';
-  if (dia === diaNoFuso(new Date(Date.now() - 86400000))) return 'Ontem';
-  return diaCurto(iso);
+  const data = paraData(iso);
+  const hoje = new Date();
+  const zerar = (valor) => new Date(valor.getFullYear(), valor.getMonth(), valor.getDate()).getTime();
+  const diferenca = Math.round((zerar(hoje) - zerar(data)) / 86400000);
+  if (diferenca === 0) return 'Hoje';
+  if (diferenca === 1) return 'Ontem';
+  return diaCurtoLocal(iso);
 };
 
 /** Quando foi a última mensagem, no formato curto da lista de canais. */
 export const quandoFoi = (iso) => {
   if (!iso) return '';
-  const dia = diaNoFuso(paraData(iso));
-  if (dia === diaNoFuso(new Date())) return horaDaMensagem(iso);
-  if (dia === diaNoFuso(new Date(Date.now() - 86400000))) return 'ontem';
-  return diaCurto(iso);
+  const data = paraData(iso);
+  const agora = new Date();
+  const mesmoDia =
+    data.getDate() === agora.getDate() &&
+    data.getMonth() === agora.getMonth() &&
+    data.getFullYear() === agora.getFullYear();
+  if (mesmoDia) return horaDaMensagem(iso);
+  const ontem = new Date(agora.getTime() - 86400000);
+  if (
+    data.getDate() === ontem.getDate() &&
+    data.getMonth() === ontem.getMonth() &&
+    data.getFullYear() === ontem.getFullYear()
+  ) {
+    return 'ontem';
+  }
+  return diaCurtoLocal(iso);
 };
 
 /** Ordem da lista: conversas com novidade primeiro, depois as mais recentes. */
