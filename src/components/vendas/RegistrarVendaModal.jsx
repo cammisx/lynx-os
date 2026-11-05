@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { CloseIcon, ImageIcon } from '@/components/icons';
 import parsePrivacy from '@/lib/privacyParser';
 import { emitNotificationsChanged } from '@/lib/desktopEvents';
+import notificarAdminsSolicitacao from '@/lib/solicitacoes';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
@@ -174,7 +175,6 @@ export default function RegistrarVendaModal({ usuario, modeloPadraoId = '', onCl
         )
       );
 
-      const admins = asList(await base44.entities.User.filter({ role: 'admin' }, { limit: 50 }));
       const resumo = itens
         .map(
           (item) =>
@@ -185,22 +185,12 @@ export default function RegistrarVendaModal({ usuario, modeloPadraoId = '', onCl
         )
         .join(' · ');
 
-      await Promise.all(
-        admins
-          .filter((admin) => admin?.id)
-          .map((admin) =>
-            base44.entities.Notificacao.create({
-              usuario_id: admin.id,
-              titulo: itens.length > 1 ? `${itens.length} vendas aguardando` : 'Venda aguardando',
-              mensagem: `${resumo}${modelo?.nome ? ` na modelo ${modelo.nome}` : ''}. Print anexado.`,
-              tipo: 'venda_pendente',
-              venda_id: criadas[0]?.id || '',
-              status: 'pendente',
-              lida: false,
-              criado_por_automacao: false,
-            })
-          )
-      );
+      await notificarAdminsSolicitacao(base44, {
+        titulo: itens.length > 1 ? `${itens.length} vendas aguardando` : 'Venda aguardando',
+        mensagem: `${resumo}${modelo?.nome ? ` na modelo ${modelo.nome}` : ''}. Print anexado.`,
+        tipo: 'venda_pendente',
+        extra: { venda_id: criadas[0]?.id || '' },
+      });
 
       emitNotificationsChanged();
       if (onSaved) await onSaved();

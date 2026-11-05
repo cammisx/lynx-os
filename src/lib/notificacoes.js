@@ -1,4 +1,5 @@
 import { emitNotificationsChanged } from '@/lib/desktopEvents';
+import { listarAdmins } from '@/lib/solicitacoes';
 import { nextOccurrence } from '@/lib/aceite';
 /** Não lida = ainda não abriu e não está resolvida. */
 export const isNaoLida = (notification) =>
@@ -138,10 +139,7 @@ export const notificarAdmins = async (base44, payload, { dedupe = true } = {}) =
     if (lista.length > 0) return [];
   }
 
-  const adminsRaw = await base44.entities.User.filter({ role: 'admin' }, { limit: 50 });
-  const admins = (Array.isArray(adminsRaw) ? adminsRaw : adminsRaw?.items || []).filter(
-    (user) => user?.id
-  );
+  const admins = await listarAdmins(base44);
   if (!admins.length) return [];
 
   const criadas = await Promise.all(
