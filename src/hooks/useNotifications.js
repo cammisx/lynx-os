@@ -5,7 +5,8 @@ import { isSolicitacaoSemDono } from '@/lib/solicitacoes';
 import { NOTIFICATIONS_CHANGED } from '@/lib/desktopEvents';
 import { avaliarNotificacoesNovas, tocarNotificacao } from '@/lib/sons';
 
-const REFRESH_MS = 60000;
+/* Reforço: mesmo sem tempo real disponível, a lista não fica velha por muito. */
+const REFRESH_MS = 20000;
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
@@ -50,6 +51,58 @@ export default function useNotifications(userId, isAdmin = false) {
     } catch (error) {
       setItems([]);
     }
+  }, [userId, isAdmin]);
+
+  /* Tempo real: notificação criada agora (convite de turno, folga, venda)
+     aparece na hora, sem precisar recarregar a página. O subscribe do SDK já
+     é usado no chat; se ele não existir, o intervalo curto cobre. */
+  useEffect(() => {
+    if (!userId) return undefined;
+    const entidade = base44.entities.Notificacao;
+    if (typeof entidade?.subscribe !== 'function') return undefined;
+
+    const minha = (dados) =>
+      Boolean(dados?.id) &&
+      (dados.usuario_id === userId || (isAdmin && isSolicitacaoSemDono(dados)));
+
+    const sair = entidade.subscribe((evento) => {
+      const dados = evento?.data;
+      if (!minha(dados)) return;
+
+      if (evento.type === 'create') {
+        setItems((anterior) =>
+          anterior.some((item) => item.id === dados.id)
+            ? anterior.map((item) => (item.id === dados.id ? { ...item, ...dados } : item))
+            : [dados, ...anterior]
+        );
+        /* Chegou agora: é o caso em que o som deve soar. */
+        if (isNaoLida(dados) && avaliarNotificacoesNovas([dados], aberturaRef.current)) {
+          tocarNotificacao();
+        }
+        return;
+      }
+
+      if (evento.type === 'update') {
+        setItems((anterior) =>
+          anterior.some((item) => item.id === dados.id)
+            ? anterior.map((item) => (item.id === dados.id ? { ...item, ...dados } : item))
+            : [dados, ...anterior]
+        );
+        return;
+      }
+
+      if (evento.type === 'delete') {
+        setItems((anterior) => anterior.filter((item) => item.id !== dados.id));
+      }
+    });
+
+    return () => {
+      try {
+        sair();
+      } catch (falha) {
+        console.warn('[Notificacao] não consegui fechar o tempo real', falha);
+      }
+    };
   }, [userId, isAdmin]);
 
   useEffect(() => {
