@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { isNaoLida } from '@/lib/notificacoes';
 import { NOTIFICATIONS_CHANGED } from '@/lib/desktopEvents';
 
 const REFRESH_MS = 60000;
@@ -42,7 +43,7 @@ export default function useNotifications(userId) {
     }
   }, []);
 
-  const naoLidas = items.filter((item) => !item.lida && item.status !== 'resolvida').length;
+  const naoLidas = items.filter(isNaoLida).length;
 
   return { items, naoLidas, markRead, reload: load };
 }

@@ -1,5 +1,9 @@
 import { emitNotificationsChanged } from '@/lib/desktopEvents';
 import { nextOccurrence } from '@/lib/aceite';
+/** Não lida = ainda não abriu e não está resolvida. */
+export const isNaoLida = (notification) =>
+  Boolean(notification) && !notification.lida && notification.status !== 'resolvida';
+
 const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 const pad = (value) => String(value).padStart(2, '0');

@@ -1,10 +1,15 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CloseIcon } from '@/components/icons';
 import NotificationRow from '@/components/notifications/NotificationRow';
+import { isNaoLida } from '@/lib/notificacoes';
 
 export default function NotificationsPanel({ items, anchorRef, onOpen, onClose }) {
   const panelRef = useRef(null);
+  const [filtro, setFiltro] = useState('nao_lidas');
+
+  const naoLidas = useMemo(() => items.filter(isNaoLida), [items]);
+  const visiveis = filtro === 'nao_lidas' ? naoLidas : items;
 
   useEffect(() => {
     const handleDown = (event) => {
@@ -81,8 +86,52 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose }
         </button>
       </div>
 
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          flexShrink: 0,
+          padding: '0 8px',
+          height: 28,
+          borderBottom: '1px solid color-mix(in srgb, var(--c2) 10%, transparent)',
+        }}
+      >
+        {[
+          { id: 'nao_lidas', label: 'Não lidas', count: naoLidas.length },
+          { id: 'todas', label: 'Ver todas', count: items.length },
+        ].map((aba) => {
+          const ativa = filtro === aba.id;
+          return (
+            <button
+              key={aba.id}
+              type="button"
+              onClick={() => setFiltro(aba.id)}
+              style={{
+                height: 28,
+                padding: '0 8px',
+                border: 'none',
+                borderBottom: `2px solid ${ativa ? 'var(--c1)' : 'transparent'}`,
+                borderRadius: 0,
+                background: 'transparent',
+                color: ativa ? 'var(--c1)' : 'var(--c2)',
+                fontFamily: 'var(--font-main)',
+                fontSize: 10,
+                fontWeight: ativa ? 700 : 500,
+                letterSpacing: '0.03em',
+                opacity: ativa ? 1 : 0.6,
+                cursor: 'pointer',
+                transition: 'color 0.15s, opacity 0.15s',
+              }}
+            >
+              {aba.label} ({aba.count})
+            </button>
+          );
+        })}
+      </div>
+
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-        {items.length === 0 ? (
+        {visiveis.length === 0 ? (
           <div
             style={{
               padding: 24,
@@ -92,10 +141,10 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose }
               opacity: 0.6,
             }}
           >
-            Nada por aqui.
+            {filtro === 'nao_lidas' ? 'Nada não lido.' : 'Nada por aqui.'}
           </div>
         ) : (
-          items.map((notification) => (
+          visiveis.map((notification) => (
             <NotificationRow
               key={notification.id}
               notification={notification}
