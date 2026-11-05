@@ -8,12 +8,59 @@
     "usuario_nome": {
       "type": "string"
     },
-    "data": {
-      "type": "string",
-      "format": "date"
+    "shift_id": {
+      "type": "string"
     },
-    "turnos_no_dia": {
+    "modelo_id": {
+      "type": "string"
+    },
+    "modelo_nome": {
+      "type": "string"
+    },
+    "ocorrencia_data": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "folga",
+        "reducao"
+      ],
+      "enumColors": [
+        "blue",
+        "purple"
+      ],
+      "default": "folga"
+    },
+    "ajuste": {
+      "type": "string",
+      "enum": [
+        "sair_antes",
+        "entrar_depois"
+      ],
+      "enumColors": [
+        "orange",
+        "teal"
+      ]
+    },
+    "horario_solicitado": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "turno_inicio": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "turno_fim": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "antecedencia_horas": {
       "type": "number"
+    },
+    "fora_do_prazo": {
+      "type": "boolean",
+      "default": false
     },
     "motivo": {
       "type": "string"
@@ -45,7 +92,7 @@
   },
   "required": [
     "usuario_id",
-    "data",
-    "motivo"
+    "shift_id",
+    "tipo"
   ]
 }

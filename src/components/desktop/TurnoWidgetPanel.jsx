@@ -362,7 +362,7 @@ export default function TurnoWidgetPanel({
           <button
             type="button"
             onClick={() => onAbrirSolicitacao('folga')}
-            title="Solicitar folga"
+            title="Folga ou redução de horário"
             style={BOTAO_SECUNDARIO}
           >
             <CoffeeIcon size={13} />
