@@ -224,6 +224,7 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
         {recusando && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <textarea
+              className="glass-scroll"
               value={motivo}
               onChange={(event) => setMotivo(event.target.value)}
               placeholder="Motivo da recusa (opcional)"
@@ -231,8 +232,8 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
               style={{
                 width: '100%',
                 boxSizing: 'border-box',
-                minHeight: 64,
-                resize: 'vertical',
+                height: 72,
+                resize: 'none',
                 background: 'color-mix(in srgb, var(--c8) 60%, transparent)',
                 border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
                 borderRadius: 8,

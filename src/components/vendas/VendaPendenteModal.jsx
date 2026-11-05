@@ -26,8 +26,8 @@ const rotulo = {
 const AREA = {
   width: '100%',
   boxSizing: 'border-box',
-  minHeight: 58,
-  resize: 'vertical',
+  height: 66,
+  resize: 'none',
   background: 'color-mix(in srgb, var(--c8) 60%, transparent)',
   border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
   borderRadius: 8,
@@ -290,6 +290,7 @@ export default function VendaPendenteModal({ notification, onClose, onSaved }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               <span style={rotulo}>Motivo da recusa</span>
               <textarea
+                className="glass-scroll"
                 value={motivo}
                 onChange={(event) => setMotivo(event.target.value)}
                 placeholder="Por que este registro não vale?"

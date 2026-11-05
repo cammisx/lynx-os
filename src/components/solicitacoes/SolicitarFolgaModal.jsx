@@ -19,8 +19,8 @@ const JANELA_DIAS = 30;
 const AREA = {
   width: '100%',
   boxSizing: 'border-box',
-  minHeight: 62,
-  resize: 'vertical',
+  height: 70,
+  resize: 'none',
   background: 'color-mix(in srgb, var(--c8) 60%, transparent)',
   border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
   borderRadius: 8,
@@ -441,6 +441,7 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <span style={rotulo}>Justificativa</span>
                 <textarea
+                  className="glass-scroll"
                   value={motivo}
                   onChange={(event) => setMotivo(event.target.value)}
                   placeholder=""

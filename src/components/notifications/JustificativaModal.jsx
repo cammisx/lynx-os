@@ -16,8 +16,8 @@ const dateLabel = (dateKey) => {
 const inputStyle = {
   width: '100%',
   boxSizing: 'border-box',
-  minHeight: 80,
-  resize: 'vertical',
+  height: 88,
+  resize: 'none',
   background: 'color-mix(in srgb, var(--c8) 60%, transparent)',
   border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
   borderRadius: 8,
@@ -138,6 +138,7 @@ export default function JustificativaModal({ notification, onClose, onSaved }) {
         </div>
 
         <textarea
+          className="glass-scroll"
           value={resposta}
           onChange={(event) => setResposta(event.target.value)}
           placeholder="O que houve?"
