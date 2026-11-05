@@ -14,6 +14,9 @@ const JANELA_DIAS = 7;
 const REGISTRO_JANELA_MS = 48 * 60 * 60 * 1000;
 // Entrada esquecida (sem saída) não segura a página para sempre.
 const REGISTRO_ESQUECIDO_MS = 18 * 60 * 60 * 1000;
+// Turno marcado que começou e ninguém bateu entrada: passados 30 minutos a
+// página é liberada para qualquer um cobrir.
+const TOLERANCIA_ENTRADA_MS = 30 * 60 * 1000;
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
@@ -265,19 +268,43 @@ Deno.serve(async (req: Request) => {
       const agora = ocorrencias.find((occ) => occ.start <= now && occ.end > now) || null;
       const proximo = ocorrencias.find((occ) => occ.start > now) || null;
 
-      const estado = ocupantes.length
-        ? 'ocupada'
-        : agora
-        ? 'programado_sem_entrada'
-        : 'livre';
+      // Turno em andamento sem ninguém no ponto: só libera depois da tolerância.
+      const atraso = agora ? now - agora.start : 0;
+      const liberada = !ocupantes.length && !!agora && atraso >= TOLERANCIA_ENTRADA_MS;
+      const aguardando = !ocupantes.length && !!agora && atraso < TOLERANCIA_ENTRADA_MS;
+
+      const estado = ocupantes.length ? 'ocupada' : aguardando ? 'programado_sem_entrada' : 'livre';
+
+      // Página liberada por abandono fica livre até o próximo turno ou até o fim
+      // do turno que ninguém assumiu.
+      const fimDaEspera = liberada ? agora.end : null;
+      const limiteLivre = proximo ? proximo.start : fimDaEspera;
 
       return {
         modelo_id: modelo.id,
         modelo_nome: modelo.nome || '',
         estado,
         ocupantes,
-        livre_ate: proximo ? new Date(proximo.start).toISOString() : null,
-        minutos_livres: proximo ? Math.max(0, Math.round((proximo.start - now) / 60000)) : null,
+        liberada,
+        liberada_de:
+          liberada && agora
+            ? {
+                shift_id: agora.shift?.id || '',
+                usuario_id: agora.shift?.usuario_id || '',
+                usuario_nome: agora.shift?.usuario_nome || '',
+                inicio: new Date(agora.start).toISOString(),
+                fim: new Date(agora.end).toISOString(),
+                minutos_esperando: Math.round(atraso / 60000),
+              }
+            : null,
+        libera_em_minutos: aguardando
+          ? Math.max(
+              0,
+              Math.ceil((agora.start + TOLERANCIA_ENTRADA_MS - now) / 60000)
+            )
+          : null,
+        livre_ate: limiteLivre ? new Date(limiteLivre).toISOString() : null,
+        minutos_livres: limiteLivre ? Math.max(0, Math.round((limiteLivre - now) / 60000)) : null,
         proximo: proximo
           ? {
               shift_id: proximo.shift?.id || '',

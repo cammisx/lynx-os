@@ -295,6 +295,7 @@ export default function PaginasWidgetPanel({
           const ocupante = pagina.ocupantes[0];
           const proximo = pagina.proximo;
           const minutos = pagina.minutos_livres;
+          const fimLivre = proximo?.inicio || pagina.livre_ate;
           const logoAgora = minutos !== null && minutos * 60000 <= AVISO_MS;
           const meAviso = aviso?.modelo_id === pagina.modelo_id;
 
@@ -353,10 +354,25 @@ export default function PaginasWidgetPanel({
                 </span>
               )}
 
+              {pagina.estado === 'programado_sem_entrada' &&
+                typeof pagina.libera_em_minutos === 'number' && (
+                  <span style={{ fontSize: 10.5, color: COR_AVISO }}>
+                    Libera para cobertura em{' '}
+                    {countdownLabel(pagina.libera_em_minutos * 60000)}
+                  </span>
+                )}
+
+              {pagina.estado === 'livre' && pagina.liberada && pagina.liberada_de && (
+                <span style={{ fontSize: 10.5, color: COR_AVISO, lineHeight: 1.4 }}>
+                  Turno de {pagina.liberada_de.usuario_nome || 'quem estava escalado'} não teve
+                  entrada · livre para cobertura
+                </span>
+              )}
+
               {pagina.estado === 'livre' && (
                 <span style={{ fontSize: 11, color: 'var(--c2)' }}>
-                  {proximo
-                    ? `Livre até ${hora(proximo.inicio)} (${countdownLabel(minutos * 60000)})`
+                  {fimLivre && typeof minutos === 'number'
+                    ? `Livre até ${hora(fimLivre)} (${countdownLabel(minutos * 60000)})`
                     : 'Livre, sem turno marcado à frente'}
                 </span>
               )}

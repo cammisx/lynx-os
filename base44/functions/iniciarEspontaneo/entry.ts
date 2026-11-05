@@ -19,6 +19,8 @@ const JANELA_DIAS = 7;
 const REGISTRO_JANELA_MS = 48 * 60 * 60 * 1000;
 const REGISTRO_ESQUECIDO_MS = 18 * 60 * 60 * 1000;
 const FIM_PADRAO_MS = 8 * 60 * 60 * 1000;
+// Turno que começou e ninguém entrou: depois de 30 minutos a página abre para cobertura.
+const TOLERANCIA_ENTRADA_MS = 30 * 60 * 1000;
 
 const pad = (value: number) => String(value).padStart(2, '0');
 const lista = (resultado: any) => (Array.isArray(resultado) ? resultado : resultado?.items || []);
@@ -278,6 +280,41 @@ Deno.serve(async (req: Request) => {
     }
 
     const ocorrencias = turnosVigentes(shifts, modeloId, now, now + JANELA_DIAS * DAY_MS);
+    const emAndamento = ocorrencias.find((occ) => occ.start <= now && occ.end > now) || null;
+
+    // Nos primeiros 30 minutos o turno marcado ainda é de quem estava escalado.
+    if (emAndamento) {
+      const atraso = now - emAndamento.start;
+      const doEscalado = emAndamento.shift?.usuario_id === user.id;
+
+      if (doEscalado) {
+        return Response.json(
+          {
+            ok: false,
+            motivo: 'turno_programado',
+            error: 'Seu turno está começando agora. Bata entrada pelo widget Turno.',
+          },
+          { status: 409 }
+        );
+      }
+
+      if (atraso < TOLERANCIA_ENTRADA_MS) {
+        const nome = emAndamento.shift?.usuario_nome || 'A pessoa escalada';
+        return Response.json(
+          {
+            ok: false,
+            motivo: 'aguardando_entrada',
+            libera_em_minutos: Math.max(
+              0,
+              Math.ceil((emAndamento.start + TOLERANCIA_ENTRADA_MS - now) / 60000)
+            ),
+            error: `${nome} ainda tem os primeiros 30 minutos do turno.`,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const proximo = ocorrencias.find((occ) => occ.start > now) || null;
     const fimPrevisto = proximo ? proximo.start : now + FIM_PADRAO_MS;
     const entradaIso = new Date(now).toISOString();
