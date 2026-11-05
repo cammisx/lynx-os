@@ -640,3 +640,14 @@ body {
   background: var(--c1);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--c8) 65%, transparent);
 }
+
+/* Ícone de atualizar girando enquanto a janela busca os dados de novo. */
+@keyframes girar-atualizacao {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.girando {
+  animation: girar-atualizacao 900ms linear infinite;
+}

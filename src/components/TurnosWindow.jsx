@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
 import ShiftForm from '@/components/shifts/ShiftForm';
 import GlassSelect from '@/components/GlassSelect';
-import { CalendarIcon, PlusIcon, PencilIcon, TrashIcon } from '@/components/icons';
+import { CalendarIcon, PlusIcon, PencilIcon, RefreshIcon, TrashIcon } from '@/components/icons';
 import { emitShiftsChanged } from '@/lib/desktopEvents';
 import { daysLabel, sortDays } from '@/lib/shiftRepeat';
 import { ACEITE_COLOR, ACEITE_LABEL, aceiteOf } from '@/lib/aceite';
@@ -85,6 +85,7 @@ export default function TurnosWindow({ onClose }) {
   const [chatters, setChatters] = useState([]);
   const [form, setForm] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [atualizando, setAtualizando] = useState(false);
 
   const weekStartMs = anchor.getTime();
 
@@ -117,6 +118,20 @@ export default function TurnosWindow({ onClose }) {
   useEffect(() => {
     loadShifts();
   }, [weekStartMs, modelFilter]);
+
+  /* Recarrega os status dos turnos direto do banco, sem esperar o próximo ciclo. */
+  const atualizarTurnos = async () => {
+    if (atualizando) return;
+    setAtualizando(true);
+    try {
+      await Promise.all([loadMeta(), loadShifts()]);
+      emitShiftsChanged();
+    } catch (error) {
+      console.warn('[Turnos] não consegui atualizar agora', error);
+    } finally {
+      setTimeout(() => setAtualizando(false), 400);
+    }
+  };
 
   const afterChange = async () => {
     setForm(null);
@@ -225,6 +240,25 @@ export default function TurnosWindow({ onClose }) {
                 onClick={() => setAnchor(startOfDay(new Date()))}
               >
                 Hoje
+              </button>
+
+              <button
+                type="button"
+                className="md-btn"
+                style={{
+                  ...navButton,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: atualizando ? 'var(--c1)' : 'var(--c2)',
+                  cursor: atualizando ? 'default' : 'pointer',
+                }}
+                onClick={atualizarTurnos}
+                disabled={atualizando}
+                aria-label="Atualizar status dos turnos"
+                title="Atualizar status dos turnos"
+              >
+                <RefreshIcon size={13} className={atualizando ? 'girando' : undefined} />
               </button>
 
               <button

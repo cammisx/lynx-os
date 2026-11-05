@@ -239,3 +239,12 @@ export function CheckIcon({ size = 16, className }) {
     </Svg>
   );
 }
+
+export function RefreshIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+      <path d="M21 4v5h-5" />
+    </Svg>
+  );
+}
