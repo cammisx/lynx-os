@@ -35,24 +35,36 @@ export const somPorId = (id) => SONS.find((som) => som.id === id) || null;
 
 const cache = new Map();
 
-const elemento = (som) => {
-  if (!som) return null;
-  if (!cache.has(som.id)) {
+/** Um único player para o app inteiro: dois avisos nunca tocam por cima. */
+let player = null;
+
+const obterPlayer = () => {
+  if (!player) {
+    player = new Audio();
+    player.preload = 'auto';
+  }
+  return player;
+};
+
+/** Pré-carrega os arquivos para o primeiro aviso não atrasar. */
+export const preaquecerSons = () => {
+  SONS.forEach((som) => {
+    if (cache.has(som.id)) return;
     const audio = new Audio(som.arquivo);
     audio.preload = 'auto';
     cache.set(som.id, audio);
-  }
-  return cache.get(som.id);
+  });
 };
 
 /** Toca o som escolhido. Volume em 0..1. */
 export const tocarSom = (id, volume = 0.6) => {
   const som = somPorId(id);
   if (!som) return;
-  const audio = elemento(som);
-  if (!audio) return;
+  const audio = obterPlayer();
   try {
+    // Corta o que estiver tocando antes de começar: nada de sobreposição.
     audio.pause();
+    if (audio.src !== som.arquivo) audio.src = som.arquivo;
     audio.currentTime = 0;
     audio.volume = Math.min(1, Math.max(0, volume));
     const promessa = audio.play();
@@ -60,11 +72,6 @@ export const tocarSom = (id, volume = 0.6) => {
   } catch (error) {
     console.warn('[Som] não consegui tocar', error);
   }
-};
-
-/** Pré-carrega os arquivos para o primeiro aviso não atrasar. */
-export const preaquecerSons = () => {
-  SONS.forEach((som) => elemento(som));
 };
 
 /**
@@ -87,7 +94,7 @@ const avisadas = new Set();
 let avisosIniciados = false;
 let ultimoToque = 0;
 
-const INTERVALO_MINIMO = 1200;
+const INTERVALO_MINIMO = 2500;
 
 /** Marca os ids como conhecidos e diz se algum deles é novidade de verdade. */
 export const avaliarNotificacoesNovas = (ids = []) => {
