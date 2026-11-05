@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { MODAL_CAIXA } from '@/lib/modalStyles';
 import { base44 } from '@/api/base44Client';
 import DateTimePicker from '@/components/DateTimePicker';
 import GlassSelect from '@/components/GlassSelect';
@@ -225,20 +226,7 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
       <div
         role="dialog"
         aria-label="Ajuste de ponto"
-        style={{
-          width: 400,
-          display: 'flex',
-          flexDirection: 'column',
-          borderRadius: 12,
-          background: 'color-mix(in srgb, var(--c8) 62%, transparent)',
-          backdropFilter: 'blur(22px) saturate(1.3)',
-          WebkitBackdropFilter: 'blur(22px) saturate(1.3)',
-          border:
-            '1px solid color-mix(in srgb, white 14%, color-mix(in srgb, var(--c1) 18%, transparent))',
-          boxShadow: '0 18px 60px rgba(0,0,0,0.5)',
-          fontFamily: 'var(--font-main)',
-          overflow: 'hidden',
-        }}
+        style={MODAL_CAIXA}
       >
         <div
           style={{
