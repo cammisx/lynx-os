@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { notificarNovoShift } from '@/lib/notificacoes';
 import GlassSelect from '@/components/GlassSelect';
 import DateTimePicker, { formatDateKey } from '@/components/DateTimePicker';
 import RepeatFields from '@/components/shifts/RepeatFields';
@@ -150,9 +151,9 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
         const created = await base44.entities.Shift.create(payload);
         if (created?.id) {
           // Avisa o chatter do turno novo sem travar o salvamento do formulário.
-          base44.functions
-            .invoke('notificarNovoShift', { shift_id: created.id })
-            .catch((error) => console.warn('[notificarNovoShift]', error));
+          notificarNovoShift(base44, payload, created.id).catch((error) =>
+            console.warn('[notificarNovoShift]', error)
+          );
         }
       }
       await onSaved();
