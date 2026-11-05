@@ -53,6 +53,12 @@
     "solicitacao_id": {
       "type": "string"
     },
+    "solicitante_id": {
+      "type": "string"
+    },
+    "solicitante_nome": {
+      "type": "string"
+    },
     "modelo_id": {
       "type": "string"
     },
