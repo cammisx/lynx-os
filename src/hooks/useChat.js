@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import {
+  CANAL_GRUPO,
   CANAL_PRIVADO,
   asList,
   canalVisivel,
@@ -167,12 +168,102 @@ export default function useChat() {
     [euId]
   );
 
+  /**
+   * Conversa direta é uma só por pessoa. Quando já existem duas entre a mesma
+   * dupla (criadas antes desse controle), as mensagens são movidas para a mais
+   * movimentada e a repetida é apagada.
+   */
+  const juntarPrivadosRepetidos = useCallback(async (lista) => {
+    const grupos = new Map();
+    (lista || []).forEach((canal) => {
+      if (canal?.tipo !== CANAL_PRIVADO) return;
+      const gente = [...new Set(canal.participantes || [])].filter(Boolean);
+      if (gente.length !== 2) return;
+      const chave = [...gente].sort().join('|');
+      grupos.set(chave, [...(grupos.get(chave) || []), canal]);
+    });
+
+    const repetidos = [...grupos.values()].filter((canais) => canais.length > 1);
+    if (!repetidos.length) return lista;
+
+    let mexeu = false;
+    for (const canais of repetidos) {
+      const ordenados = [...canais].sort(
+        (a, b) =>
+          String(b.ultima_mensagem_em || '').localeCompare(String(a.ultima_mensagem_em || '')) ||
+          new Date(a.created_date) - new Date(b.created_date)
+      );
+      const oficial = ordenados[0];
+      for (const outro of ordenados.slice(1)) {
+        try {
+          const mensagens = asList(
+            await base44.entities.ChatMensagem.filter(
+              { canal_id: outro.id },
+              '-created_date',
+              300,
+              0
+            )
+          );
+          for (const mensagem of mensagens) {
+            await base44.entities.ChatMensagem.update(mensagem.id, {
+              canal_id: oficial.id,
+            }).catch(() => null);
+          }
+
+          const membrosOutro = asList(
+            await base44.entities.ChatMembro.filter(
+              { canal_id: outro.id },
+              '-created_date',
+              50,
+              0
+            )
+          );
+          const membrosOficial = asList(
+            await base44.entities.ChatMembro.filter(
+              { canal_id: oficial.id },
+              '-created_date',
+              50,
+              0
+            )
+          );
+          for (const membro of membrosOutro) {
+            const igual = membrosOficial.find((item) => item.usuario_id === membro.usuario_id);
+            if (!igual) {
+              await base44.entities.ChatMembro.update(membro.id, {
+                canal_id: oficial.id,
+              }).catch(() => null);
+              continue;
+            }
+            const leituraOutro = String(membro.ultima_leitura_em || '');
+            const leituraOficial = String(igual.ultima_leitura_em || '');
+            if (leituraOutro && leituraOutro > leituraOficial) {
+              await base44.entities.ChatMembro.update(igual.id, {
+                ultima_leitura_em: membro.ultima_leitura_em,
+              }).catch(() => null);
+            }
+            await base44.entities.ChatMembro.delete(membro.id).catch(() => null);
+          }
+
+          await base44.entities.ChatCanal.delete(outro.id);
+          mexeu = true;
+        } catch (falha) {
+          console.warn('[Chat] não consegui juntar a conversa repetida', falha);
+        }
+      }
+    }
+
+    if (!mexeu) return lista;
+    return asList(await base44.entities.ChatCanal.list('-created_date', 200, 0));
+  }, []);
+
   /* Lista os canais de novo sem mexer em pessoas e membros: é o que roda no
      intervalo e faz a conversa criada por outra pessoa aparecer aqui. */
   const recarregarCanais = useCallback(async () => {
     if (!euId) return null;
     try {
-      const brutos = asList(await base44.entities.ChatCanal.list('-created_date', 200, 0));
+      const brutos = await juntarPrivadosRepetidos(
+        asList(await base44.entities.ChatCanal.list('-created_date', 200, 0))
+      );
       const prontos = await garantirCanais(brutos, modelosRef.current);
       setCanais(prontos);
       return prontos;
@@ -180,7 +271,7 @@ export default function useChat() {
       console.warn('[Chat] não consegui atualizar os canais', falha);
       return null;
     }
-  }, [euId, garantirCanais]);
+  }, [euId, garantirCanais, juntarPrivadosRepetidos]);
 
   const carregar = useCallback(async () => {
     if (!euId) return;
@@ -191,7 +282,9 @@ export default function useChat() {
         listar(base44.entities.Modelo.list('-created_date', 100, 0)),
       ]);
 
-      const canaisBrutos = asList(await base44.entities.ChatCanal.list('-created_date', 200, 0));
+      const canaisBrutos = await juntarPrivadosRepetidos(
+        asList(await base44.entities.ChatCanal.list('-created_date', 200, 0))
+      );
       const canaisProntos = await garantirCanais(canaisBrutos, modelosCarregados);
 
       const membrosCarregados = await base44.entities.ChatMembro
@@ -215,7 +308,7 @@ export default function useChat() {
     } finally {
       setCarregando(false);
     }
-  }, [euId, user, carregarPessoas, garantirCanais, carregarMensagens]);
+  }, [euId, user, carregarPessoas, garantirCanais, carregarMensagens, juntarPrivadosRepetidos]);
 
   useEffect(() => {
     if (!euId) return;
@@ -389,6 +482,27 @@ export default function useChat() {
       /* Antes de criar, procura no banco uma conversa com exatamente essas
          pessoas. Sem isso, cada lado criava a sua e a mensagem caía numa
          conversa que o outro não estava vendo. */
+      if (tipo === CANAL_GRUPO && lista.length >= 2) {
+        /* Grupo com as mesmas pessoas pode se repetir, mas não com o mesmo
+           nome: isso é a mesma sala criada duas vezes. */
+        const assinatura = [...lista].sort().join('|');
+        const nomeLimpo = String(nome || '').trim().toLowerCase();
+        const grupos = asList(
+          await base44.entities.ChatCanal.filter({ tipo: CANAL_GRUPO }, '-created_date', 200, 0).catch(
+            () => []
+          )
+        );
+        const igual = grupos.find(
+          (canal) =>
+            String(canal.nome || '').trim().toLowerCase() === nomeLimpo &&
+            [...(canal.participantes || [])].sort().join('|') === assinatura
+        );
+        if (igual) {
+          abrirCanal(igual.id);
+          return igual;
+        }
+      }
+
       if (tipo === CANAL_PRIVADO && lista.length === 2) {
         const assinatura = [...lista].sort().join('|');
         const existentes = asList(

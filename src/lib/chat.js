@@ -22,11 +22,19 @@ export const chaveDoCanal = (canal) => {
   return canal.tipo || '';
 };
 
-/** Na hora de agrupar a lista, privado e grupo são únicos por id: dois privados
- *  diferentes não podem virar um só. */
+/**
+ * Chave usada para não repetir conversa na lista.
+ * Grupo é único por id (pode ter mais de um com as mesmas pessoas, desde que
+ * com nomes diferentes). Privado é único por dupla: só existe uma conversa
+ * direta entre você e cada pessoa.
+ */
 export const chaveDeDedupe = (canal) => {
   if (!canal) return '';
   if (canal.tipo === CANAL_GERAL || canal.tipo === CANAL_MODELO) return chaveDoCanal(canal);
+  if (canal.tipo === CANAL_PRIVADO) {
+    const gente = [...new Set(canal.participantes || [])].filter(Boolean).sort();
+    if (gente.length === 2) return `privado:${gente.join('|')}`;
+  }
   return `unico:${canal.id}`;
 };
 
