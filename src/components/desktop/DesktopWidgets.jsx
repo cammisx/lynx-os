@@ -5,14 +5,18 @@ import JustificativaModal from '@/components/notifications/JustificativaModal';
 import useWidgets from '@/hooks/useWidgets';
 import useTurnoPonto from '@/hooks/useTurnoPonto';
 import useNotifications from '@/hooks/useNotifications';
+import RegistrarVendaModal from '@/components/vendas/RegistrarVendaModal';
+import { useAuth } from '@/lib/AuthContext';
 
 const ENTRADA_LIBERADA_MS = 5 * 60000;
 
 export default function DesktopWidgets() {
+  const { user } = useAuth();
   const { widgets, carregado, patch } = useWidgets();
   const { userId, ponto, semana, saving, feedback, punch } = useTurnoPonto();
   const { items, reload } = useNotifications(userId);
   const [justificativa, setJustificativa] = useState(null);
+  const [vendaAberta, setVendaAberta] = useState(false);
 
   if (!carregado) return null;
 
@@ -52,6 +56,16 @@ export default function DesktopWidgets() {
           onOpenJustificativa={(notificacao) => setJustificativa(notificacao)}
           onClose={() => patch(turno.id, { aberto: false })}
           onMove={(posicao) => patch(turno.id, posicao)}
+          onRegistrarVenda={() => setVendaAberta(true)}
+        />
+      )}
+
+      {vendaAberta && (
+        <RegistrarVendaModal
+          usuario={user}
+          modeloPadraoId={ponto.modeloId || ''}
+          onClose={() => setVendaAberta(false)}
+          onSaved={() => setVendaAberta(false)}
         />
       )}
 

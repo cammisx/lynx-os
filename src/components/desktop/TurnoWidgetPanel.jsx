@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import PunchButton from '@/components/shifts/PunchButton';
-import { CloseIcon, LogInIcon, PauseIcon, PlayIcon, StopIcon } from '@/components/icons';
+import { CloseIcon, GiftIcon, LogInIcon, PauseIcon, PlayIcon, StopIcon } from '@/components/icons';
 import TurnoIcon from '@/components/icons/TurnoIcon';
 import { countdownLabel, durationLabel } from '@/lib/ponto';
 import { TASKBAR_SAFE, WIDGET_TILE } from './widgetLayout';
@@ -57,6 +57,7 @@ export default function TurnoWidgetPanel({
   onOpenJustificativa,
   onClose,
   onMove,
+  onRegistrarVenda,
 }) {
   const [pos, setPos] = useState(() => {
     if (typeof widget.painel_x === 'number' && typeof widget.painel_y === 'number') {
@@ -312,6 +313,41 @@ export default function TurnoWidgetPanel({
         {acoes && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{acoes}</div>}
 
         {dica && !feedback && <span style={{ fontSize: 10, color: 'var(--c2)', opacity: 0.75 }}>{dica}</span>}
+
+        <div
+          style={{
+            display: 'flex',
+            gap: 6,
+            paddingTop: 9,
+            marginTop: 1,
+            borderTop: '1px solid color-mix(in srgb, white 9%, transparent)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={onRegistrarVenda}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              height: 28,
+              padding: '0 10px',
+              borderRadius: 8,
+              border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
+              background: 'color-mix(in srgb, white 5%, transparent)',
+              color: 'var(--c2)',
+              fontSize: 11,
+              fontFamily: 'var(--font-main)',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <GiftIcon size={13} />
+            Mimo / venda internacional
+          </button>
+        </div>
       </div>
     </div>,
     document.body

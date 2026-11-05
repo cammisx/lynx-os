@@ -17,17 +17,22 @@
         "turno_esquecido",
         "novo_shift",
         "turno_recusado",
-        "turno_pendente"
+        "turno_pendente",
+        "venda_pendente"
       ],
       "enumColors": [
         "yellow",
         "blue",
         "red",
-        "orange"
+        "orange",
+        "purple"
       ],
       "default": "turno_esquecido"
     },
     "shift_id": {
+      "type": "string"
+    },
+    "venda_id": {
       "type": "string"
     },
     "ocorrencia_data": {

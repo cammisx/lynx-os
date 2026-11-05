@@ -140,3 +140,45 @@ export function CloseIcon({ size = 16, className }) {
     </Svg>
   );
 }
+export function GiftIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <rect x="3" y="8" width="18" height="13" rx="2" />
+      <path d="M12 8v13" />
+      <path d="M3 12h18" />
+      <path d="M12 8c-2.5 0-4.5-1.3-4.5-3.2A2.3 2.3 0 0 1 9.8 2.5C11.5 2.5 12 5.2 12 8z" />
+      <path d="M12 8c2.5 0 4.5-1.3 4.5-3.2A2.3 2.3 0 0 0 14.2 2.5C12.5 2.5 12 5.2 12 8z" />
+    </Svg>
+  );
+}
+
+export function CoffeeIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M4 9h12v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V9z" />
+      <path d="M16 10h2a2 2 0 0 1 0 4h-2" />
+      <path d="M7 2v3M11 2v3" />
+    </Svg>
+  );
+}
+
+export function SlidersIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" />
+      <circle cx="16" cy="6" r="2" />
+      <circle cx="10" cy="12" r="2" />
+      <circle cx="18" cy="18" r="2" />
+    </Svg>
+  );
+}
+
+export function ImageIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="8.5" cy="9.5" r="1.5" />
+      <path d="M21 16l-5-5-6 6-3-3-4 4" />
+    </Svg>
+  );
+}

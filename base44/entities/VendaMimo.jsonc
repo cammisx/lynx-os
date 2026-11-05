@@ -1,0 +1,96 @@
+{
+  "name": "VendaMimo",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string"
+    },
+    "usuario_nome": {
+      "type": "string"
+    },
+    "modelo_id": {
+      "type": "string"
+    },
+    "modelo_nome": {
+      "type": "string"
+    },
+    "plataforma": {
+      "type": "string",
+      "enum": [
+        "privacy",
+        "onlyfans",
+        "fansly",
+        "outra"
+      ],
+      "enumColors": [
+        "blue",
+        "green",
+        "purple",
+        "gray"
+      ],
+      "default": "privacy"
+    },
+    "usuario_plataforma": {
+      "type": "string"
+    },
+    "tipo": {
+      "type": "string"
+    },
+    "bruto": {
+      "type": "number"
+    },
+    "liquido": {
+      "type": "number"
+    },
+    "moeda": {
+      "type": "string",
+      "default": "BRL"
+    },
+    "metodo": {
+      "type": "string"
+    },
+    "ocorrido_em": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "print_url": {
+      "type": "string"
+    },
+    "registro_original": {
+      "type": "string"
+    },
+    "observacao": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "aprovada",
+        "recusada"
+      ],
+      "enumColors": [
+        "yellow",
+        "green",
+        "red"
+      ],
+      "default": "pendente"
+    },
+    "revisado_por": {
+      "type": "string"
+    },
+    "revisado_em": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "motivo_recusa": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "usuario_id",
+    "plataforma",
+    "bruto",
+    "print_url"
+  ]
+}
