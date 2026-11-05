@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { UsersIcon } from '@/components/icons';
 import { useAuth } from '@/lib/AuthContext';
 import {
   CANAL_GERAL,
   CANAL_MODELO,
+  CANAL_PRIVADO,
   corDaPessoa,
+  fotoDoCanal,
   iniciais,
   nomeDoCanal,
   quandoFoi,
@@ -12,6 +14,7 @@ import {
   tipoDoCanal,
 } from '@/lib/chat';
 import { useChatPanel } from '@/components/chat/ChatProvider';
+import CanalMenu from '@/components/chat/CanalMenu';
 
 const linhaBase = {
   display: 'flex',
@@ -27,7 +30,27 @@ const linhaBase = {
   fontFamily: 'var(--font-main)',
 };
 
-function Avatar({ canal, modelos }) {
+function Avatar({ canal, modelos, pessoas, usuario }) {
+  const foto = fotoDoCanal(canal, { usuario, pessoas, modelos });
+  const arredondado = canal.tipo === CANAL_PRIVADO ? 15 : 9;
+
+  if (foto) {
+    return (
+      <img
+        src={foto}
+        alt=""
+        style={{
+          width: 30,
+          height: 30,
+          flexShrink: 0,
+          borderRadius: arredondado,
+          objectFit: 'cover',
+          border: '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
+        }}
+      />
+    );
+  }
+
   if (canal.tipo === CANAL_GERAL) {
     return (
       <span
@@ -74,7 +97,7 @@ function Avatar({ canal, modelos }) {
     );
   }
 
-  const nome = canal.nome || 'Conversa';
+  const nome = nomeDoCanal(canal, { usuario, pessoas, modelos }) || 'Conversa';
   return (
     <span
       style={{
@@ -109,6 +132,60 @@ export default function CanalLista({ onNovo }) {
     carregando,
   } = useChatPanel();
 
+  const admin = user?.role === 'admin';
+  const [menu, setMenu] = useState(null);
+  const [salvandoImagem, setSalvandoImagem] = useState(false);
+  const [erroImagem, setErroImagem] = useState('');
+  const { definirFotoDoCanal } = useChatPanel();
+
+  const fecharMenu = useCallback(() => setMenu(null), []);
+
+  const abrirMenu = (event, canal) => {
+    if (!admin) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setErroImagem('');
+    setMenu({ canal, x: event.clientX, y: event.clientY });
+  };
+
+  const trocarImagem = async (arquivo) => {
+    if (!menu?.canal || !arquivo) return;
+    if (!String(arquivo.type || '').startsWith('image/')) {
+      setErroImagem('Escolha um arquivo de imagem.');
+      return;
+    }
+    if (arquivo.size > 8 * 1024 * 1024) {
+      setErroImagem('Imagem muito grande (até 8 MB).');
+      return;
+    }
+    setSalvandoImagem(true);
+    setErroImagem('');
+    try {
+      await definirFotoDoCanal(menu.canal.id, arquivo);
+      setMenu(null);
+    } catch (falha) {
+      console.error('[Chat] não consegui trocar a imagem do canal', falha);
+      setErroImagem('Não consegui salvar a imagem.');
+    } finally {
+      setSalvandoImagem(false);
+    }
+  };
+
+  const removerImagem = async () => {
+    if (!menu?.canal) return;
+    setSalvandoImagem(true);
+    setErroImagem('');
+    try {
+      await definirFotoDoCanal(menu.canal.id, null);
+      setMenu(null);
+    } catch (falha) {
+      console.error('[Chat] não consegui remover a imagem do canal', falha);
+      setErroImagem('Não consegui remover a imagem.');
+    } finally {
+      setSalvandoImagem(false);
+    }
+  };
+
   const { fixos, conversas } = useMemo(() => {
     const ordenaModelo = (a, b) =>
       nomeDoCanal(a, { usuario: user, modelos }).localeCompare(
@@ -138,8 +215,10 @@ export default function CanalLista({ onNovo }) {
         className={`chat-canal${ativo ? ' is-ativo' : ''}${naoLidas ? ' tem-novidade' : ''}`}
         style={linhaBase}
         onClick={() => abrirCanal(canal.id)}
+        onContextMenu={(event) => abrirMenu(event, canal)}
+        title={admin ? 'Botão direito para trocar a imagem do canal' : undefined}
       >
-        <Avatar canal={canal} modelos={modelos} />
+        <Avatar canal={canal} modelos={modelos} pessoas={pessoas} usuario={user} />
         <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span
@@ -250,6 +329,19 @@ export default function CanalLista({ onNovo }) {
         </div>
       )}
       {conversas.map(item)}
+
+      {menu && (
+        <CanalMenu
+          canal={menu.canal}
+          nome={nomeDoCanal(menu.canal, { usuario: user, pessoas, modelos })}
+          posicao={{ x: menu.x, y: menu.y }}
+          salvando={salvandoImagem}
+          erro={erroImagem}
+          onAlterar={trocarImagem}
+          onRemover={removerImagem}
+          onFechar={fecharMenu}
+        />
+      )}
     </div>
   );
 }

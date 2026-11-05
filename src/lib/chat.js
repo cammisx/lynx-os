@@ -90,6 +90,25 @@ export const nomeDoCanal = (canal, { usuario, pessoas, modelos } = {}) => {
   return canal.nome || 'Grupo';
 };
 
+/**
+ * Imagem do canal, na ordem: imagem escolhida pelo admin, foto da modelo e,
+ * nas conversas privadas, foto de quem está do outro lado.
+ */
+export const fotoDoCanal = (canal, { usuario, pessoas, modelos } = {}) => {
+  if (!canal) return '';
+  if (canal.foto_url) return canal.foto_url;
+  if (canal.tipo === CANAL_MODELO) {
+    const modelo = (modelos || []).find((item) => item.id === canal.modelo_id);
+    return modelo?.foto_url || '';
+  }
+  if (canal.tipo === CANAL_PRIVADO) {
+    const outroId = (canal.participantes || []).find((id) => id !== usuario?.id);
+    const outro = (pessoas || []).find((pessoa) => pessoa.id === outroId);
+    return outro?.foto_url || '';
+  }
+  return '';
+};
+
 /** Rótulo pequeno embaixo do nome, para diferenciar canal de modelo e grupo. */
 export const tipoDoCanal = (canal) => {
   if (!canal) return '';

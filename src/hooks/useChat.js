@@ -613,6 +613,25 @@ export default function useChat() {
     [euId, enviar]
   );
 
+  /**
+   * Troca (ou remove, com arquivo nulo) a imagem de um canal.
+   * Só quem manda é o admin; a tela já esconde a opção dos demais.
+   */
+  const definirFotoDoCanal = useCallback(async (canalId, arquivo) => {
+    if (!canalId) return null;
+    let url = '';
+    if (arquivo) {
+      const resposta = await base44.integrations.Core.UploadFile({ file: arquivo });
+      if (!resposta?.file_url) throw new Error('O upload não devolveu a imagem.');
+      url = resposta.file_url;
+    }
+    await base44.entities.ChatCanal.update(canalId, { foto_url: url });
+    setCanais((anterior) =>
+      anterior.map((canal) => (canal.id === canalId ? { ...canal, foto_url: url } : canal))
+    );
+    return url;
+  }, []);
+
   const editar = useCallback(
     async (mensagemId, texto) => {
       const limpo = String(texto || '').trim();
@@ -879,6 +898,7 @@ export default function useChat() {
     fecharCanal: () => setCanalAtivoId(null),
     enviar,
     enviarAnexo,
+    definirFotoDoCanal,
     editar,
     apagar,
     enviando,

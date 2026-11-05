@@ -24,6 +24,9 @@
     "modelo_id": {
       "type": "string"
     },
+    "foto_url": {
+      "type": "string"
+    },
     "participantes": {
       "type": "array",
       "items": {
