@@ -35,38 +35,48 @@ export const somPorId = (id) => SONS.find((som) => som.id === id) || null;
 
 const cache = new Map();
 
-/** Um único player para o app inteiro: dois avisos nunca tocam por cima. */
-let player = null;
+/** Só um som toca por vez: o anterior é cortado quando outro começa. */
+let tocando = null;
 
-const obterPlayer = () => {
-  if (!player) {
-    player = new Audio();
-    player.preload = 'auto';
+const elemento = (som) => {
+  if (!som) return null;
+  if (!cache.has(som.id)) {
+    const audio = new Audio(som.arquivo);
+    audio.preload = 'auto';
+    cache.set(som.id, audio);
   }
-  return player;
+  return cache.get(som.id);
 };
 
 /** Pré-carrega os arquivos para o primeiro aviso não atrasar. */
 export const preaquecerSons = () => {
-  SONS.forEach((som) => {
-    if (cache.has(som.id)) return;
-    const audio = new Audio(som.arquivo);
-    audio.preload = 'auto';
-    cache.set(som.id, audio);
-  });
+  SONS.forEach((som) => elemento(som));
+};
+
+const parar = (audio) => {
+  if (!audio) return;
+  try {
+    audio.pause();
+    audio.currentTime = 0;
+  } catch (error) {
+    // elemento sem metadata ainda: nada a fazer
+  }
 };
 
 /** Toca o som escolhido. Volume em 0..1. */
 export const tocarSom = (id, volume = 0.6) => {
   const som = somPorId(id);
   if (!som) return;
-  const audio = obterPlayer();
+  const audio = elemento(som);
+  if (!audio) return;
+
+  if (tocando && tocando !== audio) parar(tocando);
+  tocando = audio;
+
   try {
-    // Corta o que estiver tocando antes de começar: nada de sobreposição.
-    audio.pause();
-    if (audio.src !== som.arquivo) audio.src = som.arquivo;
-    audio.currentTime = 0;
     audio.volume = Math.min(1, Math.max(0, volume));
+    if (audio.currentTime > 0) audio.currentTime = 0;
+    console.debug('[Som] tocou', som.id, new Date().toISOString());
     const promessa = audio.play();
     if (promessa?.catch) promessa.catch(() => {});
   } catch (error) {
