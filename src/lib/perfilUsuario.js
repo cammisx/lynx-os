@@ -73,7 +73,7 @@ export const refletirNomeDeUsuario = (usuarioId, nome) => {
  * banco recusou (campos do perfil ainda não publicados).
  */
 export const salvarPerfil = async (user, parcial = {}) => {
-  const nomeAntes = atual.nomeExibicao;
+  const antes = { nome: atual.nomeExibicao, foto: atual.fotoUrl, subnick: atual.subnick };
   atual = { ...atual, ...parcial };
   aplicarTema(atual.tema);
   if (user?.id) gravarLocal(user.id, atual);
@@ -95,13 +95,22 @@ export const salvarPerfil = async (user, parcial = {}) => {
     /* O nome é o mesmo do resto do app: quando ele muda, leva para a cópia que
        o desktop, o painel do relógio e os relatórios já leem. Trocar só o tema
        não custa essas leituras. */
-    if (atual.nomeExibicao && atual.nomeExibicao !== nomeAntes) {
+    if (atual.nomeExibicao && atual.nomeExibicao !== antes.nome) {
       await espelharNomeNoChatter({
         usuarioId: user.id,
         nome: atual.nomeExibicao,
         email: user.email,
       });
       await propagarNomeNasModelos({ usuarioId: user.id, nome: atual.nomeExibicao });
+    }
+
+    /* Foto e subnick também aparecem em outras janelas: avisa sempre que
+       qualquer um dos três mudou. */
+    if (
+      atual.nomeExibicao !== antes.nome ||
+      atual.fotoUrl !== antes.foto ||
+      atual.subnick !== antes.subnick
+    ) {
       emitChattersChanged();
     }
 

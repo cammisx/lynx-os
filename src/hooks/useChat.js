@@ -18,6 +18,7 @@ import {
 } from '@/lib/chat';
 import { avaliarMensagensChat, lerFocoDoChat, tocarSomChat } from '@/lib/sons';
 import { cargoDaPessoa, fotoDaPessoa, nomeDaPessoa } from '@/lib/pessoas';
+import { perfilAtual, usePerfil } from '@/lib/perfilUsuario';
 import { CHATTERS_CHANGED, MODELS_CHANGED } from '@/lib/desktopEvents';
 
 /** Mensagens consideradas para contagem e histórico curto. */
@@ -68,6 +69,8 @@ export default function useChat() {
   const modelosRef = useRef([]);
 
   const euId = user?.id;
+  /* O perfil da própria pessoa recarrega a lista de pessoas quando muda. */
+  const perfil = usePerfil(user);
 
   const carregarPessoas = useCallback(async () => {
     const [usuarios, chatters] = await Promise.all([
@@ -105,8 +108,22 @@ export default function useChat() {
       });
     });
 
+    /* O perfil que a pessoa acabou de salvar vale na hora, mesmo antes de o
+       banco responder (e mesmo se foto ou subnick ainda não estiverem
+       publicados no User). */
+    if (euId && mapa.has(euId)) {
+      const local = perfilAtual();
+      const eu = mapa.get(euId);
+      mapa.set(euId, {
+        ...eu,
+        nome: local?.nomeExibicao || eu.nome,
+        foto_url: local?.fotoUrl || eu.foto_url,
+        subnick: local?.subnick || eu.subnick,
+      });
+    }
+
     return [...mapa.values()];
-  }, []);
+  }, [euId, perfil.nomeExibicao, perfil.fotoUrl, perfil.subnick]);
 
   /* Nome ou foto trocados em qualquer janela aparecem no chat na hora. */
   useEffect(() => {
