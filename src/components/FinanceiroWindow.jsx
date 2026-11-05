@@ -4,12 +4,14 @@ import Window from '@/components/Window';
 import { MoneyIcon } from '@/components/icons';
 import ImportarExtrato from '@/components/financeiro/ImportarExtrato';
 import RelatorioFinanceiro from '@/components/financeiro/RelatorioFinanceiro';
+import VendasLista from '@/components/financeiro/VendasLista';
 
 const asList = (resultado) => (Array.isArray(resultado) ? resultado : resultado?.items || []);
 
 const ABAS = [
   { id: 'importar', label: 'Importar extrato' },
   { id: 'relatorio', label: 'Relatório' },
+  { id: 'vendas', label: 'Vendas' },
 ];
 
 export default function FinanceiroWindow({ onClose }) {
@@ -72,10 +74,10 @@ export default function FinanceiroWindow({ onClose }) {
         {erro && <span style={{ fontSize: 11.5, color: '#ff6b6b' }}>{erro}</span>}
 
         <div style={{ flex: 1, minHeight: 0 }}>
-          {aba === 'importar' ? (
-            <ImportarExtrato modelos={modelos} chatters={chatters} />
-          ) : (
-            <RelatorioFinanceiro modelos={modelos} chatters={chatters} />
+          {aba === 'importar' && <ImportarExtrato modelos={modelos} chatters={chatters} />}
+          {aba === 'relatorio' && <RelatorioFinanceiro modelos={modelos} chatters={chatters} />}
+          {aba === 'vendas' && (
+            <VendasLista modelos={modelos} chatters={chatters} />
           )}
         </div>
       </div>
