@@ -42,7 +42,7 @@ const dateLabel = (date) => {
 const timeLabel = (date) => {
   const wall = wallClockInTz(date);
   return `${pad(wall.hour)}:${pad(wall.minute)}`;
-};
+}; 
 
 const daysLabel = (dias) => {
   const list = (Array.isArray(dias) ? dias : [])
