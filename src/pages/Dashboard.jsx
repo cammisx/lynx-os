@@ -6,11 +6,13 @@ import ChattersWindow from '@/components/ChattersWindow';
 import ModelosWindow from '@/components/ModelosWindow';
 import TurnosWindow from '@/components/TurnosWindow';
 import useFecharTurnosEsquecidos from '@/hooks/useFecharTurnosEsquecidos';
+import useAvisarTurnosPendentes from '@/hooks/useAvisarTurnosPendentes';
 
 export default function Dashboard() {
   const [openApp, setOpenApp] = useState(null);
 
   useFecharTurnosEsquecidos();
+  useAvisarTurnosPendentes();
 
   useEffect(() => {
     const root = document.documentElement;

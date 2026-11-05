@@ -4,6 +4,7 @@ import StartMenu from '@/components/StartMenu';
 import ClockPanel from '@/components/ClockPanel';
 import NotificationsPanel from '@/components/notifications/NotificationsPanel';
 import JustificativaModal from '@/components/notifications/JustificativaModal';
+import ConfirmarTurnoModal from '@/components/notifications/ConfirmarTurnoModal';
 import useNotifications from '@/hooks/useNotifications';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -15,6 +16,7 @@ export default function Taskbar({ onOpenApp }) {
   const [clockOpen, setClockOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [justificativa, setJustificativa] = useState(null);
+  const [confirmacao, setConfirmacao] = useState(null);
   const clockRef = useRef(null);
   const bellRef = useRef(null);
 
@@ -41,6 +43,11 @@ export default function Taskbar({ onOpenApp }) {
 
     if (notification.tipo === 'turno_esquecido') {
       setJustificativa(notification);
+      return;
+    }
+
+    if (notification.tipo === 'novo_shift') {
+      setConfirmacao(notification);
       return;
     }
 
@@ -158,6 +165,15 @@ export default function Taskbar({ onOpenApp }) {
         <JustificativaModal
           notification={justificativa}
           onClose={() => setJustificativa(null)}
+          onSaved={reload}
+        />
+      )}
+
+      {confirmacao && (
+        <ConfirmarTurnoModal
+          notification={confirmacao}
+          chatterNome={user?.full_name || ''}
+          onClose={() => setConfirmacao(null)}
           onSaved={reload}
         />
       )}

@@ -1,4 +1,5 @@
 import { emitNotificationsChanged } from '@/lib/desktopEvents';
+import { nextOccurrence } from '@/lib/aceite';
 const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 const pad = (value) => String(value).padStart(2, '0');
@@ -68,15 +69,17 @@ export const novoShiftPayload = (shift, shiftId) => ({
  * Cria a notificação de turno novo para o chatter, ignorando duplicidade.
  * A app não tem backend functions habilitado, então isso roda no cliente.
  */
-export const notificarNovoShift = async (base44, shift, shiftId) => {
+export const notificarNovoShift = async (base44, shift, shiftId, { force = false } = {}) => {
   if (!shift?.usuario_id || !shiftId) return null;
 
-  const existentes = await base44.entities.Notificacao.filter(
-    { shift_id: shiftId, tipo: 'novo_shift' },
-    { limit: 1 }
-  );
-  const lista = Array.isArray(existentes) ? existentes : existentes?.items || [];
-  if (lista.length > 0) return null;
+  if (!force) {
+    const existentes = await base44.entities.Notificacao.filter(
+      { shift_id: shiftId, tipo: 'novo_shift' },
+      { limit: 1 }
+    );
+    const lista = Array.isArray(existentes) ? existentes : existentes?.items || [];
+    if (lista.length > 0) return null;
+  }
 
   const criada = await base44.entities.Notificacao.create(novoShiftPayload(shift, shiftId));
   emitNotificationsChanged();
@@ -84,3 +87,70 @@ export const notificarNovoShift = async (base44, shift, shiftId) => {
 };
 
 export { weekdayOf };
+
+/** Horário legível de uma ocorrência concreta (data + faixa). */
+const occurrencePhrase = (occurrence) => {
+  if (!occurrence) return '';
+  const start = new Date(occurrence.start);
+  const end = new Date(occurrence.end);
+  return `${pad(start.getDate())}/${pad(start.getMonth() + 1)} das ${pad(start.getHours())}:${pad(
+    start.getMinutes()
+  )} às ${pad(end.getHours())}:${pad(end.getMinutes())}`;
+};
+
+export const buildTurnoRecusadoMessage = (
+  shift = {},
+  chatterNome = '',
+  motivo = '',
+  occurrence = null
+) => {
+  const modelo = shift.modelo_nome || 'sem modelo';
+  const quando = occurrencePhrase(occurrence || nextOccurrence(shift)) || shortDate(shift.inicio);
+  const quem = chatterNome || shift.usuario_nome || 'Um chatter';
+  const base = `${quem} recusou o turno em ${modelo}: ${quando}.`;
+  return motivo ? `${base} Motivo: ${motivo}` : base;
+};
+
+export const buildTurnoPendenteMessage = (shift = {}, chatterNome = '', occurrence = null) => {
+  const modelo = shift.modelo_nome || 'sem modelo';
+  const quando = occurrencePhrase(occurrence) || shortDate(shift.inicio);
+  const quem = chatterNome || shift.usuario_nome || 'O chatter';
+  return `${quem} ainda não confirmou o turno em ${modelo}, que começa em ${quando}.`;
+};
+
+/**
+ * Cria a mesma notificação para todos os admins, ignorando duplicidade por
+ * shift_id + tipo, para não avisar duas vezes do mesmo turno.
+ */
+export const notificarAdmins = async (base44, payload, { dedupe = true } = {}) => {
+  if (!payload?.shift_id) return [];
+
+  if (dedupe) {
+    const existentes = await base44.entities.Notificacao.filter(
+      { shift_id: payload.shift_id, tipo: payload.tipo },
+      { limit: 1 }
+    );
+    const lista = Array.isArray(existentes) ? existentes : existentes?.items || [];
+    if (lista.length > 0) return [];
+  }
+
+  const adminsRaw = await base44.entities.User.filter({ role: 'admin' }, { limit: 50 });
+  const admins = (Array.isArray(adminsRaw) ? adminsRaw : adminsRaw?.items || []).filter(
+    (user) => user?.id
+  );
+  if (!admins.length) return [];
+
+  const criadas = await Promise.all(
+    admins.map((admin) =>
+      base44.entities.Notificacao.create({
+        ...payload,
+        usuario_id: admin.id,
+        status: 'pendente',
+        lida: false,
+        criado_por_automacao: false,
+      })
+    )
+  );
+  emitNotificationsChanged();
+  return criadas;
+};

@@ -142,11 +142,31 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
       status: shift?.status || 'agendado',
       dias_semana: [...dias].sort((a, b) => a - b),
       repetir_ate: dias.length > 0 && repetirAte ? formatDateKey(repetirAte) : null,
+      aceite: shift?.aceite || 'pendente',
     };
+
+    // Mudou modelo, chatter, horário ou repetição? O turno precisa ser
+    // confirmado de novo por quem vai cumpri-lo.
+    const mudouRegra =
+      shift &&
+      (shift.usuario_id !== payload.usuario_id ||
+        shift.modelo_id !== payload.modelo_id ||
+        new Date(shift.inicio).getTime() !== new Date(payload.inicio).getTime() ||
+        new Date(shift.fim).getTime() !== new Date(payload.fim).getTime() ||
+        JSON.stringify(shift.dias_semana || []) !== JSON.stringify(payload.dias_semana || []) ||
+        String(shift.repetir_ate || '') !== String(payload.repetir_ate || ''));
 
     try {
       if (shift) {
-        await base44.entities.Shift.update(shift.id, payload);
+        const patch = mudouRegra
+          ? { ...payload, aceite: 'pendente', aceite_em: null, motivo_recusa: '' }
+          : payload;
+        await base44.entities.Shift.update(shift.id, patch);
+        if (mudouRegra) {
+          notificarNovoShift(base44, patch, shift.id, { force: true }).catch((error) =>
+            console.warn('[notificarNovoShift]', error)
+          );
+        }
       } else {
         const created = await base44.entities.Shift.create(payload);
         if (created?.id) {

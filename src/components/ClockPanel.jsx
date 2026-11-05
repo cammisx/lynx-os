@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { CHATTERS_CHANGED, MODELS_CHANGED, SHIFTS_CHANGED } from '@/lib/desktopEvents';
 import { buildChatterNames } from '@/lib/chatterNames';
 import { expandShift } from '@/lib/shiftRepeat';
+import { isRecusado } from '@/lib/aceite';
 import {
   buildPontoIndex,
   clockLabel,
@@ -241,6 +242,7 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
 
     const next = ownShifts
       .filter((shift) => !archivedIds.has(shift.modelo_id))
+      .filter((shift) => !isRecusado(shift))
       .flatMap((shift) => expandShift(shift, windowStart, windowEnd))
       .filter((occurrence) => occurrence.end > now)
       .sort((a, b) => a.start - b.start)
@@ -349,6 +351,7 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
 
   const gridShifts = (() => {
     const base = weekShifts.filter((shift) => {
+      if (isRecusado(shift)) return false;
       if (archivedModels.some((model) => model.id === shift.modelo_id)) return false;
       if (!shift.modelo_id) {
         return !archivedModels.some((model) => model.nome === shift.modelo_nome);

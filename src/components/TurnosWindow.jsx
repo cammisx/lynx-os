@@ -7,6 +7,7 @@ import GlassSelect from '@/components/GlassSelect';
 import { CalendarIcon, PlusIcon, PencilIcon, TrashIcon } from '@/components/icons';
 import { emitShiftsChanged } from '@/lib/desktopEvents';
 import { daysLabel, sortDays } from '@/lib/shiftRepeat';
+import { ACEITE_COLOR, ACEITE_LABEL, aceiteOf } from '@/lib/aceite';
 import { buildChatterNames, chatterName } from '@/lib/chatterNames';
 
 const DAY_MS = 86400000;
@@ -328,6 +329,20 @@ export default function TurnosWindow({ onClose }) {
                         }}
                       >
                         {STATUS_LABEL[shift.status] || shift.status}
+                      </span>
+                      <span
+                        title={`Confirmação do chatter: ${ACEITE_LABEL[aceiteOf(shift)]}`}
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: ACEITE_COLOR[aceiteOf(shift)],
+                          backgroundColor: `color-mix(in srgb, ${ACEITE_COLOR[aceiteOf(shift)]} 18%, transparent)`,
+                          borderRadius: 999,
+                          padding: '2px 8px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {ACEITE_LABEL[aceiteOf(shift)]}
                       </span>
                       <button
                         type="button"

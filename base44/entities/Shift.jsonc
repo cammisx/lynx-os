@@ -33,6 +33,29 @@
       "type": "string",
       "format": "date-time"
     },
+    "aceite": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "aceito",
+        "recusado",
+        "nao_confirmado"
+      ],
+      "enumColors": [
+        "blue",
+        "green",
+        "red",
+        "gray"
+      ],
+      "default": "pendente"
+    },
+    "aceite_em": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "motivo_recusa": {
+      "type": "string"
+    },
     "status": {
       "type": "string",
       "enum": [

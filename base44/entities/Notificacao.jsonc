@@ -15,11 +15,15 @@
       "type": "string",
       "enum": [
         "turno_esquecido",
-        "novo_shift"
+        "novo_shift",
+        "turno_recusado",
+        "turno_pendente"
       ],
       "enumColors": [
         "yellow",
-        "blue"
+        "blue",
+        "red",
+        "orange"
       ],
       "default": "turno_esquecido"
     },
