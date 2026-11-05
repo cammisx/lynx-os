@@ -1,3 +1,5 @@
+import { paraData } from '@/lib/chat';
+
 /**
  * Sons de notificação disponíveis no shell.
  * Arquivos em /public/sons (créditos e licenças em public/sons/CREDITOS.md).
@@ -138,6 +140,19 @@ let ultimoToque = 0;
 
 const INTERVALO_MINIMO = 2500;
 
+/**
+ * O carimbo do banco vem em UTC sem fuso; lido direto, ficava 3h no futuro em
+ * São Paulo e toda pendência antiga parecia nova. Timestamp muito à frente do
+ * relógio local também é ignorado, para não depender de relógio sincronizado.
+ */
+const chegouDepoisDe = (carimbo, desde) => {
+  if (!carimbo) return false;
+  const quando = paraData(carimbo).getTime();
+  if (!Number.isFinite(quando)) return false;
+  if (quando > Date.now() + 60000) return false;
+  return quando > desde;
+};
+
 /** Marca os ids como conhecidos e diz se algum deles é novidade de verdade. */
 /**
  * Só avisa de notificação que nasceu depois de a página abrir. Antes disso o
@@ -155,11 +170,7 @@ export const avaliarNotificacoesNovas = (itens = [], desde = 0) => {
     return false;
   }
 
-  return novos.some((item) => {
-    if (!item.created_date) return true;
-    const quando = new Date(item.created_date).getTime();
-    return Number.isFinite(quando) && quando > desde;
-  });
+  return novos.some((item) => chegouDepoisDe(item.created_date, desde));
 };
 
 /** Toca o som escolhido pelo usuário, respeitando o desligar e o volume. */
@@ -213,11 +224,7 @@ export const avaliarMensagensChat = (mensagens = [], euId, desde = 0) => {
   const novas = lista.filter((mensagem) => !vistas.has(mensagem.id));
   lista.forEach((mensagem) => vistas.add(mensagem.id));
 
-  const chegouAgora = (mensagem) => {
-    if (!mensagem.created_date) return false;
-    const quando = new Date(mensagem.created_date).getTime();
-    return Number.isFinite(quando) && quando > desde;
-  };
+  const chegouAgora = (mensagem) => chegouDepoisDe(mensagem.created_date, desde);
 
   if (!vistasIniciadas) {
     vistasIniciadas = true;
