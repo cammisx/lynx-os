@@ -47,7 +47,7 @@ const timeLabel = (date) => {
 const daysLabel = (dias) => {
   const list = (Array.isArray(dias) ? dias : [])
     .map(Number)
-    .filter((day) => day >= 0 && day <= 6)
+    .filter((day) => day >= 0 && day <= 6) 
     .sort((a, b) => a - b);
 
   const names = list.map((day) => WEEKDAYS[day]);
