@@ -18,7 +18,10 @@ import { nomeDaPessoa } from '@/lib/pessoas';
 
 export default function Taskbar({ onOpenApp }) {
   const { user } = useAuth();
-  const { items, naoLidas, markRead, reload } = useNotifications(user?.id, user?.role === 'admin');
+  const { items, naoLidas, markRead, markAllRead, reload } = useNotifications(
+    user?.id,
+    user?.role === 'admin'
+  );
   const preferenciaSom = usePreferenciaSom();
   const chat = useChatPanel();
   const [now, setNow] = useState(() => new Date());
@@ -232,6 +235,7 @@ export default function Taskbar({ onOpenApp }) {
           onOpen={openNotification}
           onClose={() => setBellOpen(false)}
           preferencia={preferenciaSom}
+          onMarcarTodas={markAllRead}
         />
       )}
 

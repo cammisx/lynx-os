@@ -240,6 +240,15 @@ export function CheckIcon({ size = 16, className }) {
   );
 }
 
+export function CheckAllIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M2 12.5 6 16.5 14 8.5" />
+      <path d="M9 13 12.5 16.5 22 7" />
+    </Svg>
+  );
+}
+
 export function RefreshIcon({ size = 16, className }) {
   return (
     <Svg size={size} className={className}>

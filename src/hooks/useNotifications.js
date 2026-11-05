@@ -125,7 +125,24 @@ export default function useNotifications(userId, isAdmin = false) {
     }
   }, []);
 
+  /* "Marcar tudo como lido" some com o badge de uma vez. Atualiza a lista na
+     hora e só depois persiste, para o clique não parecer travado. */
+  const markAllRead = useCallback(async () => {
+    const alvo = items.filter(isNaoLida);
+    if (!alvo.length) return 0;
+    const ids = new Set(alvo.map((item) => item.id));
+    setItems((prev) => prev.map((item) => (ids.has(item.id) ? { ...item, lida: true } : item)));
+    await Promise.all(
+      alvo.map((item) =>
+        base44.entities.Notificacao.update(item.id, { lida: true }).catch((erro) => {
+          console.warn('[Notificacao] não consegui marcar como lida', erro?.message || erro);
+        })
+      )
+    );
+    return alvo.length;
+  }, [items]);
+
   const naoLidas = items.filter(isNaoLida).length;
 
-  return { items, naoLidas, markRead, reload: load };
+  return { items, naoLidas, markRead, markAllRead, reload: load };
 }

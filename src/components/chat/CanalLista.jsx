@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { UsersIcon } from '@/components/icons';
+import { CheckAllIcon, UsersIcon } from '@/components/icons';
 import { useAuth } from '@/lib/AuthContext';
 import {
   CANAL_GERAL,
@@ -130,9 +130,14 @@ export default function CanalLista({ onNovo }) {
     canalAtivo,
     abrirCanal,
     carregando,
+    marcarTudoLido,
   } = useChatPanel();
 
   const admin = user?.role === 'admin';
+  const totalNaoLidas = useMemo(
+    () => [...naoLidasPorCanal.values()].reduce((soma, valor) => soma + valor, 0),
+    [naoLidasPorCanal]
+  );
   const [menu, setMenu] = useState(null);
   const [salvandoImagem, setSalvandoImagem] = useState(false);
   const [erroImagem, setErroImagem] = useState('');
@@ -299,7 +304,33 @@ export default function CanalLista({ onNovo }) {
       {fixos.map(item)}
 
       <div style={{ ...secao, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span>conversas</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          conversas
+          {totalNaoLidas > 0 && (
+            <button
+              type="button"
+              onClick={() => marcarTudoLido?.()}
+              aria-label="Marcar tudo como lido"
+              title={`Marcar tudo como lido (${totalNaoLidas})`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+                border: 'none',
+                borderRadius: 5,
+                background: 'transparent',
+                color: 'var(--c1)',
+                cursor: 'pointer',
+                padding: '1px 3px',
+                fontFamily: 'var(--font-main)',
+                fontSize: 9,
+                letterSpacing: '0.04em',
+              }}
+            >
+              <CheckAllIcon size={11} />
+            </button>
+          )}
+        </span>
         {onNovo && (
           <button
             type="button"

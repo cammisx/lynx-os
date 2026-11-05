@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckIcon, CloseIcon, GearIcon, VolumeIcon } from '@/components/icons';
+import { CheckAllIcon, CheckIcon, CloseIcon, GearIcon, VolumeIcon } from '@/components/icons';
 import NotificationRow from '@/components/notifications/NotificationRow';
 import { isNaoLida } from '@/lib/notificacoes';
 import { SONS } from '@/lib/sons';
 
-export default function NotificationsPanel({ items, anchorRef, onOpen, onClose, preferencia }) {
+export default function NotificationsPanel({ items, anchorRef, onOpen, onClose, preferencia, onMarcarTodas }) {
   const panelRef = useRef(null);
   const [filtro, setFiltro] = useState('nao_lidas');
   const [config, setConfig] = useState(false);
@@ -70,6 +70,36 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose, 
           {config ? 'Som de notificação' : 'Notificações'}
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {!config && (
+            <button
+              type="button"
+              aria-label="Marcar todas como lidas"
+              title={
+                naoLidas.length
+                  ? `Marcar ${naoLidas.length} como lidas`
+                  : 'Nenhuma notificação não lida'
+              }
+              onClick={() => onMarcarTodas?.()}
+              disabled={!naoLidas.length}
+              className="clk-nav-btn"
+              style={{
+                width: 24,
+                height: 24,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                border: 'none',
+                borderRadius: 6,
+                background: 'transparent',
+                color: naoLidas.length ? 'var(--c1)' : 'var(--c12)',
+                cursor: naoLidas.length ? 'pointer' : 'default',
+                opacity: naoLidas.length ? 1 : 0.55,
+              }}
+            >
+              <CheckAllIcon size={13} />
+            </button>
+          )}
           <button
             type="button"
             aria-label={config ? 'Voltar para as notificações' : 'Configurar som de notificação'}

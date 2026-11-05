@@ -555,6 +555,21 @@ export default function useChat() {
     [euId]
   );
 
+  /* "Marcar tudo como lido": zera o badge de todos os canais de uma vez.
+     Reaproveita o marcarLido, que já cuida do banco e do estado local. */
+  const marcarTudoLido = useCallback(async () => {
+    const alvos = canaisVisiveis
+      .filter((canal) => (naoLidasPorCanal.get(canal.id) || 0) > 0)
+      .map((canal) => canal.id);
+    if (!alvos.length) return 0;
+    for (let indice = 0; indice < alvos.length; indice += 1) {
+      // Um por vez para não disparar uma leva de gravações ao mesmo tempo.
+      // eslint-disable-next-line no-await-in-loop
+      await marcarLido(alvos[indice]);
+    }
+    return alvos.length;
+  }, [canaisVisiveis, naoLidasPorCanal, marcarLido]);
+
   const abrirCanal = useCallback(
     (canalId) => {
       setCanalAtivoId(canalId);
@@ -923,6 +938,7 @@ export default function useChat() {
     enviando,
     criarCanal,
     marcarLido,
+    marcarTudoLido,
     salvarTranscricao,
     recarregar: carregar,
   };
