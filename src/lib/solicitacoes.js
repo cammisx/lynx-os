@@ -26,7 +26,9 @@ const criarNoCliente = async (base44, admins, payload) => {
  * Avisa os admins sobre uma solicitação pendente do chatter
  * (mimo/venda, folga, ajuste de ponto). Sem dedupe: cada pedido é único.
  *
- * O app não tem backend functions habilitado, então:
+ * Ordem:
+ * 0. se a função notificarAdmins responder, ela cria uma notificação por admin
+ *    (roda com service role, então vale para chatter também);
  * 1. se quem pediu é admin, cria uma notificação por admin;
  * 2. senão cria uma notificação "sem dono", que o sino dos admins mostra.
  */
@@ -45,6 +47,22 @@ export default async function notificarAdminsSolicitacao(
     solicitante_nome: solicitante?.full_name || solicitante?.email || '',
     ...extra,
   };
+
+  try {
+    const resposta = await base44.functions.invoke('notificarAdmins', {
+      titulo,
+      mensagem,
+      tipo,
+      extra,
+    });
+    const corpo = resposta?.data || resposta;
+    if (corpo?.ok) {
+      emitNotificationsChanged();
+      return corpo.criadas || [];
+    }
+  } catch (error) {
+    // Função indisponível: segue pelo cliente.
+  }
 
   let admins = [];
   try {
