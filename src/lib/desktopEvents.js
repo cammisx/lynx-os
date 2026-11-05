@@ -15,3 +15,8 @@ export const SHIFTS_CHANGED = 'silk:shifts-changed';
 export const emitShiftsChanged = () => {
   window.dispatchEvent(new Event(SHIFTS_CHANGED));
 };
+export const NOTIFICATIONS_CHANGED = 'silk:notifications-changed';
+
+export const emitNotificationsChanged = () => {
+  window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED));
+};

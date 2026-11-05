@@ -1,3 +1,4 @@
+import { emitNotificationsChanged } from '@/lib/desktopEvents';
 const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 const pad = (value) => String(value).padStart(2, '0');
@@ -31,6 +32,7 @@ const daysPhrase = (dias) => {
  * Texto da notificação enviada ao chatter quando um turno é criado.
  * Turno com dias marcados repete toda semana; sem dias é uma data única.
  */
+
 export const buildNovoShiftMessage = (shift = {}) => {
   const modelo = shift.modelo_nome ? `em ${shift.modelo_nome}` : 'em uma modelo';
   const horario = `das ${clock(shift.inicio)} às ${clock(shift.fim)}`;
@@ -56,6 +58,7 @@ export const novoShiftPayload = (shift, shiftId) => ({
   tipo: 'novo_shift',
   shift_id: shiftId,
   status: 'pendente',
+  lida: false,
   criado_por_automacao: false,
   modelo_id: shift.modelo_id || '',
   ocorrencia_data: '',
@@ -75,7 +78,9 @@ export const notificarNovoShift = async (base44, shift, shiftId) => {
   const lista = Array.isArray(existentes) ? existentes : existentes?.items || [];
   if (lista.length > 0) return null;
 
-  return base44.entities.Notificacao.create(novoShiftPayload(shift, shiftId));
+  const criada = await base44.entities.Notificacao.create(novoShiftPayload(shift, shiftId));
+  emitNotificationsChanged();
+  return criada;
 };
 
 export { weekdayOf };

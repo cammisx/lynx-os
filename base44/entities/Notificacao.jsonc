@@ -44,6 +44,10 @@
     "resposta": {
       "type": "string"
     },
+    "lida": {
+      "type": "boolean",
+      "default": false
+    },
     "criado_por_automacao": {
       "type": "boolean",
       "default": false

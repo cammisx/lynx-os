@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/AuthContext';
 
 export default function Taskbar({ onOpenApp }) {
   const { user } = useAuth();
-  const { items, readIds, markRead, reload } = useNotifications(user?.id);
+  const { items, naoLidas, markRead, reload } = useNotifications(user?.id);
   const [now, setNow] = useState(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
   const [clockOpen, setClockOpen] = useState(false);
@@ -34,10 +34,6 @@ export default function Taskbar({ onOpenApp }) {
     day: '2-digit',
     month: '2-digit',
   });
-
-  const pendentes = items.filter(
-    (notification) => notification.status === 'pendente' && !readIds.has(notification.id)
-  ).length;
 
   const openNotification = async (notification) => {
     markRead(notification.id);
@@ -100,7 +96,7 @@ export default function Taskbar({ onOpenApp }) {
             <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.7 21a2 2 0 0 1-3.4 0" />
           </svg>
-          {pendentes > 0 && (
+          {naoLidas > 0 && (
             <span
               style={{
                 position: 'absolute',
@@ -110,6 +106,7 @@ export default function Taskbar({ onOpenApp }) {
                 height: 7,
                 borderRadius: '50%',
                 background: 'var(--c1)',
+                boxShadow: '0 0 0 2px color-mix(in srgb, var(--c8) 65%, transparent)',
                 animation: 'clk-punch-pulse 1.8s ease-in-out infinite',
               }}
             />
@@ -151,7 +148,6 @@ export default function Taskbar({ onOpenApp }) {
       {bellOpen && (
         <NotificationsPanel
           items={items}
-          readIds={readIds}
           anchorRef={bellRef}
           onOpen={openNotification}
           onClose={() => setBellOpen(false)}

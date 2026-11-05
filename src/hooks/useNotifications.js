@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { NOTIFICATIONS_CHANGED } from '@/lib/desktopEvents';
 
 const REFRESH_MS = 60000;
 
@@ -7,7 +8,6 @@ const asList = (result) => (Array.isArray(result) ? result : result?.items || []
 
 export default function useNotifications(userId) {
   const [items, setItems] = useState([]);
-  const [readIds, setReadIds] = useState(() => new Set());
 
   const load = useCallback(async () => {
     if (!userId) return;
@@ -26,17 +26,23 @@ export default function useNotifications(userId) {
     if (!userId) return undefined;
     load();
     const id = setInterval(load, REFRESH_MS);
-    return () => clearInterval(id);
+    window.addEventListener(NOTIFICATIONS_CHANGED, load);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener(NOTIFICATIONS_CHANGED, load);
+    };
   }, [userId, load]);
 
-  const markRead = useCallback((id) => {
-    setReadIds((prev) => {
-      if (prev.has(id)) return prev;
-      const next = new Set(prev);
-      next.add(id);
-      return next;
-    });
+  const markRead = useCallback(async (id) => {
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, lida: true } : item)));
+    try {
+      await base44.entities.Notificacao.update(id, { lida: true });
+    } catch (error) {
+      console.warn('[Notificacao]', error);
+    }
   }, []);
 
-  return { items, readIds, markRead, reload: load };
+  const naoLidas = items.filter((item) => !item.lida && item.status !== 'resolvida').length;
+
+  return { items, naoLidas, markRead, reload: load };
 }

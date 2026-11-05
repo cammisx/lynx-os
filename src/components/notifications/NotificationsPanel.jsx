@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { CloseIcon } from '@/components/icons';
 import NotificationRow from '@/components/notifications/NotificationRow';
 
-export default function NotificationsPanel({ items, readIds, anchorRef, onOpen, onClose }) {
+export default function NotificationsPanel({ items, anchorRef, onOpen, onClose }) {
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -99,7 +99,7 @@ export default function NotificationsPanel({ items, readIds, anchorRef, onOpen, 
             <NotificationRow
               key={notification.id}
               notification={notification}
-              read={readIds.has(notification.id) || notification.status === 'resolvida'}
+              read={Boolean(notification.lida) || notification.status === 'resolvida'}
               onOpen={onOpen}
             />
           ))
