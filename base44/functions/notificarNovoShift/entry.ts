@@ -1,5 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.27';
-import { secrets } from 'base44:runtime';
 
 // Notifica o chatter quando um turno é inserido para ele.
 // Chamada pelo formulário de turno logo após criar (ou reatribuir) um shift.
@@ -88,14 +87,11 @@ Deno.serve(async (req) => {
       error?.status === 401 ? null : Promise.reject(error)
     );
 
-    // Sem sessão, apenas a automação que apresenta o segredo combinado pode avisar.
     if (!user) {
-      const enviado = req.headers.get('x-automacao-secret') || '';
-      const esperado = secrets.get('AUTOMACAO_SECRET') || '';
-      if (!esperado || enviado !== esperado) {
-        return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-      }
-    } else if (user.role !== 'admin') {
+      return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (user.role !== 'admin') {
       return Response.json({ ok: false, error: 'Apenas admin pode notificar turnos' }, { status: 403 });
     }
 

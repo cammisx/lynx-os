@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { CloseIcon, GiftIcon } from '@/components/icons';
 import { moedaLabel, quandoLabel, statusColor, statusLabel } from '@/lib/vendas';
 import { useAuth } from '@/lib/AuthContext';
+import { urlSegura } from '@/lib/url';
 
 const BOTAO = {
   height: 30,
@@ -88,7 +89,7 @@ export default function VendaPendenteModal({ notification, onClose, onSaved }) {
 
   const pendentes = vendas.filter((venda) => venda.status === 'pendente');
   const podeDecidir = pendentes.length > 0 && !salvando;
-  const print = vendas.find((venda) => venda.print_url)?.print_url || '';
+  const print = urlSegura(vendas.find((venda) => venda.print_url)?.print_url || '');
 
   const finalizarNotificacao = async (resposta) => {
     try {

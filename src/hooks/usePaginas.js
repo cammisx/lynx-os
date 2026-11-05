@@ -2,13 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { carregarPaginas, iniciarEspontaneo } from '@/lib/paginas';
 import { emitNotificationsChanged, SHIFTS_CHANGED } from '@/lib/desktopEvents';
 
-const REFRESH_MS = 15000;
-
 /**
  * Estado ao vivo das páginas em que a pessoa está atribuída.
  *
- * Recarrega a cada 15 segundos (mesmo ritmo do resto do shell) e sempre que um
- * turno muda, para o cartão não mentir sobre quem está na página.
+ * Carrega ao abrir, quando um turno muda e no botão "Atualizar". Não repete
+ * sozinho: cada leitura chama a função de backend, então nada de laço.
  */
 export default function usePaginas() {
   const [paginas, setPaginas] = useState([]);
@@ -35,13 +33,11 @@ export default function usePaginas() {
     ativo.current = true;
     recarregar();
 
-    const id = setInterval(recarregar, REFRESH_MS);
     const aoMudarTurnos = () => recarregar();
     window.addEventListener(SHIFTS_CHANGED, aoMudarTurnos);
 
     return () => {
       ativo.current = false;
-      clearInterval(id);
       window.removeEventListener(SHIFTS_CHANGED, aoMudarTurnos);
     };
   }, [recarregar]);
