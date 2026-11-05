@@ -9,6 +9,7 @@ import { expandShift } from '@/lib/shiftRepeat';
 import { isRecusado } from '@/lib/aceite';
 import { clockLabel, localDateKey } from '@/lib/ponto';
 import notificarAdminsSolicitacao from '@/lib/solicitacoes';
+import aplicarAjustePonto from '@/lib/ajustePonto';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 const DAY_MS = 86400000;
@@ -245,6 +246,9 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
   const podeEnviar =
     !!ocorrencia && !!mudouAlgo && !pausaInvalida && motivo.trim().length >= 3 && !salvando;
 
+  // Turno acontecendo agora: a correção entra na hora, sem esperar o admin.
+  const aplicarNaHora = !!ocorrencia?.andamento;
+
   const enviar = async () => {
     if (!podeEnviar) return;
     setSalvando(true);
@@ -277,6 +281,33 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
         status: 'pendente',
       });
 
+      // Turno em andamento: aplica agora e marca o pedido como aprovado.
+      let aplicadoNaHora = false;
+      if (aplicarNaHora) {
+        try {
+          await aplicarAjustePonto(base44, {
+            ocorrencia,
+            registros,
+            entrada: entradaMudou ? entradaFinal : null,
+            saida: saidaMudou ? saidaFinal : null,
+            pausas: pausas.filter(pausaMudou).map((item) => ({
+              pausaId: item.pausaId,
+              retornoId: item.retornoId,
+              inicio: inicioDaPausa(item),
+              fim: fimDaPausa(item),
+            })),
+            usuario,
+            fecharTurno: !!saidaFinal,
+          });
+          aplicadoNaHora = true;
+          if (criado?.id) {
+            await base44.entities.AjustePonto.update(criado.id, { status: 'aprovado' });
+          }
+        } catch (error) {
+          console.warn('[AjustePonto] não consegui aplicar na hora', error);
+        }
+      }
+
       const pedacos = [];
       if (entradaFinal) pedacos.push(`entrada ${clockLabel(entradaFinal.toISOString())}`);
       if (saidaFinal) pedacos.push(`saída ${clockLabel(saidaFinal.toISOString())}`);
@@ -292,15 +323,36 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
         pedacos.push(`pausa ${indice + 1} ${de} para ${para}`);
       });
 
-      await notificarAdminsSolicitacao(base44, {
-        titulo: 'Ajuste de ponto',
-        mensagem: `${usuario?.full_name || usuario?.email || 'Chatter'} pediu ajuste em ${
-          ocorrencia.modeloNome || 'um turno'
-        } (${diaCurto(ocorrencia.start)}): ${pedacos.join(' e ') || 'sem horário novo'}. Motivo: ${motivo.trim()}`,
-        tipo: 'ajuste_ponto_pendente',
-        extra: { ajuste_ponto_id: criado?.id || '', shift_id: ocorrencia.shiftId, ocorrencia_data: ocorrencia.dateKey },
-        solicitante: usuario,
-      });
+      const quem = usuario?.full_name || usuario?.email || 'Chatter';
+      const extra = {
+        ajuste_ponto_id: criado?.id || '',
+        shift_id: ocorrencia.shiftId,
+        ocorrencia_data: ocorrencia.dateKey,
+        modelo_id: ocorrencia.modeloId || '',
+        modelo_nome: ocorrencia.modeloNome || '',
+      };
+      const detalhe = `${ocorrencia.modeloNome || 'um turno'} (${diaCurto(ocorrencia.start)}): ${
+        pedacos.join(' e ') || 'sem horário novo'
+      }. Motivo: ${motivo.trim()}`;
+
+      if (aplicadoNaHora) {
+        // Aviso informativo: já foi aplicado no turno em andamento.
+        await notificarAdminsSolicitacao(base44, {
+          titulo: 'Ponto corrigido na hora',
+          mensagem: `${quem} corrigiu o turno em andamento de ${detalhe}`,
+          tipo: 'ajuste_ponto_aplicado',
+          extra,
+          solicitante: usuario,
+        });
+      } else {
+        await notificarAdminsSolicitacao(base44, {
+          titulo: 'Ajuste de ponto',
+          mensagem: `${quem} pediu ajuste em ${detalhe}`,
+          tipo: 'ajuste_ponto_pendente',
+          extra,
+          solicitante: usuario,
+        });
+      }
 
       if (onSaved) await onSaved();
       onClose();
@@ -433,7 +485,9 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
                 </span>
               </span>
               {ocorrencia?.andamento && (
-                <span style={{ color: '#7bd88f' }}>Turno em andamento: dá para corrigir agora.</span>
+                <span style={{ color: '#7bd88f' }}>
+                  Turno em andamento: a correção entra na hora, sem passar pelo admin.
+                </span>
               )}
               {ocorrencia?.aSeguir && (
                 <span style={{ color: '#e8b93b' }}>
@@ -581,7 +635,7 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
               opacity: salvando ? 0.6 : 1,
             }}
           >
-            {salvando ? 'Enviando…' : 'Pedir ajuste'}
+            {salvando ? 'Enviando…' : aplicarNaHora ? 'Aplicar ajuste' : 'Pedir ajuste'}
           </button>
         </div>
       </div>
