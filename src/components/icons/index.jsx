@@ -212,6 +212,16 @@ export function MoneyIcon({ size = 16, className }) {
   );
 }
 
+export function UploadIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="M12 16V4" />
+      <path d="m7 9 5-5 5 5" />
+    </Svg>
+  );
+}
+
 export function CheckIcon({ size = 16, className }) {
   return (
     <Svg size={size} className={className}>

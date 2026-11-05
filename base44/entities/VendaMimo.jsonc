@@ -53,6 +53,12 @@
       "type": "string",
       "format": "date-time"
     },
+    "comprador_id": {
+      "type": "string"
+    },
+    "tipo_venda": {
+      "type": "string"
+    },
     "identificador": {
       "type": "string"
     },

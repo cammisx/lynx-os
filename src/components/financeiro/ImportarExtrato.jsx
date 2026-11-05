@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import GlassSelect from '@/components/GlassSelect';
-import { conferirExtrato, paraVendaMimo, SITUACOES } from '@/lib/extrato';
+import { UploadIcon } from '@/components/icons';
+import { conferirExtrato, itensDaPlanilha, paraVendaMimo, SITUACOES } from '@/lib/extrato';
+import { lerArquivoPlanilha } from '@/lib/planilha';
 import { moeda } from '@/lib/financeiro';
 import { quandoLabel } from '@/lib/vendas';
 
@@ -31,7 +33,7 @@ const valorDestaque = {
   color: 'var(--c3)',
 };
 
-const botao = (principal) => ({
+const botao = (principal = true) => ({
   height: 32,
   padding: '0 14px',
   borderRadius: 8,
@@ -75,7 +77,8 @@ const situacaoChip = (situacao) => {
 export default function ImportarExtrato({ modelos, chatters }) {
   const { user } = useAuth();
   const [modeloId, setModeloId] = useState('');
-  const [texto, setTexto] = useState('');
+  const [arquivo, setArquivo] = useState(null);
+  const [lendo, setLendo] = useState(false);
   const [existentes, setExistentes] = useState([]);
   const [conferencia, setConferencia] = useState(null);
   const [salvando, setSalvando] = useState(false);
@@ -100,7 +103,6 @@ export default function ImportarExtrato({ modelos, chatters }) {
 
   useEffect(() => {
     setConferencia(null);
-    setAviso(null);
     if (!modeloId) {
       setExistentes([]);
       return undefined;
@@ -118,23 +120,42 @@ export default function ImportarExtrato({ modelos, chatters }) {
     };
   }, [modeloId]);
 
-  const conferir = () => {
+  const conferir = (itens) => {
     setAviso(null);
     if (!modelo) {
-      setAviso({ erro: true, texto: 'Escolha a modelo antes de conferir o extrato.' });
+      setAviso({ erro: true, texto: 'Escolha a modelo antes de enviar o extrato.' });
       return;
     }
-    if (!texto.trim()) {
-      setAviso({ erro: true, texto: 'Cole o extrato do Privacy.' });
-      return;
-    }
-    const resultado = conferirExtrato({ texto, modelo, existentes });
-    if (!resultado.linhas.length) {
-      setAviso({ erro: true, texto: 'Não reconheci nenhuma venda nesse texto.' });
+    if (!itens?.length) {
+      setAviso({ erro: true, texto: 'Não reconheci nenhuma venda nesse arquivo.' });
       setConferencia(null);
       return;
     }
-    setConferencia(resultado);
+    setConferencia(conferirExtrato({ itens, modelo, existentes }));
+  };
+
+  const escolherArquivo = async (event) => {
+    const escolhido = event.target.files?.[0];
+    event.target.value = '';
+    if (!escolhido) return;
+    setAviso(null);
+    setConferencia(null);
+    setLendo(true);
+    try {
+      const linhas = await lerArquivoPlanilha(escolhido);
+      const itens = itensDaPlanilha(linhas);
+      setArquivo({ nome: escolhido.name, registros: itens.length });
+      if (!modelo) {
+        setAviso({ erro: true, texto: 'Extrato lido. Escolha a modelo para conferir.' });
+        return;
+      }
+      conferir(itens);
+    } catch (erro) {
+      setArquivo(null);
+      setAviso({ erro: true, texto: erro?.message || 'Não consegui ler esse arquivo.' });
+    } finally {
+      setLendo(false);
+    }
   };
 
   const salvar = async () => {
@@ -148,22 +169,23 @@ export default function ImportarExtrato({ modelos, chatters }) {
     setSalvando(true);
     setAviso(null);
     try {
-      for (const linha of paraSalvar) {
+      const registros = paraSalvar.map((linha) =>
+        paraVendaMimo(linha, {
+          modelo,
+          chatterNome: nomeDoChatter.get(linha.chatter_id) || '',
+          lote,
+          admin: user,
+        })
+      );
+      for (let inicio = 0; inicio < registros.length; inicio += 200) {
         // eslint-disable-next-line no-await-in-loop
-        await base44.entities.VendaMimo.create(
-          paraVendaMimo(linha, {
-            modelo,
-            chatterNome: nomeDoChatter.get(linha.chatter_id) || '',
-            lote,
-            admin: user,
-          })
-        );
+        await base44.entities.VendaMimo.bulkCreate(registros.slice(inicio, inicio + 200));
       }
       setAviso({
         erro: false,
         texto: `${paraSalvar.length} venda(s) salva(s) em ${modelo?.nome || 'modelo'}.`,
       });
-      setTexto('');
+      setArquivo(null);
       setConferencia(null);
       const atualizadas = await base44.entities.VendaMimo.filter(
         { modelo_id: modeloId },
@@ -197,29 +219,42 @@ export default function ImportarExtrato({ modelos, chatters }) {
         )}
       </div>
 
-      <textarea
-        className="glass-scroll"
-        value={texto}
-        onChange={(event) => setTexto(event.target.value)}
-        placeholder={'Cole aqui o extrato do Privacy, um registro embaixo do outro.'}
+      <label
         style={{
-          height: 132,
-          resize: 'none',
-          padding: '10px 12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '14px 16px',
           borderRadius: 10,
-          border: '1px solid color-mix(in srgb, var(--c6) 35%, transparent)',
-          background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
-          color: 'var(--c3)',
-          fontSize: 11.5,
-          fontFamily: 'var(--font-main)',
-          lineHeight: 1.5,
+          border: '1px dashed color-mix(in srgb, var(--c1) 35%, transparent)',
+          background: 'color-mix(in srgb, var(--c8) 45%, transparent)',
+          cursor: lendo ? 'progress' : 'pointer',
         }}
-      />
+      >
+        <input
+          type="file"
+          accept=".xlsx"
+          onChange={escolherArquivo}
+          style={{ display: 'none' }}
+        />
+        <UploadIcon size={18} />
+        <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: arquivo ? 'var(--c3)' : 'var(--c1)' }}>
+            {lendo
+              ? 'Lendo o extrato...'
+              : arquivo
+                ? arquivo.nome
+                : 'Enviar extrato do Privacy (.xlsx)'}
+          </span>
+          <span style={{ fontSize: 10.5, color: 'var(--c2)' }}>
+            {arquivo
+              ? `${arquivo.registros} registro(s) lido(s) · clique para trocar o arquivo`
+              : 'O arquivo SalesStatement exportado pelo Privacy'}
+          </span>
+        </span>
+      </label>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <button type="button" style={botao(false)} onClick={conferir}>
-          Conferir extrato
-        </button>
         <button
           type="button"
           style={{ ...botao(true), opacity: salvando ? 0.6 : 1 }}
@@ -291,7 +326,9 @@ export default function ImportarExtrato({ modelos, chatters }) {
                     <td style={{ padding: '5px 6px', color: 'var(--c2)' }}>{moeda(linha.liquido)}</td>
                     <td style={{ padding: '5px 6px' }}>
                       {linha.chatter_id
-                        ? `${nomeDoChatter.get(linha.chatter_id) || 'Chatter'} (${linha.identificador})`
+                        ? `${nomeDoChatter.get(linha.chatter_id) || 'Chatter'}${
+                            linha.situacao === 'centavo' ? ` (${linha.identificador})` : ''
+                          }`
                         : '—'}
                     </td>
                     <td style={{ padding: '5px 6px' }}>{situacaoChip(linha.situacao)}</td>
