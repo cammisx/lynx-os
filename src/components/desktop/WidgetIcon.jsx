@@ -1,13 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import TurnoIcon from '@/components/icons/TurnoIcon';
-import { TASKBAR_SAFE, WIDGET_ICON, WIDGET_LABEL, WIDGET_TILE } from './widgetLayout';
+import {
+  LABEL_OFFSET,
+  TASKBAR_SAFE,
+  WIDGET_ICON,
+  WIDGET_LABEL,
+  WIDGET_TILE,
+  WIDGET_TILE_H,
+} from './widgetLayout';
 
 const TILE = WIDGET_TILE;
+const TILE_H = WIDGET_TILE_H;
 const TASKBAR = TASKBAR_SAFE;
 
 const clamp = (x, y) => ({
   x: Math.min(Math.max(0, x), Math.max(0, window.innerWidth - TILE)),
-  y: Math.min(Math.max(0, y), Math.max(0, window.innerHeight - TASKBAR - TILE)),
+  y: Math.min(Math.max(0, y), Math.max(0, window.innerHeight - TASKBAR - TILE_H)),
 });
 
 /**
@@ -74,12 +82,12 @@ export default function WidgetIcon({ label, position, onOpen, onCommit, pulsando
         left: pos.x,
         top: pos.y,
         width: TILE,
-        height: TILE,
+        height: TILE_H,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 4,
+        gap: 0,
         cursor: arrastando ? 'grabbing' : 'default',
         userSelect: 'none',
         zIndex: 1,
@@ -106,6 +114,7 @@ export default function WidgetIcon({ label, position, onOpen, onCommit, pulsando
       <span
         style={{
           fontSize: WIDGET_LABEL,
+          marginTop: LABEL_OFFSET,
           color: 'var(--c3)',
           textShadow: '0 1px 3px rgba(0,0,0,0.85)',
           maxWidth: TILE,
