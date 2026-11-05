@@ -115,3 +115,11 @@ export const CheckIcon = ({ size = 14, ...rest }) => (
     <path d="M5 12.5 9.5 17 19 7" />
   </svg>
 );
+
+export const SmileIcon = ({ size = 15, ...rest }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...base} {...rest}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M8.5 14c.9 1.3 2.1 2 3.5 2s2.6-.7 3.5-2" />
+    <path d="M9 9.6v.9M15 9.6v.9" />
+  </svg>
+);

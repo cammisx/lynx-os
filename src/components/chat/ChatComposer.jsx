@@ -7,7 +7,10 @@ import {
   PencilIcon,
   SendIcon,
 } from '@/components/chat/chatIcons';
+import EmojiPicker from '@/components/chat/EmojiPicker';
 import GravadorAudio from '@/components/chat/GravadorAudio';
+import { inserirEmoji } from '@/lib/emojis';
+import { SmileIcon } from '@/components/chat/chatIcons';
 import { aplicarMarcador } from '@/lib/textoRico';
 import { tamanhoLegivel } from '@/lib/chat';
 
@@ -34,6 +37,7 @@ export default function ChatComposer({
   setFalha,
 }) {
   const [gravando, setGravando] = useState(false);
+  const [emojisAbertos, setEmojisAbertos] = useState(false);
   const areaRef = useRef(null);
   const arquivoRef = useRef(null);
 
@@ -48,6 +52,20 @@ export default function ChatComposer({
       if (!alvo) return;
       alvo.focus();
       alvo.setSelectionRange(resultado.inicio, resultado.fim);
+    });
+  };
+
+  const escolherEmoji = (emoji) => {
+    const campo = areaRef.current;
+    const inicio = campo?.selectionStart ?? texto.length;
+    const fim = campo?.selectionEnd ?? texto.length;
+    const resultado = inserirEmoji(texto, inicio, fim, emoji);
+    setTexto(resultado.texto);
+    requestAnimationFrame(() => {
+      const alvo = areaRef.current;
+      if (!alvo) return;
+      alvo.focus();
+      alvo.setSelectionRange(resultado.cursor, resultado.cursor);
     });
   };
 
@@ -169,6 +187,7 @@ export default function ChatComposer({
 
       <div
         style={{
+          position: 'relative',
           flexShrink: 0,
           display: 'flex',
           alignItems: 'flex-end',
@@ -177,6 +196,10 @@ export default function ChatComposer({
           borderTop: '1px solid color-mix(in srgb, var(--c2) 12%, transparent)',
         }}
       >
+        {emojisAbertos && !gravando && (
+          <EmojiPicker onEscolher={escolherEmoji} onFechar={() => setEmojisAbertos(false)} />
+        )}
+
         <input
           ref={arquivoRef}
           type="file"
@@ -314,7 +337,36 @@ export default function ChatComposer({
 
             <button
               type="button"
-              onClick={() => setGravando(true)}
+              onClick={() => setEmojisAbertos((aberto) => !aberto)}
+              disabled={Boolean(editando)}
+              aria-label="Emojis"
+              title="Emojis"
+              className="chat-emojis"
+              style={{
+                width: 30,
+                height: 34,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 9,
+                border: '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
+                background: emojisAbertos
+                  ? 'color-mix(in srgb, var(--c1) 18%, transparent)'
+                  : 'color-mix(in srgb, var(--c8) 55%, transparent)',
+                color: emojisAbertos ? 'var(--c1)' : editando ? 'var(--c12)' : 'var(--c2)',
+                cursor: editando ? 'default' : 'pointer',
+              }}
+            >
+              <SmileIcon size={15} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEmojisAbertos(false);
+                setGravando(true);
+              }}
               disabled={Boolean(editando)}
               aria-label="Gravar áudio"
               title="Gravar áudio (até 3 min)"
