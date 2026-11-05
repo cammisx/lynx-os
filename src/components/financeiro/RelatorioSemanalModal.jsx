@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import GlassSelect from '@/components/GlassSelect';
 import { CloseIcon, DownloadIcon } from '@/components/icons';
-import { pctChatter } from '@/lib/financeiro';
+import { filtrarVendasDoRelatorio, pctChatter } from '@/lib/financeiro';
 import {
   gerarRelatorioSemanal,
   inicioDaSemana,
@@ -83,9 +83,14 @@ export default function RelatorioSemanalModal({ modelos, chatters, onClose }) {
         { modelo_id: modelo.id, usuario_id: chatterId, ocorrido_em: { $gte: de } },
         { sort: 'ocorrido_em', limit: 500 }
       );
-      const vendas = vendasDaSemana(
-        asList(resultado).filter((venda) => (venda.status || 'aprovada') === 'aprovada'),
-        inicio
+      /* Mesma regra do relatório na tela: só venda de chat atribuída pelo
+         centavo do bruto ao chatter da modelo. */
+      const vendas = filtrarVendasDoRelatorio(
+        vendasDaSemana(
+          asList(resultado).filter((venda) => (venda.status || 'aprovada') === 'aprovada'),
+          inicio
+        ),
+        [modelo]
       );
       const { paginas } = await gerarRelatorioSemanal({
         modelo,
@@ -95,7 +100,7 @@ export default function RelatorioSemanalModal({ modelos, chatters, onClose }) {
       });
       setAviso({
         erro: false,
-        texto: `PDF gerado com ${vendas.length} venda(s) em ${paginas} página(s).`,
+        texto: `PDF gerado com ${vendas.length} venda(s) de chat em ${paginas} página(s).`,
       });
     } catch (erro) {
       const detalhe = String(erro?.message || erro || '').slice(0, 90);
@@ -275,8 +280,9 @@ export default function RelatorioSemanalModal({ modelos, chatters, onClose }) {
           </div>
 
           <div style={{ fontSize: 10.5, color: 'var(--c2)', lineHeight: 1.6 }}>
-            O PDF lista cada venda da semana com bruto, líquido e a comissão do chatter, além dos
-            totais. A parte da agência não entra no documento.
+            O PDF lista cada venda de chat da semana com bruto, líquido e a comissão do chatter,
+            além dos totais. Entram só as transações do tipo Chat cujo centavo do bruto é o
+            identificador do chatter na modelo. A parte da agência não entra no documento.
             {chatter && ` Comissão configurada: ${pctChatter(chatter)}%.`}
           </div>
 
