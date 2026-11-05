@@ -181,9 +181,12 @@ export default function ImportarExtrato({ modelos, chatters }) {
         // eslint-disable-next-line no-await-in-loop
         await base44.entities.VendaMimo.bulkCreate(registros.slice(inicio, inicio + 200));
       }
+      const semChatter = paraSalvar.filter((linha) => linha.situacao === 'sem_dono').length;
       setAviso({
         erro: false,
-        texto: `${paraSalvar.length} venda(s) salva(s) em ${modelo?.nome || 'modelo'}.`,
+        texto: `${paraSalvar.length} venda(s) salva(s) em ${modelo?.nome || 'modelo'}${
+          semChatter ? `, ${semChatter} sem chatter atribuído` : ''
+        }.`,
       });
       setArquivo(null);
       setConferencia(null);

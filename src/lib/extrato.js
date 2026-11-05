@@ -88,6 +88,9 @@ const acharExistente = (item, existentes) => {
   );
 };
 
+/** usuario_id das vendas do extrato que ninguém assumiu. Não é pessoa. */
+export const SEM_CHATTER = 'sem_chatter';
+
 export const SITUACOES = {
   centavo: {
     rotulo: 'Atribuída',
@@ -111,8 +114,9 @@ export const SITUACOES = {
   },
   sem_dono: {
     rotulo: 'Sem dono',
-    cor: '#ff6b6b',
-    texto: 'Nenhum chatter da modelo tem esse centavo como identificador.',
+    cor: '#e8b93b',
+    texto:
+      'Nenhum chatter da modelo tem esse centavo como identificador. A venda entra mesmo assim, sem chatter.',
   },
   nao_confirmada: {
     rotulo: 'Não confirmada',
@@ -247,7 +251,9 @@ export const conferirExtrato = ({ itens: itensProntos, texto, modelo, existentes
       chatter_id: chatterId,
       chatter_nome: existente && chatterId === existente.usuario_id ? existente.usuario_nome || '' : '',
       venda_existente_id: existente?.id || '',
-      salvar: situacao === 'centavo' || situacao === 'mimo_sem_registro',
+      /* Entra tudo: venda sem identificador de chatter também é salva, só que
+         sem dono, para o faturamento do extrato fechar. */
+      salvar: situacao === 'centavo' || situacao === 'mimo_sem_registro' || situacao === 'sem_dono',
     };
   });
 
@@ -273,8 +279,12 @@ export const conferirExtrato = ({ itens: itensProntos, texto, modelo, existentes
 
 /** Registro pronto para gravar como VendaMimo do extrato. */
 export const paraVendaMimo = (linha, { modelo, chatterNome, lote, admin }) => ({
-  usuario_id: linha.chatter_id || admin?.id || '',
-  usuario_nome: chatterNome || admin?.full_name || admin?.email || '',
+  usuario_id:
+    linha.situacao === 'sem_dono' ? SEM_CHATTER : linha.chatter_id || admin?.id || '',
+  usuario_nome:
+    linha.situacao === 'sem_dono'
+      ? 'Sem chatter'
+      : chatterNome || admin?.full_name || admin?.email || '',
   modelo_id: modelo?.id || linha.modelo_id,
   modelo_nome: modelo?.nome || linha.modelo_nome,
   plataforma: 'privacy',
@@ -292,5 +302,10 @@ export const paraVendaMimo = (linha, { modelo, chatterNome, lote, admin }) => ({
   origem: 'extrato',
   lote,
   status: 'aprovada',
-  observacao: linha.situacao === 'mimo_sem_registro' ? 'Mimo sem registro prévio no widget' : '',
+  observacao:
+    linha.situacao === 'mimo_sem_registro'
+      ? 'Mimo sem registro prévio no widget'
+      : linha.situacao === 'sem_dono'
+        ? 'Sem identificador de chatter no extrato'
+        : '',
 });
