@@ -78,7 +78,8 @@ export default function useChat() {
         id: usuario.id,
         email: usuario.email || '',
         cargo: usuario.role === 'admin' ? 'admin' : 'chatter',
-        nome: usuario.full_name || usuario.email || 'Sem nome',
+        // O nome escolhido no perfil vale aqui também.
+        nome: usuario.nome_exibicao || usuario.full_name || usuario.email || 'Sem nome',
       });
     });
     chatters.forEach((chatter) => {

@@ -7,6 +7,10 @@ import ChattersWindow from '@/components/ChattersWindow';
 import ModelosWindow from '@/components/ModelosWindow';
 import TurnosWindow from '@/components/TurnosWindow';
 import FinanceiroWindow from '@/components/FinanceiroWindow';
+import ConfiguracoesWindow from '@/components/ConfiguracoesWindow';
+import { useAuth } from '@/lib/AuthContext';
+import { usePerfil } from '@/lib/perfilUsuario';
+import { TEMA_PADRAO, aplicarTema } from '@/lib/temas';
 import { ChatProvider } from '@/components/chat/ChatProvider';
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import useFecharTurnosEsquecidos from '@/hooks/useFecharTurnosEsquecidos';
@@ -15,6 +19,9 @@ import useVersaoPublicada from '@/hooks/useVersaoPublicada';
 
 export default function Dashboard() {
   const [openApp, setOpenApp] = useState(null);
+  const { user } = useAuth();
+  // Carrega o perfil (tema, nome, foto) antes de tudo aparecer na tela.
+  usePerfil(user);
 
   useFecharTurnosEsquecidos();
   useAvisarTurnosPendentes();
@@ -22,7 +29,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.setAttribute('data-theme', 'silk');
+    // O tema do perfil manda; o padrão é só o ponto de partida.
+    if (!root.getAttribute('data-theme')) aplicarTema(TEMA_PADRAO);
     root.setAttribute('data-mode', 'dark');
     document.body.classList.add('is-desktop-shell');
     return () => document.body.classList.remove('is-desktop-shell');
@@ -52,6 +60,8 @@ export default function Dashboard() {
       {openApp === 'turnos' && <TurnosWindow onClose={() => setOpenApp(null)} />}
 
       {openApp === 'financeiro' && <FinanceiroWindow onClose={() => setOpenApp(null)} />}
+
+      {openApp === 'config' && <ConfiguracoesWindow onClose={() => setOpenApp(null)} />}
     </div>
   );
 }

@@ -20,7 +20,7 @@
   --c9: color-mix(in srgb, var(--c5) 55%, transparent);
   --c11: color-mix(in srgb, var(--c5) 40%, transparent);
   --c13: color-mix(in srgb, var(--c8) 75%, transparent);
-  --c1-deep: color-mix(in srgb, var(--c1) 30%, #1A0510);
+  --c1-deep: color-mix(in srgb, var(--c1) 30%, var(--c8));
   --c16: #3B9EFF;
   --c16-bg: rgba(59, 158, 255, 0.18);
   --c16-glow: rgba(59, 158, 255, 0.35);
@@ -254,6 +254,10 @@ body {
 
 .sm-item {
   color: var(--c1);
+}
+
+.sm-user:hover {
+  background-color: color-mix(in srgb, var(--c1) 12%, transparent);
 }
 
 .sm-item:hover {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/lib/AuthContext';
+import { iniciaisDe, nomeDe, usePerfil } from '@/lib/perfilUsuario';
 import { UsersIcon, CalendarIcon, MoneyIcon } from '@/components/icons';
 
 const ANIM_MS = 180;
@@ -12,8 +13,9 @@ const APPS = [
   { id: 'financeiro', Icon: MoneyIcon, title: 'Financeiro', desc: 'Extratos, comissões e repasses' },
 ];
 
-export default function StartMenu({ open, onClose, onOpenApp }) {
+export default function StartMenu({ open, onClose, onOpenApp, onOpenConfig }) {
   const { user, logout } = useAuth();
+  const perfil = usePerfil(user);
   const [mounted, setMounted] = useState(open);
   const [closing, setClosing] = useState(false);
 
@@ -34,10 +36,9 @@ export default function StartMenu({ open, onClose, onOpenApp }) {
 
   if (!mounted) return null;
 
-  const source = (user?.nickname || user?.full_name || user?.email || '').trim();
-  const words = source.split(/\s+/).filter(Boolean);
-  const initials = words.slice(0, 2).map((word) => word[0]).join('').toUpperCase() || '?';
-  const displayName = user?.full_name || user?.nickname || user?.email || 'Conta';
+  const displayName = nomeDe(perfil, user);
+  const initials = iniciaisDe(displayName);
+  const subnick = (perfil.subnick || '').trim();
   const isAdmin = user?.role === 'admin';
 
   const panelStyle = {
@@ -150,21 +151,70 @@ export default function StartMenu({ open, onClose, onOpenApp }) {
             ))}
         </div>
         <div style={footerStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-            <div style={avatarStyle}>{initials}</div>
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'var(--c3)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {displayName}
+          <button
+            type="button"
+            className="sm-user"
+            onClick={() => {
+              onClose();
+              if (onOpenConfig) onOpenConfig();
+            }}
+            title="Configurações do perfil"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              minWidth: 0,
+              flex: 1,
+              padding: '4px 6px',
+              marginLeft: -6,
+              borderRadius: 8,
+              border: 'none',
+              background: 'transparent',
+              textAlign: 'left',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-main)',
+            }}
+          >
+            <div style={{ ...avatarStyle, overflow: 'hidden' }}>
+              {perfil.fotoUrl ? (
+                <img
+                  src={perfil.fotoUrl}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                initials
+              )}
+            </div>
+            <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: 'var(--c3)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {displayName}
+              </span>
+              {subnick && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontStyle: 'italic',
+                    color: 'var(--c1)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  — {subnick}
+                </span>
+              )}
             </span>
-          </div>
+          </button>
           <button
             type="button"
             aria-label="Sair"

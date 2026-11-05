@@ -5,14 +5,14 @@ const GHOST_COUNT = 45;
 const GHOST_STEP = 6; // frames entre fantasmas
 const MAX_HISTORY = GHOST_COUNT * GHOST_STEP + 1;
 
-// Stops da "seda" — interpolados e ciclados pelo colorPhase
-const SILK_STOPS = [
-  [0, '#9B3FA8'],
-  [0.25, '#C8387A'],
-  [0.5, '#E8604A'],
-  [0.75, '#F0943A'],
-  [1, '#9B3FA8'],
-];
+// Cores da "seda" — vêm do tema ativo (c14, c5, c6, c1) e são cicladas.
+const CORES_PADRAO = ['#9B3FA8', '#C8387A', '#E8604A', '#F0943A'];
+
+const montarStops = (cores) => {
+  const lista = cores.map((hex, indice) => [indice / cores.length, hex]);
+  lista.push([1, cores[0]]);
+  return lista;
+};
 
 const hexToRgb = (hex) => {
   const h = hex.replace('#', '');
@@ -23,7 +23,7 @@ const hexToRgb = (hex) => {
   ];
 };
 
-const RGB_STOPS = SILK_STOPS.map(([p, hex]) => [p, hexToRgb(hex)]);
+let RGB_STOPS = montarStops(CORES_PADRAO).map(([p, hex]) => [p, hexToRgb(hex)]);
 
 function colorAt(t) {
   const x = ((t % 1) + 1) % 1;
@@ -119,8 +119,20 @@ export default function DesktopBackground() {
         return;
       }
       bgOverride = null;
-      const c8 = window.getComputedStyle(root).getPropertyValue('--c8').trim();
+      const estilo = window.getComputedStyle(root);
+      const lerCor = (nome, reserva) => {
+        const valor = estilo.getPropertyValue(nome).trim();
+        return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(valor) ? valor : reserva;
+      };
+      const c8 = estilo.getPropertyValue('--c8').trim();
       background = c8 || '#1A0510';
+      // O tema pode ter mudado: a seda se repinta com as cores dele.
+      RGB_STOPS = montarStops([
+        lerCor('--c14', CORES_PADRAO[0]),
+        lerCor('--c5', CORES_PADRAO[1]),
+        lerCor('--c6', CORES_PADRAO[2]),
+        lerCor('--c1', CORES_PADRAO[3]),
+      ]).map(([p, hex]) => [p, hexToRgb(hex)]);
     };
 
     const resize = () => {

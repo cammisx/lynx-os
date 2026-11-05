@@ -193,6 +193,10 @@ export default function Taskbar({ onOpenApp }) {
           setMenuOpen(false);
           if (onOpenApp) onOpenApp(app);
         }}
+        onOpenConfig={() => {
+          setMenuOpen(false);
+          if (onOpenApp) onOpenApp('config');
+        }}
       />
       <ClockPanel
         open={clockOpen}
