@@ -6,11 +6,11 @@ import useWidgets from '@/hooks/useWidgets';
 import useTurnoPonto from '@/hooks/useTurnoPonto';
 import useNotifications from '@/hooks/useNotifications';
 
-const ENTRADA_LIBERADA_MS = 15 * 60000;
+const ENTRADA_LIBERADA_MS = 5 * 60000;
 
 export default function DesktopWidgets() {
   const { widgets, carregado, patch } = useWidgets();
-  const { userId, ponto, saving, feedback, punch } = useTurnoPonto();
+  const { userId, ponto, semana, saving, feedback, punch } = useTurnoPonto();
   const { items, reload } = useNotifications(userId);
   const [justificativa, setJustificativa] = useState(null);
 
@@ -44,6 +44,7 @@ export default function DesktopWidgets() {
         <TurnoWidgetPanel
           widget={turno}
           ponto={ponto}
+          semana={semana}
           saving={saving}
           feedback={feedback}
           onPunch={punch}

@@ -7,18 +7,21 @@ import { countdownLabel, durationLabel } from '@/lib/ponto';
 import { TASKBAR_SAFE, WIDGET_TILE } from './widgetLayout';
 
 const WIDTH = 340;
-const HEIGHT = 236;
+const HEIGHT = 300;
 const TASKBAR = TASKBAR_SAFE;
 const MARGIN = 8;
+const LIBERA_ENTRADA_MS = 5 * 60000;
 
-const dayLabel = (value) => {
+const DESTAQUE = { color: 'var(--c1)', fontWeight: 700 };
+
+const diaHora = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  const today = new Date();
+  const hoje = new Date();
   const mesmoDia =
-    date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear();
+    date.getDate() === hoje.getDate() &&
+    date.getMonth() === hoje.getMonth() &&
+    date.getFullYear() === hoje.getFullYear();
   const dia = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
   const hora = date.toLocaleTimeString('pt-BR', {
     hour: '2-digit',
@@ -46,6 +49,7 @@ export const posicaoPainel = (icone) => {
 export default function TurnoWidgetPanel({
   widget,
   ponto,
+  semana,
   saving,
   feedback,
   onPunch,
@@ -67,6 +71,8 @@ export default function TurnoWidgetPanel({
 
   const busy = !!saving;
   const agora = Date.now();
+  const modelo = ponto.modeloNome || 'sem modelo';
+  const agendados = semana?.total || 0;
 
   const startDrag = (event) => {
     if (event.button !== 0) return;
@@ -99,8 +105,9 @@ export default function TurnoWidgetPanel({
   };
 
   let titulo = 'Turno';
-  let linha = 'Nenhum turno agendado.';
+  let contexto = null;
   let acoes = null;
+  let dica = null;
 
   if (ponto.mode === 'ativo') {
     const decorrido =
@@ -109,7 +116,12 @@ export default function TurnoWidgetPanel({
       (ponto.pausasMs || 0) -
       (ponto.pausaAbertaAt ? agora - ponto.pausaAbertaAt : 0);
     titulo = ponto.modeloNome || 'Turno';
-    linha = `Em shift há ${durationLabel(decorrido)}`;
+    contexto = (
+      <>
+        Em shift há <span style={DESTAQUE}>{durationLabel(decorrido)}</span> em{' '}
+        <span style={DESTAQUE}>{modelo}</span>.
+      </>
+    );
     acoes = (
       <>
         <PunchButton
@@ -122,7 +134,7 @@ export default function TurnoWidgetPanel({
         <PunchButton
           variant="danger"
           icon={StopIcon}
-          label="Fim do turno"
+          label="Registrar saída"
           busy={saving === 'saida'}
           disabled={busy}
           onClick={() => onPunch('saida')}
@@ -131,7 +143,12 @@ export default function TurnoWidgetPanel({
     );
   } else if (ponto.mode === 'pausa') {
     titulo = ponto.modeloNome || 'Turno';
-    linha = `Em pausa há ${durationLabel(agora - ponto.pausaAbertaAt)}`;
+    contexto = (
+      <>
+        Em pausa há <span style={DESTAQUE}>{durationLabel(agora - ponto.pausaAbertaAt)}</span> em{' '}
+        <span style={DESTAQUE}>{modelo}</span>.
+      </>
+    );
     acoes = (
       <>
         <PunchButton
@@ -145,7 +162,7 @@ export default function TurnoWidgetPanel({
         <PunchButton
           variant="danger"
           icon={StopIcon}
-          label="Fim do turno"
+          label="Registrar saída"
           busy={saving === 'saida'}
           disabled={busy}
           onClick={() => onPunch('saida')}
@@ -153,23 +170,33 @@ export default function TurnoWidgetPanel({
       </>
     );
   } else if (ponto.mode === 'proximo') {
-    titulo = ponto.modeloNome || 'Turno';
     const falta = ponto.start - agora;
-    linha =
-      falta > 0
-        ? `Próximo turno ${dayLabel(ponto.start)} · entra em ${countdownLabel(falta)}`
-        : `Turno ${dayLabel(ponto.start)} · entrada liberada`;
+    const liberado = falta <= LIBERA_ENTRADA_MS;
+    titulo = ponto.modeloNome || 'Turno';
+    contexto = (
+      <>
+        Seu próximo shift começa em{' '}
+        <span style={DESTAQUE}>{falta > 0 ? countdownLabel(falta) : 'agora'}</span> em{' '}
+        <span style={DESTAQUE}>{modelo}</span>.
+      </>
+    );
+    dica = falta > 0 ? diaHora(ponto.start) : null;
     acoes = (
       <PunchButton
         icon={LogInIcon}
         label="Registrar entrada"
         busy={saving === 'entrada'}
-        disabled={busy}
-        pulse={falta <= 15 * 60000}
+        disabled={busy || !liberado}
+        pulse={liberado}
         onClick={() => onPunch('entrada')}
       />
     );
+    if (!liberado) dica = `${diaHora(ponto.start)} · entrada libera 5 min antes`;
+  } else {
+    contexto = <>Você não tem nenhum turno agendado.</>;
   }
+
+  const justificativa = justificativaPendente && ponto.mode !== 'ativo' && ponto.mode !== 'pausa';
 
   return createPortal(
     <div
@@ -180,7 +207,7 @@ export default function TurnoWidgetPanel({
         left: pos.left,
         top: pos.top,
         width: WIDTH,
-        minHeight: 150,
+        minHeight: 170,
         maxHeight: HEIGHT,
         display: 'flex',
         flexDirection: 'column',
@@ -248,8 +275,21 @@ export default function TurnoWidgetPanel({
         </button>
       </div>
 
-      <div style={{ padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {justificativaPendente && ponto.mode !== 'ativo' && ponto.mode !== 'pausa' && (
+      <div style={{ padding: '13px 12px', display: 'flex', flexDirection: 'column', gap: 9 }}>
+        <span style={{ fontSize: 11.5, color: 'var(--c2)' }}>
+          Você tem <span style={DESTAQUE}>{agendados}</span>{' '}
+          {agendados === 1 ? 'shift agendado' : 'shifts agendados'} nesta semana.
+        </span>
+
+        <span style={{ fontSize: 12.5, lineHeight: 1.45, color: 'var(--c3)' }}>
+          {feedback ? (
+            <span style={{ color: feedback.error ? '#ff6b6b' : 'var(--c1)' }}>{feedback.text}</span>
+          ) : (
+            contexto
+          )}
+        </span>
+
+        {justificativa && (
           <button
             type="button"
             onClick={() => onOpenJustificativa(justificativaPendente)}
@@ -269,17 +309,9 @@ export default function TurnoWidgetPanel({
           </button>
         )}
 
-        <span
-          style={{
-            fontSize: 12,
-            lineHeight: 1.45,
-            color: feedback ? (feedback.error ? '#ff6b6b' : 'var(--c1)') : 'var(--c3)',
-          }}
-        >
-          {feedback ? feedback.text : linha}
-        </span>
-
         {acoes && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{acoes}</div>}
+
+        {dica && !feedback && <span style={{ fontSize: 10, color: 'var(--c2)', opacity: 0.75 }}>{dica}</span>}
       </div>
     </div>,
     document.body

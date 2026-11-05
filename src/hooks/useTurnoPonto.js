@@ -146,6 +146,26 @@ export default function useTurnoPonto() {
     [pontoIndex]
   );
 
+  // Turnos da semana vigente (mesma janela de 7 dias do painel do relógio).
+  const semana = useMemo(() => {
+    const agora = Date.now();
+    const inicio = startOfDay(new Date()).getTime();
+    const fim = inicio + 7 * DAY_MS;
+    const arquivadas = new Set(models.filter((model) => model.arquivada).map((model) => model.id));
+
+    const ocorrencias = ownShifts
+      .filter((shift) => !arquivadas.has(shift.modelo_id))
+      .filter((shift) => !isRecusado(shift))
+      .flatMap((shift) => expandShift(shift, inicio, fim))
+      .filter((occurrence) => occurrence.end > agora)
+      .sort((a, b) => a.start - b.start);
+
+    return {
+      total: ocorrencias.length,
+      proximo: ocorrencias[0] || null,
+    };
+  }, [ownShifts, models]);
+
   const ponto = useMemo(() => {
     const activeEntry = openEntries[0];
     if (activeEntry) {
@@ -266,6 +286,7 @@ export default function useTurnoPonto() {
     pontoIndex,
     openEntries,
     ponto,
+    semana,
     saving,
     feedback,
     punch,
