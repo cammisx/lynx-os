@@ -14,6 +14,8 @@ const asList = (result) => (Array.isArray(result) ? result : result?.items || []
 const DAY_MS = 86400000;
 const DIAS_PARA_TRAS = 14;
 const DIAS_PARA_FRENTE = 1;
+// Entrada antecipada: turno que ainda vai começar também entra na lista.
+const MARGEM_ENTRADA = 2 * 3600000;
 
 const AREA = {
   width: '100%',
@@ -86,8 +88,15 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
         const lista = asList(result)
           .filter((shift) => !isRecusado(shift))
           .flatMap((shift) => expandShift(shift, inicio, fim))
-          .filter((occurrence) => occurrence.start <= agora)
-          .sort((a, b) => b.start - a.start)
+          // Inclui o turno que está rolando agora e o que começa em até 2h
+          // (entrada batida antes da hora).
+          .filter((occurrence) => occurrence.start <= agora + MARGEM_ENTRADA)
+          .sort((a, b) => {
+            const aAgora = a.start <= agora && a.end > agora ? 1 : 0;
+            const bAgora = b.start <= agora && b.end > agora ? 1 : 0;
+            if (aAgora !== bAgora) return bAgora - aAgora;
+            return b.start - a.start;
+          })
           .map((occurrence) => ({
             chave: `${occurrence.shift.id}|${localDateKey(occurrence.start)}`,
             shiftId: occurrence.shift.id,
@@ -96,6 +105,8 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
             modeloNome: occurrence.shift.modelo_nome || '',
             start: occurrence.start,
             end: occurrence.end,
+            andamento: occurrence.start <= agora && occurrence.end > agora,
+            aSeguir: occurrence.start > agora,
           }));
         setOcorrencias(lista);
         setSelecionada((atual) => atual || lista[0]?.chave || '');
@@ -393,7 +404,7 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
               value: item.chave,
               label: `${diaCurto(item.start)} · ${horaDe(item.start)}–${horaDe(item.end)}${
                 item.modeloNome ? ` · ${item.modeloNome}` : ''
-              }`,
+              }${item.andamento ? ' · em andamento' : item.aSeguir ? ' · a seguir' : ''}`,
             }))}
           />
 
@@ -417,8 +428,18 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
               </span>
               <span>
                 Saída registrada:{' '}
-                <span style={{ color: 'var(--c3)' }}>{clockLabel(saidaAtual?.timestamp)}</span>
+                <span style={{ color: 'var(--c3)' }}>
+                  {saidaAtual?.timestamp ? clockLabel(saidaAtual.timestamp) : 'ainda não'}
+                </span>
               </span>
+              {ocorrencia?.andamento && (
+                <span style={{ color: '#7bd88f' }}>Turno em andamento: dá para corrigir agora.</span>
+              )}
+              {ocorrencia?.aSeguir && (
+                <span style={{ color: '#e8b93b' }}>
+                  O turno ainda não começou. Dá para ajustar a entrada se você bateu antes da hora.
+                </span>
+              )}
               {pausas.length > 0 && (
                 <span>
                   Pausas:{' '}
