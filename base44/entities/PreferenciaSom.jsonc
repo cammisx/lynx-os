@@ -52,6 +52,25 @@
     "volume_chat": {
       "type": "number",
       "default": 60
+    },
+    "notificar_email": {
+      "type": "boolean",
+      "default": true,
+      "description": "Receber e-mail quando alguém me mencionar no chat"
+    },
+    "email_todas": {
+      "type": "boolean",
+      "default": false,
+      "description": "Receber e-mail de todas as mensagens dos canais que participo"
+    },
+    "email": {
+      "type": "string",
+      "description": "E-mail que recebe os avisos (vazio usa o e-mail da conta)"
+    },
+    "notificar_navegador": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mostrar notificação do navegador quando chega mensagem"
     }
   },
   "required": [

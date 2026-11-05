@@ -22,6 +22,9 @@ import { perfilAtual, usePerfil } from '@/lib/perfilUsuario';
 import { CHATTERS_CHANGED, MODELS_CHANGED } from '@/lib/desktopEvents';
 import { PERFIS_EVENT, listarPerfis, mapaDePerfis } from '@/lib/perfis';
 import { notificarMencoes } from '@/lib/notificacoes';
+import { acharMencoes } from '@/lib/mencoes';
+import { avisarPorEmail } from '@/lib/notificacoesEmail';
+import { mostrarNotificacaoNavegador } from '@/lib/notificacaoNavegador';
 
 /** Mensagens consideradas para contagem e histórico curto. */
 const JANELA_MS = 14 * 86400000;
@@ -602,6 +605,12 @@ export default function useChat() {
     [marcarLido]
   );
 
+  /* O tempo real chama o abrir mais recente (clique na notificação do sistema). */
+  const abrirCanalRef = useRef(abrirCanal);
+  useEffect(() => {
+    abrirCanalRef.current = abrirCanal;
+  }, [abrirCanal]);
+
   const enviar = useCallback(
     async (canalId, texto, anexo) => {
       const limpo = String(texto || '').trim();
@@ -644,6 +653,7 @@ export default function useChat() {
             const usuarioDaPessoa = { id: pessoa.id, role: pessoa.cargo === 'admin' ? 'admin' : 'user' };
             return canalVisivel(canalDaMensagem, usuarioDaPessoa, modelosRef.current);
           });
+          const mencoesDaMensagem = acharMencoes(limpo, doCanal, euId);
           notificarMencoes(base44, {
             canal: canalDaMensagem,
             mensagem: { ...criada, texto: limpo },
@@ -651,6 +661,17 @@ export default function useChat() {
             autorNome: nomeDaPessoa(user) || eu?.nome || '',
             pessoas: doCanal,
           }).catch((erro) => console.warn('[Chat] menções', erro));
+
+          /* E-mail: menção sempre avisa (se a pessoa deixou ligado) e quem
+             marcou "todas as mensagens" recebe qualquer mensagem do canal. */
+          avisarPorEmail({
+            canal: canalDaMensagem,
+            mensagem: { ...criada, texto: limpo },
+            autorId: euId,
+            autorNome: nomeDaPessoa(user) || eu?.nome || '',
+            pessoas: doCanal,
+            mencionados: mencoesDaMensagem.ids,
+          }).catch((erro) => console.warn('[Chat] aviso por e-mail', erro));
         }
 
         base44.entities.ChatCanal.update(canalId, {
@@ -863,6 +884,19 @@ export default function useChat() {
           /* Chegou agora, em tempo real: é o caso em que o som deve tocar. */
           if (dados.autor_id && dados.autor_id !== euId && !dados.apagada) {
             if (lerFocoDoChat() !== dados.canal_id) tocarSomChat();
+
+            /* Notificação do sistema: só se a pessoa ligou nos ajustes. */
+            const canalDaMensagem = canaisVisiveisRef.current.find(
+              (item) => item.id === dados.canal_id
+            );
+            if (canalDaMensagem) {
+              mostrarNotificacaoNavegador({
+                titulo: `${dados.autor_nome || 'Alguém'} · ${canalDaMensagem.nome || 'Chat'}`,
+                corpo: String(dados.texto || '').slice(0, 140) || 'Nova mensagem',
+                tag: `lynx-${dados.canal_id}`,
+                aoClicar: () => abrirCanalRef.current?.(dados.canal_id),
+              });
+            }
           }
           setMensagens((anterior) =>
             anterior.some((mensagem) => mensagem.id === dados.id)

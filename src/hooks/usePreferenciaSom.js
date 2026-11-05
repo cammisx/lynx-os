@@ -9,6 +9,7 @@ import {
   tocarNotificacao,
   tocarSom,
 } from '@/lib/sons';
+import { lembrarNavegadorLigado } from '@/lib/notificacaoNavegador';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
@@ -19,7 +20,16 @@ const PADRAO = {
   som_chat: 'mensagem',
   chat_ativo: true,
   volume_chat: 60,
+  /* Avisos por e-mail: menção vem ligada, "todas as mensagens" não. */
+  notificar_email: true,
+  email_todas: false,
+  email: '',
+  notificar_navegador: false,
 };
+
+/** Lê um campo que pode ainda não existir no banco (schema antigo). */
+const simPorPadrao = (valor) => valor !== false;
+const naoPorPadrao = (valor) => valor === true;
 
 /** Preferência de som de notificação de cada pessoa, salva em PreferenciaSom. */
 export default function usePreferenciaSom() {
@@ -49,7 +59,12 @@ export default function usePreferenciaSom() {
             som_chat: registro.som_chat || 'mensagem',
             chat_ativo: registro.chat_ativo !== false,
             volume_chat: typeof registro.volume_chat === 'number' ? registro.volume_chat : 60,
+            notificar_email: simPorPadrao(registro.notificar_email),
+            email_todas: naoPorPadrao(registro.email_todas),
+            email: String(registro.email || ''),
+            notificar_navegador: naoPorPadrao(registro.notificar_navegador),
           };
+          lembrarNavegadorLigado(dados.notificar_navegador);
           prefRef.current = dados;
           setPref(dados);
           definirPreferenciaSom({ ...dados, volume: dados.volume / 100 });
@@ -157,6 +172,24 @@ export default function usePreferenciaSom() {
   const alternarSomChat = useCallback((valor) => atualizar({ chat_ativo: valor }), [atualizar]);
   const mudarVolumeChat = useCallback((volume) => atualizar({ volume_chat: volume }), [atualizar]);
 
+  /* Avisos por e-mail e notificação do navegador. */
+  const alternarEmailMencoes = useCallback(
+    (valor) => atualizar({ notificar_email: valor }),
+    [atualizar]
+  );
+  const alternarEmailTodas = useCallback(
+    (valor) => atualizar({ email_todas: valor }),
+    [atualizar]
+  );
+  const mudarEmail = useCallback((valor) => atualizar({ email: valor }), [atualizar]);
+  const alternarNotificacaoNavegador = useCallback(
+    (valor) => {
+      lembrarNavegadorLigado(valor);
+      atualizar({ notificar_navegador: valor });
+    },
+    [atualizar]
+  );
+
   return {
     pref,
     carregado,
@@ -166,5 +199,9 @@ export default function usePreferenciaSom() {
     escolherSomChat,
     alternarSomChat,
     mudarVolumeChat,
+    alternarEmailMencoes,
+    alternarEmailTodas,
+    mudarEmail,
+    alternarNotificacaoNavegador,
   };
 }

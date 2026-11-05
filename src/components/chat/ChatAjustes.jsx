@@ -1,20 +1,101 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckIcon, CloseIcon, VolumeIcon } from '@/components/icons';
 import { SONS } from '@/lib/sons';
 import usePreferenciaSom from '@/hooks/usePreferenciaSom';
+import {
+  navegadorSuportado,
+  pedirPermissaoDoNavegador,
+  permissaoDoNavegador,
+} from '@/lib/notificacaoNavegador';
+
+/** Interruptor pequeno, igual ao que já era usado aqui. */
+function Interruptor({ ligado, onMudar, rotulo }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={ligado}
+      aria-label={rotulo}
+      onClick={() => onMudar(!ligado)}
+      style={{
+        width: 34,
+        height: 18,
+        flexShrink: 0,
+        padding: 2,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: ligado ? 'flex-end' : 'flex-start',
+        borderRadius: 999,
+        border: `1px solid ${
+          ligado
+            ? 'color-mix(in srgb, var(--c1) 55%, transparent)'
+            : 'color-mix(in srgb, var(--c2) 26%, transparent)'
+        }`,
+        background: ligado
+          ? 'color-mix(in srgb, var(--c1) 30%, transparent)'
+          : 'color-mix(in srgb, var(--c8) 55%, transparent)',
+        cursor: 'pointer',
+        transition: 'background-color 0.15s, border-color 0.15s',
+      }}
+    >
+      <span
+        style={{
+          width: 12,
+          height: 12,
+          borderRadius: '50%',
+          background: ligado ? 'var(--c1)' : 'color-mix(in srgb, var(--c2) 70%, transparent)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.35)',
+        }}
+      />
+    </button>
+  );
+}
+
+function Linha({ titulo, detalhe, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'block', fontSize: 10.5, color: 'var(--c3)' }}>{titulo}</span>
+        {detalhe && (
+          <span style={{ display: 'block', fontSize: 9, color: 'var(--c2)', opacity: 0.75 }}>
+            {detalhe}
+          </span>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+const SECAO = {
+  fontFamily: 'var(--font-display)',
+  fontSize: 10,
+  letterSpacing: '0.06em',
+  color: 'var(--c1)',
+  marginTop: 2,
+};
 
 /**
- * Ajustes do som das mensagens, dentro do próprio chat.
- * A escolha aqui é independente do som das notificações.
+ * Ajustes do chat: som das mensagens, avisos por e-mail e notificação do
+ * navegador. Tudo é escolha de cada pessoa e vale só para ela.
  */
-export default function ChatAjustes({ onFechar }) {
+export default function ChatAjustes({ onFechar, emailDaConta = '' }) {
   const preferencia = usePreferenciaSom();
   const pref = preferencia?.pref || {
     som_chat: 'mensagem',
     chat_ativo: true,
     volume_chat: 60,
+    notificar_email: true,
+    email_todas: false,
+    email: '',
+    notificar_navegador: false,
   };
   const ligado = pref.chat_ativo !== false;
+  const mencoesPorEmail = pref.notificar_email !== false;
+  const todasPorEmail = pref.email_todas === true;
+  const navegadorLigado = pref.notificar_navegador === true;
+  const [aviso, setAviso] = useState('');
+  const [permissao, setPermissao] = useState(permissaoDoNavegador());
 
   useEffect(() => {
     const aoTeclar = (evento) => {
@@ -24,13 +105,35 @@ export default function ChatAjustes({ onFechar }) {
     return () => window.removeEventListener('keydown', aoTeclar);
   }, [onFechar]);
 
+  const mudarNavegador = async (valor) => {
+    if (!valor) {
+      setAviso('');
+      preferencia?.alternarNotificacaoNavegador?.(false);
+      return;
+    }
+    if (!navegadorSuportado()) {
+      setAviso('Este navegador não tem notificação de sistema.');
+      return;
+    }
+    const autorizado = await pedirPermissaoDoNavegador();
+    setPermissao(permissaoDoNavegador());
+    if (!autorizado) {
+      setAviso('O navegador bloqueou. Libere a permissão nas configurações do site.');
+      return;
+    }
+    setAviso('');
+    preferencia?.alternarNotificacaoNavegador?.(true);
+  };
+
   return (
     <div
       style={{
         position: 'absolute',
         top: 50,
         right: 10,
-        width: 236,
+        width: 268,
+        maxHeight: '78vh',
+        overflowY: 'auto',
         zIndex: 20,
         borderRadius: 12,
         padding: 12,
@@ -44,6 +147,7 @@ export default function ChatAjustes({ onFechar }) {
         boxShadow: '0 16px 40px rgba(0,0,0,0.42)',
         fontFamily: 'var(--font-main)',
       }}
+      className="glass-scroll"
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span
@@ -55,7 +159,7 @@ export default function ChatAjustes({ onFechar }) {
             color: 'var(--c1)',
           }}
         >
-          SOM DAS MENSAGENS
+          AJUSTES DO CHAT
         </span>
         <button
           type="button"
@@ -77,46 +181,15 @@ export default function ChatAjustes({ onFechar }) {
         </button>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{ fontSize: 10.5, color: 'var(--c3)' }}>Tocar ao receber</span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={ligado}
-          aria-label="Ligar ou desligar o som das mensagens"
-          onClick={() => preferencia?.alternarSomChat?.(!ligado)}
-          style={{
-            width: 34,
-            height: 18,
-            flexShrink: 0,
-            padding: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: ligado ? 'flex-end' : 'flex-start',
-            borderRadius: 999,
-            border: `1px solid ${
-              ligado
-                ? 'color-mix(in srgb, var(--c1) 55%, transparent)'
-                : 'color-mix(in srgb, var(--c2) 26%, transparent)'
-            }`,
-            background: ligado
-              ? 'color-mix(in srgb, var(--c1) 30%, transparent)'
-              : 'color-mix(in srgb, var(--c8) 55%, transparent)',
-            cursor: 'pointer',
-            transition: 'background-color 0.15s, border-color 0.15s',
-          }}
-        >
-          <span
-            style={{
-              width: 12,
-              height: 12,
-              borderRadius: '50%',
-              background: ligado ? 'var(--c1)' : 'color-mix(in srgb, var(--c2) 70%, transparent)',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.35)',
-            }}
-          />
-        </button>
-      </div>
+      <span style={SECAO}>SOM DAS MENSAGENS</span>
+
+      <Linha titulo="Tocar ao receber">
+        <Interruptor
+          ligado={ligado}
+          rotulo="Ligar ou desligar o som das mensagens"
+          onMudar={(valor) => preferencia?.alternarSomChat?.(valor)}
+        />
+      </Linha>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
         {SONS.map((opcao) => {
@@ -186,8 +259,87 @@ export default function ChatAjustes({ onFechar }) {
         </span>
       </div>
 
+      <div
+        style={{
+          height: 1,
+          background: 'color-mix(in srgb, var(--c2) 16%, transparent)',
+          margin: '2px 0',
+        }}
+      />
+
+      <span style={SECAO}>AVISOS POR E-MAIL</span>
+
+      <Linha titulo="Fui mencionado" detalhe="Quando alguém usa @com o seu nome">
+        <Interruptor
+          ligado={mencoesPorEmail}
+          rotulo="Receber e-mail quando me mencionarem"
+          onMudar={(valor) => preferencia?.alternarEmailMencoes?.(valor)}
+        />
+      </Linha>
+
+      <Linha
+        titulo="Todas as mensagens"
+        detalhe="Tudo o que passa nos canais que você participa"
+      >
+        <Interruptor
+          ligado={todasPorEmail}
+          rotulo="Receber e-mail de todas as mensagens"
+          onMudar={(valor) => preferencia?.alternarEmailTodas?.(valor)}
+        />
+      </Linha>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.8 }}>E-mail dos avisos</span>
+        <input
+          type="email"
+          value={pref.email || ''}
+          placeholder={emailDaConta || 'o e-mail da sua conta'}
+          aria-label="E-mail que recebe os avisos"
+          onChange={(evento) => preferencia?.mudarEmail?.(evento.target.value)}
+          style={{
+            width: '100%',
+            padding: '5px 7px',
+            borderRadius: 7,
+            border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
+            background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
+            color: 'var(--c3)',
+            fontFamily: 'var(--font-main)',
+            fontSize: 10.5,
+            outline: 'none',
+          }}
+        />
+        <span style={{ fontSize: 8.5, color: 'var(--c2)', opacity: 0.65, lineHeight: 1.4 }}>
+          Em branco usa o e-mail da conta. Menções vêm marcadas para todo mundo; todas as
+          mensagens não.
+        </span>
+      </div>
+
+      <div
+        style={{
+          height: 1,
+          background: 'color-mix(in srgb, var(--c2) 16%, transparent)',
+          margin: '2px 0',
+        }}
+      />
+
+      <span style={SECAO}>NOTIFICAÇÃO NO COMPUTADOR</span>
+
+      <Linha titulo="Avisar no navegador" detalhe="Aparece fora da aba, mesmo minimizado">
+        <Interruptor
+          ligado={navegadorLigado}
+          rotulo="Mostrar notificação do navegador"
+          onMudar={mudarNavegador}
+        />
+      </Linha>
+
+      {(aviso || (navegadorLigado && permissao === 'denied')) && (
+        <span style={{ fontSize: 9, color: 'var(--c6)', lineHeight: 1.4 }}>
+          {aviso || 'O navegador está bloqueando. Libere a permissão nas configurações do site.'}
+        </span>
+      )}
+
       <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.7, lineHeight: 1.4 }}>
-        Independente do som das notificações.
+        O som aqui é independente do som das notificações.
       </span>
     </div>
   );
