@@ -39,6 +39,9 @@
     "venda_id": {
       "type": "string"
     },
+    "venda_ids": {
+      "type": "string"
+    },
     "folga_id": {
       "type": "string"
     },

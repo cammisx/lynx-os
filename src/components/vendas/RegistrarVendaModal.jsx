@@ -5,29 +5,9 @@ import { CloseIcon, ImageIcon } from '@/components/icons';
 import parsePrivacy from '@/lib/privacyParser';
 import { emitNotificationsChanged } from '@/lib/desktopEvents';
 import notificarAdminsSolicitacao from '@/lib/solicitacoes';
+import { moedaLabel, quandoLabel } from '@/lib/vendas';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
-
-const moedaLabel = (valor, moeda) => {
-  if (valor === null || valor === undefined) return '—';
-  try {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: moeda || 'BRL' }).format(
-      valor
-    );
-  } catch {
-    return `${moeda || ''} ${valor}`.trim();
-  }
-};
-
-const quandoLabel = (iso) => {
-  if (!iso) return '—';
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '—';
-  return `${date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} às ${date.toLocaleTimeString(
-    'pt-BR',
-    { hour: '2-digit', minute: '2-digit', hour12: false }
-  )}`;
-};
 
 const AREA_TEXTO = {
   width: '100%',
@@ -189,7 +169,10 @@ export default function RegistrarVendaModal({ usuario, modeloPadraoId = '', onCl
         titulo: itens.length > 1 ? `${itens.length} vendas aguardando` : 'Venda aguardando',
         mensagem: `${resumo}${modelo?.nome ? ` na modelo ${modelo.nome}` : ''}. Print anexado.`,
         tipo: 'venda_pendente',
-        extra: { venda_id: criadas[0]?.id || '' },
+        extra: {
+          venda_id: criadas[0]?.id || '',
+          venda_ids: criadas.map((venda) => venda.id).filter(Boolean).join(','),
+        },
       });
 
       emitNotificationsChanged();
