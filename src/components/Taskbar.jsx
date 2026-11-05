@@ -114,7 +114,7 @@ export default function Taskbar({ onOpenApp }) {
       <div className="taskbar-right">
         <button
           type="button"
-          className="taskbar-bell"
+          className="taskbar-bell taskbar-chat"
           aria-label="Chat interno"
           onClick={() => {
             chat.alternar();
@@ -123,7 +123,7 @@ export default function Taskbar({ onOpenApp }) {
           }}
           style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          <ChatIcon size={19} />
+          <ChatIcon size={24} />
           {chat.totalNaoLidas > 0 && (
             <span className="taskbar-chat-badge">
               {chat.totalNaoLidas > 9 ? '9+' : chat.totalNaoLidas}
