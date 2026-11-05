@@ -246,8 +246,8 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
   const podeEnviar =
     !!ocorrencia && !!mudouAlgo && !pausaInvalida && motivo.trim().length >= 3 && !salvando;
 
-  // Turno acontecendo agora: a correção entra na hora, sem esperar o admin.
-  const aplicarNaHora = !!ocorrencia?.andamento;
+  // Qualquer turno listado aqui aplica a correção na hora, sem esperar o admin.
+  const aplicarNaHora = !!ocorrencia;
 
   const enviar = async () => {
     if (!podeEnviar) return;
@@ -491,7 +491,7 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
               )}
               {ocorrencia?.aSeguir && (
                 <span style={{ color: '#e8b93b' }}>
-                  O turno ainda não começou. Dá para ajustar a entrada se você bateu antes da hora.
+                  O turno ainda não começou. A correção também entra na hora, sem passar pelo admin.
                 </span>
               )}
               {pausas.length > 0 && (
