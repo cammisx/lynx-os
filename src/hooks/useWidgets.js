@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { TASKBAR_SAFE, WIDGET_TILE } from '@/components/desktop/widgetLayout';
+import { TASKBAR_SAFE, WIDGET_TILE, WIDGET_TILE_H } from '@/components/desktop/widgetLayout';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
 const MARGIN = 16;
+
+/** Widgets que toda pessoa tem no desktop, na ordem em que aparecem empilhados. */
+const TIPOS = ['turno', 'paginas'];
 
 /** Posição inicial do ícone: canto superior direito, longe da barra de tarefas. */
 export const posicaoPadrao = () => ({
@@ -19,8 +22,8 @@ export const limiterNaTela = (x, y) => ({
 });
 
 /**
- * Widgets do desktop de cada pessoa. Por enquanto só existe o de turno, então o
- * hook garante que ele sempre exista e guarda posição e estado aberto/fechado.
+ * Widgets do desktop de cada pessoa. O hook garante que turno e páginas existam,
+ * e guarda posição e estado aberto/fechado de cada um.
  */
 export default function useWidgets() {
   const { user } = useAuth();
@@ -37,18 +40,27 @@ export default function useWidgets() {
         const result = await base44.entities.WidgetUsuario.filter({ usuario_id: userId });
         const lista = asList(result);
 
-        if (lista.length > 0) {
+        const posicao = posicaoPadrao();
+        const faltando = TIPOS.filter((tipo) => !lista.some((widget) => widget.tipo === tipo));
+
+        if (!faltando.length) {
           if (active) setWidgets(lista);
           return;
         }
 
-        const criado = await base44.entities.WidgetUsuario.create({
-          usuario_id: userId,
-          tipo: 'turno',
-          aberto: false,
-          ...posicaoPadrao(),
-        });
-        if (active && criado?.id) setWidgets([criado]);
+        const criados = [];
+        for (const tipo of faltando) {
+          criados.push(
+            await base44.entities.WidgetUsuario.create({
+              usuario_id: userId,
+              tipo,
+              aberto: false,
+              icone_x: posicao.icone_x,
+              icone_y: posicao.icone_y + TIPOS.indexOf(tipo) * (WIDGET_TILE_H + 8),
+            })
+          );
+        }
+        if (active) setWidgets([...lista, ...criados.filter((item) => item?.id)]);
       } catch (error) {
         console.warn('[WidgetUsuario]', error);
       } finally {

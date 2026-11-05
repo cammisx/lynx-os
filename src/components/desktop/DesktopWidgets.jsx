@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import WidgetIcon from '@/components/desktop/WidgetIcon';
 import TurnoWidgetPanel from '@/components/desktop/TurnoWidgetPanel';
+import PaginasWidgetPanel from '@/components/desktop/PaginasWidgetPanel';
 import JustificativaModal from '@/components/notifications/JustificativaModal';
 import useWidgets from '@/hooks/useWidgets';
 import useTurnoPonto from '@/hooks/useTurnoPonto';
+import usePaginas from '@/hooks/usePaginas';
+import PaginasIcon from '@/components/icons/PaginasIcon';
 import useNotifications from '@/hooks/useNotifications';
 import RegistrarVendaModal from '@/components/vendas/RegistrarVendaModal';
 import SolicitarFolgaModal from '@/components/solicitacoes/SolicitarFolgaModal';
@@ -17,6 +20,7 @@ export default function DesktopWidgets() {
   const { widgets, carregado, patch } = useWidgets();
   const { userId, ponto, semana, saving, feedback, punch } = useTurnoPonto();
   const { items, reload } = useNotifications(userId);
+  const paginas = usePaginas();
   const [justificativa, setJustificativa] = useState(null);
   const [solicitacao, setSolicitacao] = useState(null);
 
@@ -28,11 +32,14 @@ export default function DesktopWidgets() {
     ) || null;
 
   const turno = widgets.find((widget) => widget.tipo === 'turno');
+  const paginasWidget = widgets.find((widget) => widget.tipo === 'paginas');
   if (!turno) return null;
 
   const aberto = Boolean(turno.aberto);
+  const paginasAberto = Boolean(paginasWidget?.aberto);
   const entradaLiberada =
     ponto.mode === 'proximo' && ponto.start - Date.now() <= ENTRADA_LIBERADA_MS;
+  const paginaLivre = !paginasAberto && paginas.paginas.some((pagina) => pagina.estado === 'livre');
 
   return (
     <>
@@ -43,6 +50,32 @@ export default function DesktopWidgets() {
           pulsando={entradaLiberada}
           onOpen={() => patch(turno.id, { aberto: true })}
           onCommit={(posicao) => patch(turno.id, posicao)}
+        />
+      )}
+
+      {paginasWidget && !paginasAberto && (
+        <WidgetIcon
+          label="Páginas"
+          Icon={PaginasIcon}
+          position={paginasWidget}
+          pulsando={paginaLivre}
+          onOpen={() => patch(paginasWidget.id, { aberto: true })}
+          onCommit={(posicao) => patch(paginasWidget.id, posicao)}
+        />
+      )}
+
+      {paginasWidget && paginasAberto && (
+        <PaginasWidgetPanel
+          widget={paginasWidget}
+          paginas={paginas.paginas}
+          carregando={paginas.carregando}
+          erro={paginas.erro}
+          entrando={paginas.entrando}
+          recarregar={paginas.recarregar}
+          entrar={paginas.entrar}
+          usuarioId={user?.id}
+          onClose={() => patch(paginasWidget.id, { aberto: false })}
+          onMove={(posicao) => patch(paginasWidget.id, posicao)}
         />
       )}
 

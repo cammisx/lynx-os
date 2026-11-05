@@ -22,7 +22,7 @@ const clamp = (x, y) => ({
  * Ícone do widget no desktop. Arrasta pra reposicionar e abre com duplo clique.
  * Clique simples só seleciona, pra ninguém abrir sem querer no meio de um arrasto.
  */
-export default function WidgetIcon({ label, position, onOpen, onCommit, pulsando = false }) {
+export default function WidgetIcon({ label, Icon = TurnoIcon, position, onOpen, onCommit, pulsando = false }) {
   const [pos, setPos] = useState(() => clamp(position.icone_x, position.icone_y));
   const [arrastando, setArrastando] = useState(false);
   const [selecionado, setSelecionado] = useState(false);
@@ -114,7 +114,7 @@ export default function WidgetIcon({ label, position, onOpen, onCommit, pulsando
       }}
     >
       <div style={{ position: 'relative', display: 'flex' }}>
-        <TurnoIcon size={WIDGET_ICON} />
+        <Icon size={WIDGET_ICON} />
         {pulsando && (
           <span
             style={{
