@@ -340,6 +340,24 @@ body {
 .glass-scroll {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--c1) 45%, transparent) transparent;
+  /* Barra horizontal só aparece se sobrar largura; sem ela, o canto nativo some. */
+  overflow-x: hidden;
+}
+
+/* O quadrado branco no canto só existe quando as duas barras aparecem juntas. */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.glass-scroll::-webkit-scrollbar:horizontal {
+  height: 6px;
+}
+
+.glass-scroll::-webkit-scrollbar-thumb:horizontal {
+  background: color-mix(in srgb, var(--c1) 34%, transparent);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
 }
 
 .glass-scroll::-webkit-scrollbar {
