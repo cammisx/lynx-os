@@ -5,6 +5,9 @@
  * Nesse formato o JavaScript interpreta o valor como hora local, e a tela acaba
  * mostrando o UTC cru (15:55 em vez de 12:55 em São Paulo). Aqui assumimos UTC
  * quando a string não traz fuso; quando traz "Z" ou offset, ela manda.
+ *
+ * Resolução do merge: mantém a leitura UTC dos carimbos sem fuso e mostra tudo
+ * no fuso do navegador de quem acessa, incluindo dataHoraLocal.
  */
 
 const SEM_FUSO = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/;

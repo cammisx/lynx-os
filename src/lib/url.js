@@ -1,3 +1,7 @@
+/**
+ * Resolução do merge: validação de URLs vindas do banco (print de venda) antes
+ * de virarem href/src. Só http e https passam; o resto vira string vazia.
+ */
 const PROTOCOLO_PERMITIDO = /^https?:\/\//i;
 
 export const urlSegura = (valor) => {
