@@ -5,9 +5,12 @@ import Taskbar from '@/components/Taskbar';
 import ChattersWindow from '@/components/ChattersWindow';
 import ModelosWindow from '@/components/ModelosWindow';
 import TurnosWindow from '@/components/TurnosWindow';
+import useFecharTurnosEsquecidos from '@/hooks/useFecharTurnosEsquecidos';
 
 export default function Dashboard() {
   const [openApp, setOpenApp] = useState(null);
+
+  useFecharTurnosEsquecidos();
 
   useEffect(() => {
     const root = document.documentElement;
