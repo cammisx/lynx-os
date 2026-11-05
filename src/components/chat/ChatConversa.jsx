@@ -7,11 +7,12 @@ import {
   EyeOffIcon,
   FileIcon,
   MoreIcon,
-  PaperclipIcon,
   PencilIcon,
-  SendIcon,
   TrashIcon,
 } from '@/components/chat/chatIcons';
+import AudioPlayer from '@/components/chat/AudioPlayer';
+import ChatComposer from '@/components/chat/ChatComposer';
+import TextoRico from '@/components/chat/TextoRico';
 import { useChatPanel } from '@/components/chat/ChatProvider';
 import { useAuth } from '@/lib/AuthContext';
 import {
@@ -67,20 +68,12 @@ export default function ChatConversa({ onVoltar }) {
 
   const fimRef = useRef(null);
   const areaRef = useRef(null);
-  const arquivoRef = useRef(null);
 
   const nome = nomeDoCanal(canalAtivo, { usuario: user, pessoas, modelos });
 
   useEffect(() => {
     if (fimRef.current) fimRef.current.scrollIntoView({ block: 'end' });
   }, [mensagens.length, canalAtivo?.id]);
-
-  useEffect(() => {
-    if (areaRef.current) {
-      areaRef.current.style.height = 'auto';
-      areaRef.current.style.height = `${Math.min(168, Math.max(58, areaRef.current.scrollHeight))}px`;
-    }
-  }, [texto]);
 
   /* Menu da mensagem fecha ao clicar fora. */
   useEffect(() => {
@@ -178,7 +171,13 @@ export default function ChatConversa({ onVoltar }) {
     setEditando({ id: mensagem.id });
     setTexto(mensagem.texto || '');
     limparAnexo();
-    if (areaRef.current) areaRef.current.focus();
+    requestAnimationFrame(() => {
+      const campo = document.querySelector('.chat-campo');
+      if (campo) {
+        campo.focus();
+        campo.setSelectionRange(campo.value.length, campo.value.length);
+      }
+    });
   };
 
   const cancelarEdicao = () => {
@@ -195,6 +194,18 @@ export default function ChatConversa({ onVoltar }) {
       if (editando?.id === mensagem.id) cancelarEdicao();
     } catch (erro) {
       setFalha('Não consegui apagar a mensagem.');
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  /** Áudio: sobe o arquivo gravado junto do texto e da transcrição. */
+  const enviarAudio = async (arquivo, conteudo, extras) => {
+    setFalha('');
+    setOcupado(true);
+    try {
+      await enviarAnexo(canalAtivo.id, arquivo, conteudo, extras);
+      setTexto('');
     } finally {
       setOcupado(false);
     }
@@ -314,6 +325,7 @@ export default function ChatConversa({ onVoltar }) {
           const apagada = Boolean(mensagem.apagada);
           const temAnexo = Boolean(mensagem.anexo_url) && !apagada;
           const ehImagem = mensagem.tipo === 'imagem' && temAnexo;
+          const ehAudio = Boolean(mensagem.audio_url);
 
           return (
             <div
@@ -365,7 +377,7 @@ export default function ChatConversa({ onVoltar }) {
                       color: apagada ? 'var(--c2)' : 'var(--c3)',
                       fontStyle: apagada ? 'italic' : 'normal',
                       wordBreak: 'break-word',
-                      whiteSpace: 'pre-wrap',
+                      whiteSpace: 'normal',
                     }}
                   >
                     {ehImagem && (
@@ -385,7 +397,7 @@ export default function ChatConversa({ onVoltar }) {
                       />
                     )}
 
-                    {temAnexo && !ehImagem && (
+                    {temAnexo && !ehImagem && !ehAudio && (
                       <a
                         href={mensagem.anexo_url}
                         target="_blank"
@@ -448,13 +460,42 @@ export default function ChatConversa({ onVoltar }) {
                       </a>
                     )}
 
-                    {!temAnexo && (mensagem.tipo === 'arquivo' || mensagem.tipo === 'imagem') && (
+                    {!temAnexo && !ehAudio && (mensagem.tipo === 'arquivo' || mensagem.tipo === 'imagem') && (
                       <span style={{ fontSize: 10.5, color: 'var(--c2)' }}>
                         anexo indisponível
                       </span>
                     )}
 
-                    {apagada ? 'mensagem apagada' : mensagem.texto}
+                    {mensagem.tipo === 'audio' && mensagem.audio_url && !apagada && (
+                      <div style={{ marginBottom: mensagem.texto ? 5 : 0 }}>
+                        <AudioPlayer
+                          url={mensagem.audio_url}
+                          duracao={mensagem.audio_duracao}
+                        />
+                      </div>
+                    )}
+
+                    {apagada ? (
+                      'mensagem apagada'
+                    ) : mensagem.texto ? (
+                      <TextoRico texto={mensagem.texto} />
+                    ) : null}
+
+                    {!apagada && mensagem.transcricao && (
+                      <div
+                        style={{
+                          marginTop: mensagem.texto || mensagem.audio_url ? 5 : 0,
+                          paddingTop: 4,
+                          borderTop: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
+                          fontSize: 9.5,
+                          fontStyle: 'italic',
+                          color: 'var(--c2)',
+                          lineHeight: 1.45,
+                        }}
+                      >
+                        {mensagem.transcricao}
+                      </div>
+                    )}
                   </div>
 
                   <button
@@ -557,219 +598,20 @@ export default function ChatConversa({ onVoltar }) {
         <div ref={fimRef} />
       </div>
 
-      {falha && (
-        <div style={{ padding: '0 12px 4px', fontSize: 10, color: 'var(--c6)' }}>{falha}</div>
-      )}
-
-      {editando && (
-        <div
-          style={{
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '6px 12px',
-            fontSize: 9.5,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: 'var(--c1)',
-            borderTop: '1px solid color-mix(in srgb, var(--c2) 12%, transparent)',
-          }}
-        >
-          <PencilIcon size={11} /> editando mensagem
-          <button
-            type="button"
-            onClick={cancelarEdicao}
-            style={{
-              marginLeft: 'auto',
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--c2)',
-              fontSize: 9.5,
-              cursor: 'pointer',
-            }}
-          >
-            cancelar
-          </button>
-        </div>
-      )}
-
-      {anexo && (
-        <div
-          style={{
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            margin: '0 10px',
-            marginTop: editando ? 0 : 8,
-            padding: '7px 9px',
-            borderRadius: 9,
-            border: '1px solid color-mix(in srgb, var(--c1) 26%, transparent)',
-            background: 'color-mix(in srgb, var(--c1) 10%, transparent)',
-          }}
-        >
-          {anexo.imagem ? (
-            <img
-              src={anexo.previa}
-              alt={anexo.nome}
-              style={{ width: 34, height: 34, objectFit: 'cover', borderRadius: 6 }}
-            />
-          ) : (
-            <span style={{ color: 'var(--c1)', display: 'flex' }}>
-              <FileIcon size={16} />
-            </span>
-          )}
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div
-              style={{
-                fontSize: 10.5,
-                color: 'var(--c3)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {anexo.nome}
-            </div>
-            <div style={{ fontSize: 8.5, color: 'var(--c12)' }}>
-              {tamanhoLegivel(anexo.tamanho)}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={limparAnexo}
-            aria-label="Remover anexo"
-            style={{
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--c2)',
-              display: 'flex',
-              cursor: 'pointer',
-            }}
-          >
-            <CloseIcon size={13} />
-          </button>
-        </div>
-      )}
-
-      <div
-        style={{
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'flex-end',
-          gap: 6,
-          padding: '8px 10px 10px',
-          borderTop: '1px solid color-mix(in srgb, var(--c2) 12%, transparent)',
-        }}
-      >
-        <input
-          ref={arquivoRef}
-          type="file"
-          style={{ display: 'none' }}
-          onChange={(evento) => {
-            const escolhido = evento.target.files?.[0];
-            prepararArquivo(escolhido);
-            evento.target.value = '';
-          }}
-        />
-
-        <button
-          type="button"
-          onClick={() => arquivoRef.current?.click()}
-          disabled={Boolean(editando)}
-          aria-label="Anexar arquivo"
-          className="chat-anexar"
-          style={{
-            width: 30,
-            height: 34,
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 9,
-            border: '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
-            background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
-            color: editando ? 'var(--c12)' : 'var(--c2)',
-            cursor: editando ? 'default' : 'pointer',
-          }}
-        >
-          <PaperclipIcon size={14} />
-        </button>
-
-        <textarea
-          ref={areaRef}
-          value={texto}
-          onChange={(evento) => setTexto(evento.target.value)}
-          onPaste={(evento) => {
-            if (editando) return;
-            const itens = Array.from(evento.clipboardData?.items || []);
-            const imagem = itens.find((item) => item.type.startsWith('image/'));
-            if (!imagem) return;
-            const arquivo = imagem.getAsFile();
-            if (!arquivo) return;
-            evento.preventDefault();
-            prepararArquivo(arquivo);
-          }}
-          onKeyDown={(evento) => {
-            if (evento.key === 'Enter' && !evento.shiftKey) {
-              evento.preventDefault();
-              submeter();
-            }
-            if (evento.key === 'Escape' && editando) {
-              evento.preventDefault();
-              cancelarEdicao();
-            }
-          }}
-          placeholder={
-            editando ? 'edite a mensagem…' : 'escrever mensagem… (cole uma imagem com Ctrl+V)'
-          }
-          rows={2}
-          className="chat-campo"
-          style={{
-            flex: 1,
-            minHeight: 58,
-            maxHeight: 168,
-            resize: 'none',
-            background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
-            borderRadius: 9,
-            color: 'var(--c3)',
-            fontSize: 11.5,
-            lineHeight: 1.45,
-            padding: '8px 9px',
-            fontFamily: 'var(--font-main)',
-            outline: 'none',
-          }}
-        />
-
-        <button
-          type="button"
-          onClick={submeter}
-          disabled={(!texto.trim() && !anexo) || enviando || ocupado}
-          aria-label={editando ? 'Salvar edição' : 'Enviar mensagem'}
-          className="chat-enviar"
-          style={{
-            width: 34,
-            height: 34,
-            flexShrink: 0,
-            borderRadius: 9,
-            border: '1px solid color-mix(in srgb, var(--c1) 40%, transparent)',
-            background:
-              texto.trim() || anexo
-                ? 'color-mix(in srgb, var(--c1) 22%, transparent)'
-                : 'color-mix(in srgb, var(--c2) 8%, transparent)',
-            color: texto.trim() || anexo ? 'var(--c1)' : 'var(--c12)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: texto.trim() || anexo ? 'pointer' : 'default',
-            transition: 'background 140ms ease, color 140ms ease',
-          }}
-        >
-          <SendIcon size={15} />
-        </button>
-      </div>
+      <ChatComposer
+        texto={texto}
+        setTexto={setTexto}
+        anexo={anexo}
+        onLimparAnexo={limparAnexo}
+        onEscolherArquivo={prepararArquivo}
+        editando={editando}
+        onEnviar={submeter}
+        onEnviarAnexo={enviarAudio}
+        onCancelarEdicao={cancelarEdicao}
+        ocupado={ocupado || enviando}
+        falha={falha}
+        setFalha={setFalha}
+      />
 
       {imagemAberta &&
         createPortal(

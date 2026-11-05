@@ -460,12 +460,15 @@ export default function useChat() {
           autor_id: euId,
           autor_nome: eu?.nome || user?.full_name || 'Eu',
           autor_cargo: ehAdmin(user) ? 'admin' : 'chatter',
-          tipo: anexo?.url ? (anexo.imagem ? 'imagem' : 'arquivo') : 'texto',
+          tipo: anexo?.url ? (anexo.audio ? 'audio' : anexo.imagem ? 'imagem' : 'arquivo') : 'texto',
           texto: limpo,
           anexo_url: anexo?.url || undefined,
           anexo_nome: anexo?.nome || undefined,
           anexo_tipo: anexo?.tipo || undefined,
           anexo_tamanho: anexo?.tamanho || undefined,
+          audio_url: anexo?.audio ? anexo.url : undefined,
+          audio_duracao: anexo?.audio ? Number(anexo.segundos) || 0 : undefined,
+          transcricao: anexo?.transcricao || undefined,
         });
         if (criada?.id) {
           setMensagens((anterior) =>
@@ -493,17 +496,22 @@ export default function useChat() {
 
   /** Sobe a imagem ou o arquivo e manda junto com o texto, se houver. */
   const enviarAnexo = useCallback(
-    async (canalId, arquivo, texto = '') => {
+    async (canalId, arquivo, texto = '', extras = {}) => {
       if (!canalId || !arquivo || !euId) return null;
       const resposta = await base44.integrations.Core.UploadFile({ file: arquivo });
       if (!resposta?.file_url) throw new Error('O upload não devolveu o arquivo.');
-      const imagem = String(arquivo.type || '').startsWith('image/');
+      const tipoArquivo = String(arquivo.type || '');
+      const imagem = tipoArquivo.startsWith('image/');
+      const audio = tipoArquivo.startsWith('audio/');
       return enviar(canalId, texto, {
         url: resposta.file_url,
-        nome: arquivo.name || (imagem ? 'imagem.png' : 'arquivo'),
-        tipo: arquivo.type || '',
+        nome: arquivo.name || (imagem ? 'imagem.png' : audio ? 'audio' : 'arquivo'),
+        tipo: tipoArquivo,
         tamanho: arquivo.size || 0,
         imagem,
+        audio,
+        segundos: extras.segundos,
+        transcricao: extras.transcricao,
       });
     },
     [euId, enviar]

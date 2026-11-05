@@ -83,3 +83,35 @@ export const CloseIcon = ({ size = 14, ...rest }) => (
     <path d="M6 6l12 12M18 6 6 18" />
   </svg>
 );
+
+export const MicIcon = ({ size = 15, ...rest }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...base} {...rest}>
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5.5 12a6.5 6.5 0 0 0 13 0M12 18.5V21" />
+  </svg>
+);
+
+export const StopIcon = ({ size = 14, ...rest }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...base} {...rest}>
+    <rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const PlayIcon = ({ size = 14, ...rest }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...base} {...rest}>
+    <path d="M8 5.5 19 12 8 18.5V5.5Z" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const PauseIcon = ({ size = 14, ...rest }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...base} {...rest}>
+    <rect x="7" y="5.5" width="3.5" height="13" rx="1" fill="currentColor" stroke="none" />
+    <rect x="13.5" y="5.5" width="3.5" height="13" rx="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const CheckIcon = ({ size = 14, ...rest }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" {...base} {...rest}>
+    <path d="M5 12.5 9.5 17 19 7" />
+  </svg>
+);
