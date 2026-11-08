@@ -3,15 +3,17 @@ import Window from '@/components/Window';
 import { ImageIcon } from '@/components/icons';
 import useConteudos from '@/hooks/useConteudos';
 import { nomeDoConteudo } from '@/lib/conteudos';
+import ModalTabelaPrecos from '@/components/conteudo/ModalTabelaPrecos';
 
 const escuro = (valor) => `color-mix(in srgb, var(--c2) ${valor}%, transparent)`;
 const dourado = (valor) => `color-mix(in srgb, var(--c1) ${valor}%, transparent)`;
 
-/* Janela de Conteúdo: uma parte por modelo, igual ao playbook. Por enquanto
-   o lugar existe vazio; o que vai dentro ainda está sendo definido. */
+/* Janela de Conteúdo: uma parte por modelo, igual ao playbook. A tabela de
+   preços já mora aqui; o resto do conteúdo ainda está sendo definido. */
 export default function ConteudoWindow({ onClose }) {
-  const { conteudos, carregando, erro } = useConteudos();
+  const { conteudos, carregando, erro, admin, recarregar } = useConteudos();
   const [ativoId, setAtivoId] = useState(null);
+  const [tabelaAberta, setTabelaAberta] = useState(false);
 
   const ativo = conteudos.find((item) => item.id === ativoId) || conteudos[0] || null;
 
@@ -84,9 +86,32 @@ export default function ConteudoWindow({ onClose }) {
             <span style={{ fontSize: 11, color: 'var(--erro)' }}>{erro}</span>
           ) : ativo ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--c3)' }}>
-                {nomeDoConteudo(ativo)}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--c3)' }}>
+                  {nomeDoConteudo(ativo)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTabelaAberta(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '6px 11px',
+                    borderRadius: 8,
+                    border: '1px solid color-mix(in srgb, var(--c1) 40%, transparent)',
+                    background: 'color-mix(in srgb, var(--c1) 12%, transparent)',
+                    color: 'var(--c1)',
+                    fontFamily: 'var(--font-main)',
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  Tabela de preços
+                </button>
+              </div>
 
               <div
                 style={{
@@ -131,6 +156,15 @@ export default function ConteudoWindow({ onClose }) {
           )}
         </div>
       </div>
+
+      {tabelaAberta && ativo ? (
+        <ModalTabelaPrecos
+          conteudo={ativo}
+          admin={admin}
+          onFechar={() => setTabelaAberta(false)}
+          onSalvo={recarregar}
+        />
+      ) : null}
     </Window>
   );
 }
