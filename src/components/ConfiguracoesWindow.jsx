@@ -21,7 +21,9 @@ import usePreferenciaSom from '@/hooks/usePreferenciaSom';
 import useSonsCustom from '@/hooks/useSonsCustom';
 import CortarSomModal from '@/components/config/CortarSomModal';
 import {
+  ambienteDoNavegador,
   lerEstadoServiceWorker,
+  resumoDoAmbiente,
   mostrarNotificacaoNavegador,
   navegadorSuportado,
   ouvirEstadoServiceWorker,
@@ -339,27 +341,32 @@ export default function ConfiguracoesWindow({ onClose }) {
   /* O aviso do navegador muda de história conforme o aparelho: no computador
      aparece no canto da tela; no celular, o iPhone só aceita com o app na
      Tela de Início. */
-  const ehIOS =
-    typeof navigator !== 'undefined' &&
-    (/iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  const ambiente = ambienteDoNavegador();
 
   const textoNavegador = !navegadorSuportado()
     ? {
         detalhe: 'Este navegador não mostra notificação de sistema.',
         rodape: 'Sem esse recurso, o sino do app continua avisando normalmente.',
       }
-    : pequeno
+    : ambiente.ios && !ambiente.instalado
       ? {
-          detalhe: ehIOS
-            ? 'No iPhone, só funciona com o Lynx adicionado à Tela de Início.'
-            : 'Aparece na barra do sistema, mesmo com o app atrás.',
-          rodape: 'Vale só neste celular: cada navegador guarda a própria permissão.',
+          detalhe: 'No iPhone, só com o LynxOS na Tela de Início.',
+          rodape: 'Compartilhar → Adicionar à Tela de Início, abrir por lá e ligar aqui.',
         }
-      : {
-          detalhe: 'Aparece no canto da tela, mesmo com o sistema minimizado.',
-          rodape: 'Cada navegador guarda a própria permissão, então vale só neste computador.',
-        };
+      : ambiente.dentroDeApp
+        ? {
+            detalhe: 'Este navegador é o de dentro de outro app e não deixa avisar.',
+            rodape: 'Abra o LynxOS no Safari ou no Chrome.',
+          }
+        : pequeno
+          ? {
+              detalhe: 'Aparece na barra do sistema, mesmo com o app atrás.',
+              rodape: 'Vale só neste celular: cada navegador guarda a própria permissão.',
+            }
+          : {
+              detalhe: 'Aparece no canto da tela, mesmo com o sistema minimizado.',
+              rodape: 'Cada navegador guarda a própria permissão, então vale só neste computador.',
+            };
 
   /* Aviso do navegador: o mesmo caminho do painel do sino, com a permissão
      pedida na hora em que a pessoa liga. */
@@ -373,10 +380,27 @@ export default function ConfiguracoesWindow({ onClose }) {
       setAvisoNavegador('Este navegador não tem notificação de sistema.');
       return;
     }
+    const ambiente = ambienteDoNavegador();
+    if (ambiente.dentroDeApp) {
+      setAvisoNavegador(
+        'Você abriu o LynxOS dentro de outro app. Abra no Safari ou no Chrome para poder avisar.'
+      );
+      return;
+    }
+    if (ambiente.ios && !ambiente.instalado) {
+      setAvisoNavegador(
+        'No iPhone a Apple só deixa avisar com o LynxOS na Tela de Início: toque em Compartilhar, "Adicionar à Tela de Início", abra por lá e ligue de novo.'
+      );
+      return;
+    }
     const autorizado = await pedirPermissaoDoNavegador();
     setPermissaoNavegador(permissaoDoNavegador());
     if (!autorizado) {
-      setAvisoNavegador('O navegador bloqueou. Libere a permissão nas configurações do site.');
+      setAvisoNavegador(
+        permissaoDoNavegador() === 'denied'
+          ? 'O navegador bloqueou. Libere a permissão nas configurações do site.'
+          : 'O navegador não perguntou. Às vezes é preciso tentar de novo com a página recarregada.'
+      );
       return;
     }
     setAvisoNavegador('');
@@ -805,6 +829,11 @@ export default function ConfiguracoesWindow({ onClose }) {
               {somPref.pref.notificar_navegador && estadoWorker.situacao === 'ok' && (
                 <span style={{ fontSize: 9.5, color: 'var(--ok)', lineHeight: 1.45 }}>
                   Aviso do sistema pronto.
+                </span>
+              )}
+              {somPref.pref.notificar_navegador && (
+                <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.55, lineHeight: 1.4 }}>
+                  {resumoDoAmbiente()}
                 </span>
               )}
             </div>

@@ -46,6 +46,59 @@ const definirEstadoWorker = (situacao, mensagem = '') => {
   });
 };
 
+/**
+ * Onde a pessoa está. É o que explica a maioria dos casos em que o pedido de
+ * permissão "não aparece": no iPhone fora da Tela de Início a Apple não deixa
+ * perguntar, e dentro do navegador de outro app (Instagram, WhatsApp) quase
+ * todo navegador bloqueia a permissão sem avisar.
+ */
+export const ambienteDoNavegador = () => {
+  const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+  const ios =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (typeof navigator !== 'undefined' &&
+      navigator.platform === 'MacIntel' &&
+      navigator.maxTouchPoints > 1);
+  const android = /Android/i.test(ua);
+  const instalado =
+    typeof window !== 'undefined' &&
+    (window.matchMedia?.('(display-mode: standalone)').matches === true ||
+      navigator.standalone === true);
+  const dentroDeApp = /(Instagram|FBAN|FBAV|FB_IAB|Messenger|WhatsApp|LinkedIn|Twitter|TikTok|Line\/)/i.test(
+    ua
+  );
+  const navegador = /Edg\//.test(ua)
+    ? 'Edge'
+    : /SamsungBrowser/.test(ua)
+      ? 'Samsung Internet'
+      : /Firefox\//.test(ua)
+        ? 'Firefox'
+        : /Chrome\//.test(ua)
+          ? 'Chrome'
+          : /Safari\//.test(ua)
+            ? 'Safari'
+            : 'outro';
+  return {
+    ios,
+    android,
+    instalado,
+    dentroDeApp,
+    navegador,
+    sistema: ios ? 'iPhone/iPad' : android ? 'Android' : 'computador',
+  };
+};
+
+/** Linha curta para a tela de configurações mostrar o que está acontecendo. */
+export const resumoDoAmbiente = () => {
+  const ambiente = ambienteDoNavegador();
+  const partes = [`${ambiente.sistema} · ${ambiente.navegador}`];
+  if (ambiente.ios && !ambiente.instalado) partes.push('fora da Tela de Início');
+  if (ambiente.dentroDeApp) partes.push('dentro de outro app');
+  partes.push(`permissão: ${permissaoDoNavegador()}`);
+  partes.push(`worker: ${estadoWorker.situacao}`);
+  return partes.join(' · ');
+};
+
 const explicarFalha = (erro) => {
   const nome = erro?.name || '';
   const texto = String(erro?.message || erro || '');
@@ -137,13 +190,16 @@ export const lembrarNavegadorLigado = (ligado) => {
 /** Pede a permissão do navegador. Devolve true só se ficou autorizado. */
 export const pedirPermissaoDoNavegador = async () => {
   if (!navegadorSuportado()) return false;
-  /* O pedido é o momento certo de preparar o service worker: nasce de um
-     clique, então vale em qualquer navegador. */
-  registrarServiceWorker();
-  if (window.Notification.permission === 'granted') return true;
+  if (window.Notification.permission === 'granted') {
+    registrarServiceWorker();
+    return true;
+  }
   if (window.Notification.permission === 'denied') return false;
   try {
+    /* O pedido sai na mesma respiração do clique: se houver qualquer espera
+       antes, o Safari e alguns navegadores de celular ignoram a pergunta. */
     const resposta = await window.Notification.requestPermission();
+    registrarServiceWorker();
     return resposta === 'granted';
   } catch (erro) {
     console.warn('[navegador] permissão', erro?.message || erro);
