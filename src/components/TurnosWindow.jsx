@@ -10,6 +10,7 @@ import { daysLabel, expandShift, hasWeekdays, sortDays } from '@/lib/shiftRepeat
 import { ACEITE_COLOR, ACEITE_LABEL, aceiteOf } from '@/lib/aceite';
 import { buildChatterNames, chatterName } from '@/lib/chatterNames';
 import { useMarcarSujo } from '@/components/desktop/JanelaContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const DAY_MS = 86400000;
 
@@ -199,6 +200,8 @@ export default function TurnosWindow({ onClose }) {
         shift.usuario_nome
     ) || 'Sem chatter';
 
+  const pequeno = useIsMobile();
+
   const archivedModels = models.filter((model) => model.arquivada);
   const isArchivedShift = (shift) => {
     if (archivedModels.some((model) => model.id === shift.modelo_id)) return true;
@@ -239,11 +242,11 @@ export default function TurnosWindow({ onClose }) {
                 borderBottom: '1px solid color-mix(in srgb, var(--c2) 10%, transparent)',
               }}
             >
-              <div style={{ width: 132 }}>
+              <div style={{ width: pequeno ? '100%' : 132 }}>
                 <GlassSelect
                   value={modelFilter}
                   onChange={setModelFilter}
-                  height={26}
+                  height={pequeno ? 34 : 26}
                   options={[
                     { value: 'todas', label: 'Todas' },
                     ...models
@@ -306,11 +309,13 @@ export default function TurnosWindow({ onClose }) {
                 className="md-primary"
                 onClick={() => setForm('new')}
                 style={{
-                  marginLeft: 'auto',
+                  marginLeft: pequeno ? 0 : 'auto',
+                  width: pequeno ? '100%' : undefined,
+                  justifyContent: pequeno ? 'center' : undefined,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  height: 26,
+                  height: pequeno ? 34 : 26,
                   padding: '0 12px',
                   borderRadius: 7,
                   fontSize: 11,
@@ -364,8 +369,9 @@ export default function TurnosWindow({ onClose }) {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
+                      flexWrap: pequeno ? 'wrap' : undefined,
                       gap: 10,
-                      padding: '8px 10px',
+                      padding: pequeno ? '10px 12px' : '8px 10px',
                       borderRadius: 8,
                       border: '1px solid color-mix(in srgb, var(--c2) 10%, transparent)',
                     }}
@@ -394,7 +400,15 @@ export default function TurnosWindow({ onClose }) {
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        flexShrink: 0,
+                        marginLeft: pequeno ? 'auto' : undefined,
+                      }}
+                    >
                       <span
                         style={{
                           fontSize: 10,
@@ -463,6 +477,9 @@ export default function TurnosWindow({ onClose }) {
             }}
           >
             <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Excluir turno"
               style={{
                 width: 340,
                 background: 'color-mix(in srgb, var(--c8) 72%, transparent)',

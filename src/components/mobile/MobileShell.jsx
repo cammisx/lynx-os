@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useChatPanel } from '@/components/chat/ChatProvider';
 import MobileStatusBar from '@/components/mobile/MobileStatusBar';
 import MobileDock from '@/components/mobile/MobileDock';
 import MobileInicio from '@/components/mobile/MobileInicio';
 import MobileChat from '@/components/mobile/MobileChat';
+import ClockPanel from '@/components/ClockPanel';
 import { nomeDe } from '@/lib/perfilLogica';
 
 /**
@@ -14,6 +16,7 @@ import { nomeDe } from '@/lib/perfilLogica';
  */
 export default function MobileShell({ user, perfil, janelas }) {
   const chat = useChatPanel();
+  const [relogio, setRelogio] = useState(false);
   const abertas = janelas.itens.filter((item) => item.aberta && !item.minimizada);
   const ativa = abertas.find((item) => item.id === janelas.ativa)?.id;
   const janelaAtiva = ativa || (abertas.length ? abertas[abertas.length - 1].id : null);
@@ -64,6 +67,7 @@ export default function MobileShell({ user, perfil, janelas }) {
         perfil={perfil}
         onPerfil={() => abrirJanela('config')}
         onAbrirChat={abrirChat}
+        onRelogio={() => setRelogio(true)}
       />
 
       <main
@@ -82,6 +86,8 @@ export default function MobileShell({ user, perfil, janelas }) {
       </main>
 
       {chat.aberto ? <MobileChat onVoltar={irParaInicio} /> : null}
+
+      <ClockPanel open={relogio} onClose={() => setRelogio(false)} notificacoes={[]} />
 
       <MobileDock
         atual={tela === 'inicio' ? 'inicio' : tela}

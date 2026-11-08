@@ -13,7 +13,14 @@ import { iniciaisDe } from '@/lib/perfilLogica';
  * avatar à direita. O sino abre as notificações numa folha e cada uma faz o
  * mesmo que a versão de desktop faria.
  */
-export default function MobileStatusBar({ user, perfil, onPerfil, onAbrirChat }) {
+const ClockMini = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7.5V12l3 2" />
+  </svg>
+);
+
+export default function MobileStatusBar({ user, perfil, onPerfil, onAbrirChat, onRelogio }) {
   const { items, naoLidas, markRead, markAllRead, reload } = useNotifications(
     user?.id,
     user?.role === 'admin'
@@ -75,9 +82,28 @@ export default function MobileStatusBar({ user, perfil, onPerfil, onAbrirChat })
         >
           LYNX
         </span>
-        <span style={{ fontSize: 10.5, color: 'var(--c2)', whiteSpace: 'nowrap' }}>
+        <button
+          type="button"
+          onClick={onRelogio}
+          aria-label="Relógio e agenda"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            height: 30,
+            padding: '0 8px',
+            borderRadius: 9,
+            border: '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+            background: 'transparent',
+            color: 'var(--c2)',
+            fontSize: 10.5,
+            fontFamily: 'var(--font-main)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <ClockMini />
           {data} · {hora}
-        </span>
+        </button>
         <span style={{ flex: 1 }} />
 
         <button

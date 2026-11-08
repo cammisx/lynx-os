@@ -15,6 +15,8 @@ import useTurnoPonto from '@/hooks/useTurnoPonto';
 import ShiftWidget from '@/components/shifts/ShiftWidget';
 import WeekToolbar from '@/components/shifts/WeekToolbar';
 import WeekGrid from '@/components/shifts/WeekGrid';
+import { BackIcon } from '@/components/chat/chatIcons';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const DAY_MS = 86400000;
 const REFRESH_MS = 15000;
@@ -34,6 +36,9 @@ const shortDate = (date) =>
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
 export default function ClockPanel({ open, onClose, anchorRef, notificacoes = [], onOpenJustificativa }) {
+  /* No celular o relógio e a agenda tomam a tela inteira, no lugar do painel
+     de 700x500 que sai do canto da barra no desktop. */
+  const pequeno = useIsMobile();
   const {
     user,
     userId,
@@ -189,24 +194,73 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
       ref={panelRef}
       style={{
         position: 'fixed',
-        bottom: 'calc(100vh * 1.5 / 24)',
-        right: 3,
-        width: 700,
-        height: 500,
+        ...(pequeno
+          ? {
+              left: 0,
+              right: 0,
+              top: 'calc(46px + env(safe-area-inset-top))',
+              bottom: 'calc(58px + env(safe-area-inset-bottom))',
+              width: 'auto',
+              height: 'auto',
+            }
+          : { bottom: 'calc(100vh * 1.5 / 24)', right: 3, width: 700, height: 500 }),
         background: 'color-mix(in srgb, var(--c8) 35%, transparent)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
-        border: '1px solid color-mix(in srgb, var(--c1) 22%, transparent)',
-        borderRadius: 16,
+        border: pequeno ? 'none' : '1px solid color-mix(in srgb, var(--c1) 22%, transparent)',
+        borderRadius: pequeno ? 0 : 16,
         boxShadow: '0 12px 48px rgba(0,0,0,0.5)',
-        zIndex: 1200,
+        zIndex: pequeno ? 8400 : 1200,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: 'var(--font-main)',
-        animation: 'clk-panel-in 0.2s cubic-bezier(0.22, 1, 0.36, 1)',
+        animation: pequeno ? 'none' : 'clk-panel-in 0.2s cubic-bezier(0.22, 1, 0.36, 1)',
       }}
     >
+      {pequeno ? (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            height: 46,
+            flexShrink: 0,
+            padding: '0 10px 0 4px',
+            borderBottom: '1px solid color-mix(in srgb, var(--c2) 12%, transparent)',
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Voltar"
+            onClick={onClose}
+            style={{
+              width: 40,
+              height: 40,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--c3)',
+              padding: 0,
+            }}
+          >
+            <BackIcon size={19} />
+          </button>
+          <span
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 13.5,
+              letterSpacing: '0.04em',
+              color: 'var(--c1)',
+            }}
+          >
+            Relógio e agenda
+          </span>
+        </div>
+      ) : null}
+
       <ShiftWidget
         user={user}
         displayName={chatterNames[userId]}
