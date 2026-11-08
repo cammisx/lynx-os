@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import '@/theme.css';
 import DesktopBackground from '@/components/DesktopBackground';
+import DesktopPet from '@/components/desktop/DesktopPet';
 import DesktopWidgets from '@/components/desktop/DesktopWidgets';
 import Taskbar from '@/components/Taskbar';
 import ChattersWindow from '@/components/ChattersWindow';
@@ -140,6 +141,7 @@ export default function Dashboard() {
         estatico={perfil.fundoEstatico}
         semLinhas={perfil.fundoModo === 'sem'}
       />
+      <DesktopPet pet={perfil.pet} />
       <ChatProvider>
         <DesktopWidgets />
         <Taskbar

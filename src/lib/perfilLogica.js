@@ -5,6 +5,7 @@
 import { MODO_PADRAO, TEMA_PADRAO, modoValido } from '@/lib/temas';
 import { FONTE_PADRAO } from '@/lib/fonte';
 import { emLista } from '@/lib/barraTarefas';
+import { PET_PADRAO, petValido } from '@/lib/pets';
 
 /**
  * Fundo do desktop em três estados:
@@ -36,6 +37,8 @@ export const PERFIL_PADRAO = {
   /* Ordem dos ícones na barra de tarefas e quais ficam fixados nela. */
   barraOrdem: [],
   barraFixadas: [],
+  /* Bicho que passeia pelo desktop (sem pet, gato, cachorro ou morcego). */
+  pet: PET_PADRAO,
 };
 
 /** Campos custom do User, quando publicados no Builder. */
@@ -53,6 +56,7 @@ export const perfilDoUsuario = (user) => ({
      valendo quando o campo ainda não existe no banco. */
   barraOrdem: user?.barra_ordem ? emLista(user.barra_ordem) : undefined,
   barraFixadas: user?.barra_fixadas ? emLista(user.barra_fixadas) : undefined,
+  pet: user?.pet || '',
 });
 
 export const mesclarPerfil = (local = {}, user = {}) => {
@@ -82,6 +86,7 @@ export const mesclarPerfil = (local = {}, user = {}) => {
     fundoSemLinhas: fundoModo === 'sem',
     barraOrdem: emLista(perfil.barraOrdem),
     barraFixadas: emLista(perfil.barraFixadas),
+    pet: petValido(perfil.pet),
   };
 };
 

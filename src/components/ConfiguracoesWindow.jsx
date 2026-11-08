@@ -7,6 +7,8 @@ import { iniciaisDe, nomeDe, salvarPerfil, usePerfil } from '@/lib/perfilUsuario
 import { MODO_CLARO, MODO_ESCURO, MODO_SISTEMA, TEMAS, paletaDoTema, resolverModo } from '@/lib/temas';
 import { TAMANHOS } from '@/lib/fonte';
 import { MODOS_FUNDO } from '@/lib/perfilLogica';
+import { PETS_DISPONIVEIS, spriteDe } from '@/lib/pets';
+import PetSprite from '@/components/desktop/PetSprite';
 import { prepararFundo } from '@/lib/fundo';
 import { useMarcarSujo } from '@/components/desktop/JanelaContext';
 import { AVISO_ABA_CONFIG, consumirAbaConfig } from '@/lib/configAba';
@@ -181,6 +183,16 @@ export default function ConfiguracoesWindow({ onClose }) {
       remoto
         ? null
         : { erro: false, texto: 'Fundo removido neste navegador. Falta publicar o campo fundo_url no Builder.' }
+    );
+  };
+
+  const escolherPet = async (pet) => {
+    if ((perfil.pet || 'nenhum') === pet) return;
+    const { remoto } = await salvarPerfil(user, { pet });
+    setAviso(
+      remoto
+        ? null
+        : { erro: false, texto: 'Pet escolhido neste navegador. Falta publicar o campo pet no Builder.' }
     );
   };
 
@@ -695,6 +707,52 @@ export default function ConfiguracoesWindow({ onClose }) {
                   >
                     <span style={{ fontSize: 11, fontWeight: 700, lineHeight: 1.2 }}>{nome}</span>
                     <span style={{ fontSize: 9.5, color: 'var(--c2)', lineHeight: 1.2 }}>{dica}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <span style={{ ...labelStyle, marginTop: 6 }}>Pet do desktop</span>
+            <span style={dicaStyle}>
+              Um bicho de estimação em pixel art passeia pela base da tela. Clique nele para fazer
+              carinho. Quem não quiser, deixa em "Sem pet".
+            </span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8 }}>
+              {PETS_DISPONIVEIS.map(({ id, nome, dica }) => {
+                const ativo = (perfil.pet || 'nenhum') === id;
+                const sprite = spriteDe(id);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => escolherPet(id)}
+                    title={dica}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '8px 6px',
+                      borderRadius: 10,
+                      border: ativo
+                        ? '1px solid color-mix(in srgb, var(--c1) 70%, transparent)'
+                        : '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+                      background: ativo
+                        ? 'color-mix(in srgb, var(--c1) 14%, transparent)'
+                        : 'color-mix(in srgb, var(--c8) 45%, transparent)',
+                      color: ativo ? 'var(--c1)' : 'var(--c3)',
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-main)',
+                    }}
+                  >
+                    <span style={{ height: 32, display: 'flex', alignItems: 'flex-end' }}>
+                      {sprite ? (
+                        <PetSprite sprite={sprite} acao="parado" quadro={0} escala={2} />
+                      ) : (
+                        <span style={{ fontSize: 15, opacity: 0.45, lineHeight: '32px' }}>–</span>
+                      )}
+                    </span>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, lineHeight: 1.2 }}>{nome}</span>
                   </button>
                 );
               })}

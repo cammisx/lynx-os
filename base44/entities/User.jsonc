@@ -36,6 +36,10 @@
       "type": "boolean",
       "description": "Para a animacao da seda do fundo (modo leve)"
     },
+    "pet": {
+      "type": "string",
+      "description": "Pet do desktop escolhido: nenhum, gato, cachorro ou morcego"
+    },
     "fundo_modo": {
       "type": "string",
       "enum": ["animado", "parado", "sem"],

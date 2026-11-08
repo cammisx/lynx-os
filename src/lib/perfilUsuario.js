@@ -137,6 +137,7 @@ export const salvarBarraTarefas = async (user, { ordem = [], fixadas = [] } = {}
       fundo_modo: atual.fundoModo || '',
       barra_ordem: escreverBarra(ordem),
       barra_fixadas: escreverBarra(fixadas),
+      pet: atual.pet || '',
     });
     return { remoto: true };
   } catch (erro) {
@@ -198,6 +199,7 @@ export const salvarPerfil = async (user, parcial = {}) => {
       fundo_modo: atual.fundoModo || '',
       barra_ordem: escreverBarra(atual.barraOrdem),
       barra_fixadas: escreverBarra(atual.barraFixadas),
+      pet: atual.pet || '',
     });
     noUser = Boolean(salvo && 'nome_exibicao' in salvo);
   } catch (erro) {
