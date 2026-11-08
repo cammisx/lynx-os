@@ -12,6 +12,25 @@ const TAXA_SAIDA = 22050;
 const ContextoAudio = () =>
   typeof window !== 'undefined' ? window.AudioContext || window.webkitAudioContext : null;
 
+/**
+ * Fecha um AudioContext sem susto.
+ *
+ * O navegador lança InvalidStateError quando o contexto já foi fechado, e isso
+ * acontece fácil: o fim do trecho e o botão de parar chegam quase juntos, e o
+ * segundo a fechar encontra a porta trancada. Aqui a checagem vem antes de
+ * qualquer chamada, e a promessa de close não fica solta.
+ */
+export const fecharContexto = (contexto) => {
+  if (!contexto || typeof contexto.close !== 'function') return;
+  if (contexto.state === 'closed') return;
+  try {
+    const resultado = contexto.close();
+    if (resultado && typeof resultado.catch === 'function') resultado.catch(() => {});
+  } catch (erro) {
+    // já estava fechado
+  }
+};
+
 export const audioSuportado = () => Boolean(ContextoAudio() && window.OfflineAudioContext);
 
 /** Decodifica o arquivo escolhido. Lança erro se o navegador não conhecer o formato. */
@@ -25,7 +44,7 @@ export async function decodificarAudio(arquivo) {
   } catch (erro) {
     throw new Error('Não consegui ler este áudio. Tente mp3 ou wav.');
   } finally {
-    contexto.close?.();
+    fecharContexto(contexto);
   }
 }
 
@@ -112,21 +131,24 @@ export function tocarTrecho(buffer, inicio, duracao, volume = 0.8) {
   fonte.connect(ganho);
   ganho.connect(contexto.destination);
   fonte.start(0, Math.max(0, inicio), duracao);
-  fonte.onended = () => {
-    try {
-      contexto.close?.();
-    } catch (erro) {
-      // já fechado
-    }
+  /* Uma trava só: o fim do áudio e o botão de parar podem chegar na mesma
+     batida, e quem fecha segundo encontra o contexto já fechado. */
+  let encerrado = false;
+  const encerrar = () => {
+    if (encerrado) return;
+    encerrado = true;
+    fecharContexto(contexto);
   };
+  fonte.onended = encerrar;
   return {
     parar: () => {
       try {
+        fonte.onended = null;
         fonte.stop();
-        contexto.close?.();
       } catch (erro) {
         // já parado
       }
+      encerrar();
     },
   };
 }

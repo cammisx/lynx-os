@@ -3,6 +3,8 @@
  * Nada é enviado para servidor: o áudio é decodificado aqui e o texto sai daqui
  * também. O modelo fica em cache depois do primeiro uso.
  */
+import { fecharContexto } from '@/lib/audioCorte';
+
 const CDN = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
 const MODELO = 'Xenova/whisper-base';
 const TAXA = 16000;
@@ -20,7 +22,7 @@ export const decodificarAudio = async (url) => {
   try {
     audio = await contexto.decodeAudioData(bytes);
   } finally {
-    contexto.close?.();
+    fecharContexto(contexto);
   }
 
   const canais = audio.numberOfChannels;
