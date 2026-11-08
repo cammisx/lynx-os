@@ -907,3 +907,64 @@ body {
     }
   }
 }
+
+/* ----------------------------------------------------------------------- *
+ * Celular: a casca é uma tela por vez, com barra de status em cima e dock
+ * embaixo. Aqui ficam só as regras que precisam alcançar componentes de
+ * estilo próprio, como os modais.
+ * ----------------------------------------------------------------------- */
+@keyframes mobile-sheet {
+  from {
+    transform: translateY(26px);
+    opacity: 0.6;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes mobile-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 767px) {
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+
+  /* Qualquer modal do sistema vira folha vinda de baixo, no lugar da caixa
+     centralizada: é o padrão de Android e iOS. O translate da animação não
+     entra aqui para não brigar com a posição fixa. */
+  [role='dialog'][aria-modal='true'] {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 88dvh !important;
+    border-radius: 20px 20px 0 0 !important;
+    padding-bottom: env(safe-area-inset-bottom);
+    animation: mobile-sheet 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Abaixo de 16px o Safari do iPhone dá zoom sozinho ao focar um campo. */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Toque em vez de mouse: nada de hover preso depois do tap. */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

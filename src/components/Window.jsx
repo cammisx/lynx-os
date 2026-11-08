@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CloseIcon, MaximizeIcon, MinimizeIcon, RestoreIcon } from '@/components/icons';
 import { useJanela } from '@/components/desktop/JanelaContext';
+import { BackIcon } from '@/components/chat/chatIcons';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const MIN_W = 420;
 const MIN_H = 260;
@@ -52,6 +54,7 @@ const botaoDaBarra = () => ({
 
 export default function Window({ title, icon: Icon, onClose, children, width = 620, height = 460 }) {
   const janela = useJanela();
+  const telaPequena = useIsMobile();
   const [maximizado, setMaximizado] = useState(false);
   const [, setReagir] = useState(0);
   const [size, setSize] = useState(() => {
@@ -194,6 +197,112 @@ export default function Window({ title, icon: Icon, onClose, children, width = 6
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseup', handleUp);
   };
+
+  /* No celular a janela é a tela inteira: sem arrastar, sem redimensionar e
+     sem barra de tarefas. O cabeçalho é o de app de celular: voltar à
+     esquerda, título no meio e fechar à direita. */
+  if (telaPequena) {
+    return createPortal(
+      <div
+        style={{
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          top: 'calc(46px + env(safe-area-inset-top))',
+          bottom: 0,
+          paddingBottom: 'calc(58px + env(safe-area-inset-bottom))',
+          zIndex: janela.zIndex || 8000,
+          display: janela.oculta ? 'none' : 'flex',
+          flexDirection: 'column',
+          background: 'color-mix(in srgb, var(--c8) 74%, transparent)',
+          backdropFilter: 'blur(22px) saturate(1.3)',
+          WebkitBackdropFilter: 'blur(22px) saturate(1.3)',
+          fontFamily: 'var(--font-main)',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            height: 50,
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: '0 6px 0 2px',
+            borderBottom: '1px solid color-mix(in srgb, var(--c2) 12%, transparent)',
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Voltar"
+            onClick={janela.onMinimize || onClose}
+            style={{
+              width: 40,
+              height: 40,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--c3)',
+              borderRadius: 12,
+              padding: 0,
+            }}
+          >
+            <BackIcon size={19} />
+          </button>
+          <span
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              minWidth: 0,
+              color: 'var(--c1)',
+            }}
+          >
+            {Icon ? <Icon size={15} /> : null}
+            <span
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 13.5,
+                letterSpacing: '0.04em',
+                color: 'var(--c3)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {title}
+            </span>
+          </span>
+          <button
+            type="button"
+            aria-label="Fechar"
+            onClick={onClose}
+            style={{
+              width: 40,
+              height: 40,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--c2)',
+              borderRadius: 12,
+              padding: 0,
+            }}
+          >
+            <CloseIcon size={15} />
+          </button>
+        </div>
+
+        <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 14 }}>{children}</div>
+      </div>,
+      document.body
+    );
+  }
 
   const area = areaUtil();
   const medidas = maximizado

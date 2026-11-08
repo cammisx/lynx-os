@@ -26,6 +26,8 @@ import useFecharTurnosEsquecidos from '@/hooks/useFecharTurnosEsquecidos';
 import useAvisarTurnosPendentes from '@/hooks/useAvisarTurnosPendentes';
 import useVersaoPublicada from '@/hooks/useVersaoPublicada';
 import { sincronizarAdminsUmaVez } from '@/lib/admins';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileShell from '@/components/mobile/MobileShell';
 
 /* Cada janela do menu iniciar é um componente; o id é o mesmo da taskbar. */
 const COMPONENTES = {
@@ -40,6 +42,8 @@ const COMPONENTES = {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  /* Abaixo de 768px o sistema vira o modo celular: uma tela por vez. */
+  const telaPequena = useIsMobile();
   // Carrega o perfil (tema, nome, foto, fundo) antes de tudo aparecer na tela.
   const perfil = usePerfil(user);
 
@@ -141,28 +145,36 @@ export default function Dashboard() {
         estatico={perfil.fundoEstatico}
         semLinhas={perfil.fundoModo === 'sem'}
       />
-      <DesktopPet
-        pet={perfil.pet}
-        cor={perfil.petCor}
-        nome={perfil.petNome}
-        admin={user?.role === 'admin'}
-        onTrocarPet={(id) => salvarPerfil(user, { pet: id })}
-        onTrocarCor={(id) => salvarPerfil(user, { petCor: id })}
-        onNomear={(valor) => salvarPerfil(user, { petNome: valor })}
-      />
-      <ChatProvider>
-        <DesktopWidgets />
-        <Taskbar
-          onOpenApp={janelas.abrir}
-          itens={janelas.itens}
-          janelaAtiva={janelas.ativa}
-          onAlternarJanela={janelas.alternar}
-          onFixarJanela={janelas.fixar}
-          onAbrirJanela={janelas.abrir}
-          onFecharJanela={pedirFechar}
-          onMoverJanela={janelas.mover}
+      {telaPequena ? null : (
+        <DesktopPet
+          pet={perfil.pet}
+          cor={perfil.petCor}
+          nome={perfil.petNome}
+          admin={user?.role === 'admin'}
+          onTrocarPet={(id) => salvarPerfil(user, { pet: id })}
+          onTrocarCor={(id) => salvarPerfil(user, { petCor: id })}
+          onNomear={(valor) => salvarPerfil(user, { petNome: valor })}
         />
-        <ChatSidebar />
+      )}
+      <ChatProvider>
+        {telaPequena ? (
+          <MobileShell user={user} perfil={perfil} janelas={janelas} />
+        ) : (
+          <>
+            <DesktopWidgets />
+            <Taskbar
+              onOpenApp={janelas.abrir}
+              itens={janelas.itens}
+              janelaAtiva={janelas.ativa}
+              onAlternarJanela={janelas.alternar}
+              onFixarJanela={janelas.fixar}
+              onAbrirJanela={janelas.abrir}
+              onFecharJanela={pedirFechar}
+              onMoverJanela={janelas.mover}
+            />
+            <ChatSidebar />
+          </>
+        )}
       </ChatProvider>
 
       {/* A ordem da barra é fixa; quem manda na frente é a camada (z) de cada uma. */}

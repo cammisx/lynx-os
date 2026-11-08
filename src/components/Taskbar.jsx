@@ -1,20 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import StartMenu from '@/components/StartMenu';
 import ClockPanel from '@/components/ClockPanel';
 import NotificationsPanel from '@/components/notifications/NotificationsPanel';
-import JustificativaModal from '@/components/notifications/JustificativaModal';
-import ConfirmarTurnoModal from '@/components/notifications/ConfirmarTurnoModal';
-import VendaPendenteModal from '@/components/vendas/VendaPendenteModal';
-import FolgaPendenteModal from '@/components/solicitacoes/FolgaPendenteModal';
-import HorarioDisponivelModal from '@/components/solicitacoes/HorarioDisponivelModal';
-import CutucadaModal from '@/components/notifications/CutucadaModal';
+import useAcoesNotificacoes from '@/hooks/useAcoesNotificacoes';
 import useNotifications from '@/hooks/useNotifications';
 import usePreferenciaSom from '@/hooks/usePreferenciaSom';
 import ChatIcon from '@/components/icons/ChatIcon';
 import { useChatPanel } from '@/components/chat/ChatProvider';
 import { useAuth } from '@/lib/AuthContext';
-import { nomeDaPessoa } from '@/lib/pessoas';
 import { janelaPorId } from '@/lib/janelas';
 import MenuFlutuante from '@/components/desktop/MenuFlutuante';
 
@@ -39,15 +32,10 @@ export default function Taskbar({
   const [menuOpen, setMenuOpen] = useState(false);
   const [clockOpen, setClockOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
-  const [justificativa, setJustificativa] = useState(null);
-  const [confirmacao, setConfirmacao] = useState(null);
-  const [vendaPendente, setVendaPendente] = useState(null);
-  const [folgaPendente, setFolgaPendente] = useState(null);
-  const [horarioLivre, setHorarioLivre] = useState(null);
-  const [cutucada, setCutucada] = useState(null);
   const [menuJanela, setMenuJanela] = useState(null);
   const [arrastando, setArrastando] = useState(null);
   const [alvo, setAlvo] = useState(null);
+  const { abrir: abrirNotificacao, modais: modaisNotificacao } = useAcoesNotificacoes({ reload });
   const clockRef = useRef(null);
   const bellRef = useRef(null);
 
@@ -68,69 +56,10 @@ export default function Taskbar({
     month: '2-digit',
   });
 
-  const openNotification = async (notification) => {
+  const openNotification = (notification) => {
     markRead(notification.id);
     setBellOpen(false);
-
-    if (notification.tipo === 'mencao') {
-      if (notification.canal_id) {
-        chat.abrir();
-        chat.abrirCanal(notification.canal_id);
-      }
-      if (notification.status !== 'resolvida') {
-        base44.entities.Notificacao.update(notification.id, { status: 'resolvida' }).catch(
-          (erro) => console.warn('[Notificacao]', erro)
-        );
-        await reload();
-      }
-      return;
-    }
-
-    if (notification.tipo === 'cutucada') {
-      if (notification.status === 'resolvida') return;
-      setCutucada(notification);
-      return;
-    }
-
-    if (notification.tipo === 'turno_esquecido') {
-      setJustificativa(notification);
-      return;
-    }
-
-    if (notification.tipo === 'folga_pendente') {
-      if (notification.status === 'resolvida') return;
-      setFolgaPendente(notification);
-      return;
-    }
-
-    if (notification.tipo === 'horario_disponivel') {
-      if (notification.status === 'resolvida') return;
-      setHorarioLivre(notification);
-      return;
-    }
-
-    if (notification.tipo === 'venda_pendente') {
-      if (notification.status === 'resolvida') return;
-      setVendaPendente(notification);
-      return;
-    }
-
-    if (notification.tipo === 'novo_shift') {
-      // Já respondida: abre nada, só marca como lida.
-      if (notification.status === 'resolvida') return;
-      setConfirmacao(notification);
-      return;
-    }
-
-    // Aviso de turno novo: só precisa ser lido, sem justificativa.
-    if (notification.status !== 'resolvida') {
-      try {
-        await base44.entities.Notificacao.update(notification.id, { status: 'resolvida' });
-      } catch (error) {
-        console.warn('[Notificacao]', error);
-      }
-      await reload();
-    }
+    abrirNotificacao(notification);
   };
 
   const toggleBell = () => {
@@ -355,16 +284,6 @@ export default function Taskbar({
           })()
         : null}
 
-      {cutucada && (
-        <CutucadaModal
-          notificacao={cutucada}
-          onClose={() => {
-            setCutucada(null);
-            reload();
-          }}
-        />
-      )}
-
       {bellOpen && (
         <NotificationsPanel
           items={items}
@@ -376,46 +295,7 @@ export default function Taskbar({
         />
       )}
 
-      {horarioLivre && (
-        <HorarioDisponivelModal
-          notification={horarioLivre}
-          onClose={() => setHorarioLivre(null)}
-          onSaved={reload}
-        />
-      )}
-
-      {folgaPendente && (
-        <FolgaPendenteModal
-          notification={folgaPendente}
-          onClose={() => setFolgaPendente(null)}
-          onSaved={reload}
-        />
-      )}
-
-      {vendaPendente && (
-        <VendaPendenteModal
-          notification={vendaPendente}
-          onClose={() => setVendaPendente(null)}
-          onSaved={reload}
-        />
-      )}
-
-      {justificativa && (
-        <JustificativaModal
-          notification={justificativa}
-          onClose={() => setJustificativa(null)}
-          onSaved={reload}
-        />
-      )}
-
-      {confirmacao && (
-        <ConfirmarTurnoModal
-          notification={confirmacao}
-          chatterNome={user ? nomeDaPessoa(user) : ''}
-          onClose={() => setConfirmacao(null)}
-          onSaved={reload}
-        />
-      )}
+      {modaisNotificacao}
     </div>
   );
 }
