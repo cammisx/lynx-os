@@ -16,7 +16,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.27';
 
 /* Carência depois do fim previsto antes de fechar sozinho. */
 const CARENCIA_MS = 15 * 60 * 1000;
-/* Até 5 minutos atrás conta como "está aqui". Presença é a do chat. */
+/* Até 5 minutos atrás conta como "está aqui". A presença é a do app aberto. */
 const ONLINE_MS = 5 * 60 * 1000;
 const TZ = 'America/Sao_Paulo';
 const PAGE = 500;
@@ -168,20 +168,27 @@ export const buildOccurrences = (registros) => {
  * `entities` precisa de RegistroPonto.create e Notificacao.filter/create.
  */
 const ultimoVistoMs = (presenca) => {
-  const bruto = presenca?.ultimo_visto_em;
+  const bruto = presenca?.visto_em || presenca?.ultimo_visto_em;
   if (!bruto) return 0;
   const valor = new Date(bruto).getTime();
   return Number.isFinite(valor) ? valor : 0;
 };
 
-/** Mapa usuario_id -> quando foi visto por último no app. */
-export const mapaDePresenca = (presencas) => {
+/**
+ * Mapa usuario_id -> quando o app foi visto por último.
+ * PresencaApp é a fonte; ChatPresenca fica como reforço para quem tinha o chat
+ * aberto numa versão anterior do app.
+ */
+export const mapaDePresenca = (...listas) => {
   const mapa = new Map();
-  (presencas || []).forEach((presenca) => {
-    const id = presenca?.usuario_id;
-    if (!id) return;
-    const visto = ultimoVistoMs(presenca);
-    if (!mapa.has(id) || mapa.get(id) < visto) mapa.set(id, visto);
+  listas.forEach((lista) => {
+    (lista || []).forEach((presenca) => {
+      const id = presenca?.usuario_id;
+      if (!id) return;
+      const visto = ultimoVistoMs(presenca);
+      if (!visto) return;
+      if (!mapa.has(id) || mapa.get(id) < visto) mapa.set(id, visto);
+    });
   });
   return mapa;
 };
@@ -189,13 +196,14 @@ export const mapaDePresenca = (presencas) => {
 export const processarFechamento = async ({
   registros,
   shifts,
+  presencasApp,
   presencas,
   now,
   scopeUserId,
   entities,
 }) => {
   const shiftById = new Map((shifts || []).map((shift) => [shift.id, shift]));
-  const presenca = mapaDePresenca(presencas);
+  const presenca = mapaDePresenca(presencasApp, presencas);
   const estaOnline = (usuarioId) => {
     const visto = presenca.get(usuarioId) || 0;
     return visto > 0 && now - visto <= ONLINE_MS;
@@ -327,9 +335,12 @@ Deno.serve(async (req) => {
       return out;
     };
 
-    const [registros, shifts, presencas] = await Promise.all([
+    const [registros, shifts, presencasApp, presencas] = await Promise.all([
       fetchAll('RegistroPonto'),
       fetchAll('Shift'),
+      base44.asServiceRole.entities.PresencaApp.list('-visto_em', PAGE)
+        .then((lista) => lista || [])
+        .catch(() => []),
       base44.asServiceRole.entities.ChatPresenca.list('-ultimo_visto_em', PAGE)
         .then((lista) => lista || [])
         .catch(() => []),
@@ -338,6 +349,7 @@ Deno.serve(async (req) => {
     const result = await processarFechamento({
       registros,
       shifts,
+      presencasApp,
       presencas,
       now: Date.now(),
       scopeUserId,

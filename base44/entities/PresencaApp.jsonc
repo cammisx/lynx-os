@@ -1,0 +1,20 @@
+{
+  "name": "PresencaApp",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string"
+    },
+    "usuario_nome": {
+      "type": "string"
+    },
+    "visto_em": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "usuario_id",
+    "visto_em"
+  ]
+}

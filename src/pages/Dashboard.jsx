@@ -23,6 +23,7 @@ import { MODO_CLARO, MODO_ESCURO, TEMA_PADRAO, aplicarTema } from '@/lib/temas';
 import { ChatProvider } from '@/components/chat/ChatProvider';
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import useFecharTurnosEsquecidos from '@/hooks/useFecharTurnosEsquecidos';
+import usePresencaApp from '@/hooks/usePresencaApp';
 import useAvisarTurnosPendentes from '@/hooks/useAvisarTurnosPendentes';
 import useVersaoPublicada from '@/hooks/useVersaoPublicada';
 import { sincronizarAdminsUmaVez } from '@/lib/admins';
@@ -74,6 +75,7 @@ export default function Dashboard() {
     sincronizarAdminsUmaVez();
   }, [user?.id, user?.role]);
 
+  usePresencaApp();
   useFecharTurnosEsquecidos();
   useAvisarTurnosPendentes();
   useVersaoPublicada();
