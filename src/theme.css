@@ -894,7 +894,38 @@ body {
   }
 }
 
+/* Morcego: pendurado no topo, o coração sai de baixo do corpo e sobe até sair
+   da tela, por isso o caminho é bem mais longo. */
+@keyframes lynxPetCoracaoPendurado {
+  0% {
+    transform: translateY(0) scale(0.7);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-190px) scale(1.05);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  @keyframes lynxPetCoracaoPendurado {
+    0%,
+    100% {
+      transform: none;
+      opacity: 0;
+    }
+    30%,
+    70% {
+      opacity: 1;
+    }
+  }
+
   @keyframes lynxPetCoracao {
     0%,
     100% {

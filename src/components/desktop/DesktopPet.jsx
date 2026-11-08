@@ -24,6 +24,9 @@ const LIMITE_DIR = 0.97;
 const ESCALA = 4;
 const DURACAO_FALA = 2600;
 const DURACAO_CARINHO = 1500;
+/* Os corações do morcego sobem mais alto e demoram mais: a camada precisa
+   viver até o último deles sair da tela. */
+const DURACAO_CORACOES = 2400;
 
 const SEPARADOR = { separador: true };
 
@@ -120,7 +123,7 @@ export default function DesktopPet({
       if (caladoRef.current) clearTimeout(caladoRef.current);
       caladoRef.current = setTimeout(() => setFala(''), DURACAO_FALA);
       if (coracoesRef.current) clearTimeout(coracoesRef.current);
-      coracoesRef.current = setTimeout(() => setCoracoes(false), DURACAO_CARINHO);
+      coracoesRef.current = setTimeout(() => setCoracoes(false), DURACAO_CORACOES);
       if (voltaRef.current) clearTimeout(voltaRef.current);
       voltaRef.current = setTimeout(
         () => setReacao(null),
@@ -219,16 +222,20 @@ export default function DesktopPet({
     </div>
   ) : null;
 
+  /* Os corações ficam fora do corpo do pet. O morcego é desenhado de cabeça
+     para baixo (rotate 180°), então dentro dele o coração nascia atrás da
+     borda de cima da tela e ninguém via nada. Aqui eles saem de baixo do
+     bicho e sobem até sair da tela. */
   const coracoesVoando = coracoes ? (
     <div
       style={{
         position: 'absolute',
-        bottom: pendurado ? undefined : '100%',
-        top: pendurado ? '100%' : undefined,
         left: '50%',
+        ...(pendurado ? { top: '100%' } : { bottom: '100%' }),
         width: 0,
         height: 0,
         pointerEvents: 'none',
+        zIndex: 3,
       }}
     >
       {[0, 1, 2].map((indice) => (
@@ -237,8 +244,10 @@ export default function DesktopPet({
           style={{
             position: 'absolute',
             left: [-16, 2, 16][indice],
-            bottom: 0,
-            animation: `lynxPetCoracao 1200ms ease-out ${indice * 140}ms forwards`,
+            ...(pendurado ? { top: 0 } : { bottom: 0 }),
+            animation: pendurado
+              ? `lynxPetCoracaoPendurado 1900ms ease-out ${indice * 160}ms forwards`
+              : `lynxPetCoracao 1200ms ease-out ${indice * 140}ms forwards`,
           }}
         >
           <CoracaoPet paleta={sprite.paleta} escala={2} />
@@ -294,7 +303,6 @@ export default function DesktopPet({
           animado && reacao !== 'carinho' ? 'transform 140ms ease-out' : undefined,
       }}
     >
-      {coracoesVoando}
       <PetSprite
         sprite={sprite}
         acao={reacao || posicao.andando ? 'andando' : 'parado'}
@@ -330,6 +338,7 @@ export default function DesktopPet({
       >
         {balao}
         {interagir}
+        {coracoesVoando}
       </div>
 
       {menu ? (
