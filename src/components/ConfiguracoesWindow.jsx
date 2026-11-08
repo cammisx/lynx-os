@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
-import { GearIcon } from '@/components/icons';
+import { GearIcon, MonitorIcon, MoonIcon, SunIcon } from '@/components/icons';
 import { useAuth } from '@/lib/AuthContext';
 import { iniciaisDe, nomeDe, salvarPerfil, usePerfil } from '@/lib/perfilUsuario';
-import { TEMAS } from '@/lib/temas';
+import { MODO_CLARO, MODO_ESCURO, MODO_SISTEMA, TEMAS, paletaDoTema, resolverModo } from '@/lib/temas';
 import { TAMANHOS } from '@/lib/fonte';
 
 const ABAS = [
@@ -125,6 +125,15 @@ export default function ConfiguracoesWindow({ onClose }) {
     );
   };
 
+  const trocarModo = async (modo) => {
+    const { remoto } = await salvarPerfil(user, { modo });
+    setAviso(
+      remoto
+        ? null
+        : { erro: false, texto: 'Modo aplicado neste navegador. Falta publicar o campo modo no Builder.' }
+    );
+  };
+
   const trocarFonte = async (id) => {
     const { remoto } = await salvarPerfil(user, { fonte: id });
     setAviso(
@@ -192,7 +201,7 @@ export default function ConfiguracoesWindow({ onClose }) {
         </div>
 
         {aviso && (
-          <span style={{ fontSize: 11, color: aviso.erro ? '#ff6b6b' : '#7bd88f', flexShrink: 0 }}>
+          <span style={{ fontSize: 11, color: aviso.erro ? 'var(--erro)' : 'var(--ok)', flexShrink: 0 }}>
             {aviso.texto}
           </span>
         )}
@@ -263,7 +272,7 @@ export default function ConfiguracoesWindow({ onClose }) {
                 placeholder="vendo séries e fingindo que trabalho"
                 maxLength={SUBLIMITE}
               />
-              <span style={{ ...dicaStyle, color: subnick.length > SUBLIMITE - 10 ? '#e8b93b' : 'var(--c2)' }}>
+              <span style={{ ...dicaStyle, color: subnick.length > SUBLIMITE - 10 ? 'var(--aviso)' : 'var(--c2)' }}>
                 {subnick.length}/{SUBLIMITE} · aparece embaixo do seu nome, estilo MSN.
               </span>
             </label>
@@ -404,6 +413,52 @@ export default function ConfiguracoesWindow({ onClose }) {
               })}
             </div>
 
+            <span style={{ ...labelStyle, marginTop: 6 }}>Modo de cor</span>
+            <span style={dicaStyle}>
+              Diurno e noturno usam a mesma paleta do tema, uma clara e uma escura. No automático, o
+              sistema decide junto com o Windows.
+            </span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+              {[
+                { id: MODO_CLARO, nome: 'Diurno', Icone: SunIcon, dica: 'Fundo claro' },
+                { id: MODO_ESCURO, nome: 'Noturno', Icone: MoonIcon, dica: 'Breu do Lynx' },
+                { id: MODO_SISTEMA, nome: 'Automático', Icone: MonitorIcon, dica: 'Segue o sistema' },
+              ].map(({ id, nome, Icone, dica }) => {
+                const ativo = perfil.modo === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => trocarModo(id)}
+                    title={dica}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '9px 10px',
+                      borderRadius: 10,
+                      border: ativo
+                        ? '1px solid color-mix(in srgb, var(--c1) 70%, transparent)'
+                        : '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+                      background: ativo
+                        ? 'color-mix(in srgb, var(--c1) 14%, transparent)'
+                        : 'color-mix(in srgb, var(--c8) 45%, transparent)',
+                      color: ativo ? 'var(--c1)' : 'var(--c3)',
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-main)',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <Icone size={15} />
+                    <span style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, lineHeight: 1.2 }}>{nome}</span>
+                      <span style={{ fontSize: 9.5, color: 'var(--c2)', lineHeight: 1.2 }}>{dica}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
             <span style={{ ...labelStyle, marginTop: 6 }}>Tema do sistema</span>
             <span style={dicaStyle}>
               Cada perfil veste o sistema inteiro: ícones, vidro, desktop e barras. Escolhe o seu.
@@ -411,6 +466,7 @@ export default function ConfiguracoesWindow({ onClose }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
               {TEMAS.map((tema) => {
                 const ativo = perfil.tema === tema.id;
+                const paleta = paletaDoTema(tema.id, resolverModo(perfil.modo));
                 return (
                   <button
                     key={tema.id}
@@ -437,7 +493,7 @@ export default function ConfiguracoesWindow({ onClose }) {
                     }}
                   >
                     <span style={{ display: 'flex', gap: 3 }}>
-                      {[...tema.cores, tema.fundo].map((cor, indice) => (
+                      {[...paleta.cores, paleta.fundo].map((cor, indice) => (
                         <span
                           key={`${tema.id}-${indice}`}
                           style={{
@@ -445,7 +501,7 @@ export default function ConfiguracoesWindow({ onClose }) {
                             height: 13,
                             borderRadius: indice === 4 ? '50%' : 4,
                             background: cor,
-                            border: '1px solid rgba(255,255,255,0.18)',
+                            border: '1px solid color-mix(in srgb, var(--ink-hex) 22%, transparent)',
                           }}
                         />
                       ))}

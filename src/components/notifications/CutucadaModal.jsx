@@ -181,7 +181,7 @@ export default function CutucadaModal({ notificacao, onClose }) {
             </button>
           )}
 
-          {erro && <div style={{ fontSize: 10, color: '#ff6b6b' }}>{erro}</div>}
+          {erro && <div style={{ fontSize: 10, color: 'var(--erro)' }}>{erro}</div>}
 
           <button
             type="button"

@@ -277,3 +277,29 @@ export function FireIcon({ size = 16, className }) {
     </Svg>
   );
 }
+
+export function SunIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </Svg>
+  );
+}
+
+export function MoonIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.8 6.8 0 0 0 9.8 9.8Z" />
+    </Svg>
+  );
+}
+
+export function MonitorIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <rect x="2.5" y="4" width="19" height="12.5" rx="2" />
+      <path d="M8.5 20.5h7M12 16.5v4" />
+    </Svg>
+  );
+}

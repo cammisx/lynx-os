@@ -39,7 +39,6 @@ export default function Dashboard() {
     const root = document.documentElement;
     // O tema do perfil manda; o padrão é só o ponto de partida.
     if (!root.getAttribute('data-theme')) aplicarTema(TEMA_PADRAO);
-    root.setAttribute('data-mode', 'dark');
     document.body.classList.add('is-desktop-shell');
     return () => document.body.classList.remove('is-desktop-shell');
   }, []);

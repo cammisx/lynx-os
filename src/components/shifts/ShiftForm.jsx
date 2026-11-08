@@ -208,7 +208,7 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
           emptyText="Nenhuma modelo disponível."
         />
         {archivedModel && !modeloId && (
-          <span style={{ fontSize: 11, color: '#ff6b6b' }}>
+          <span style={{ fontSize: 11, color: 'var(--erro)' }}>
             A modelo deste turno está arquivada, escolha outra
           </span>
         )}
@@ -256,7 +256,7 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
       />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
-        {error && <span style={{ fontSize: 11, color: '#ff6b6b' }}>{error}</span>}
+        {error && <span style={{ fontSize: 11, color: 'var(--erro)' }}>{error}</span>}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button type="button" className="md-btn" onClick={onCancel} style={cancelStyle}>
             Cancelar

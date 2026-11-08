@@ -43,7 +43,7 @@ const STATUS_COLOR = {
   agendado: 'var(--c1)',
   em_andamento: 'var(--c16)',
   concluido: 'var(--c2)',
-  cancelado: '#ff6b6b',
+  cancelado: 'var(--erro)',
 };
 
 const STATUS_LABEL = {
@@ -476,9 +476,9 @@ const dangerStyle = {
   height: 30,
   padding: '0 14px',
   borderRadius: 8,
-  border: '1px solid #ff6b6b',
+  border: '1px solid var(--erro)',
   background: 'transparent',
-  color: '#ff6b6b',
+  color: 'var(--erro)',
   fontSize: 11,
   fontWeight: 700,
   fontFamily: 'var(--font-main)',

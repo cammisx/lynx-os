@@ -42,7 +42,7 @@ const celula = { padding: '5px 6px', whiteSpace: 'nowrap' };
 
 const statusDaVenda = (status) => {
   if (status === 'pendente') return { texto: 'Pendente', cor: COR_AVISO };
-  if (status === 'recusada') return { texto: 'Recusada', cor: '#ff6b6b' };
+  if (status === 'recusada') return { texto: 'Recusada', cor: 'var(--erro)' };
   return { texto: 'Aprovada', cor: 'var(--c1)' };
 };
 
@@ -123,7 +123,7 @@ function ConfirmarExclusao({ quantidade, bruto, liquido, porFiltro, apagando, on
           background: 'color-mix(in srgb, var(--c8) 76%, transparent)',
           backdropFilter: 'blur(22px) saturate(1.3)',
           WebkitBackdropFilter: 'blur(22px) saturate(1.3)',
-          border: '1px solid color-mix(in srgb, white 14%, color-mix(in srgb, var(--c1) 18%, transparent))',
+          border: '1px solid color-mix(in srgb, var(--ink-hex) 14%, color-mix(in srgb, var(--c1) 18%, transparent))',
           boxShadow: '0 18px 60px rgba(0,0,0,0.55)',
           fontFamily: 'var(--font-main)',
           overflow: 'hidden',
@@ -181,8 +181,8 @@ function ConfirmarExclusao({ quantidade, bruto, liquido, porFiltro, apagando, on
               gap: 10,
               padding: '10px 12px',
               borderRadius: 10,
-              background: 'color-mix(in srgb, #ff6b6b 12%, transparent)',
-              border: '1px solid color-mix(in srgb, #ff6b6b 34%, transparent)',
+              background: 'color-mix(in srgb, var(--erro) 12%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--erro) 34%, transparent)',
             }}
           >
             <TrashIcon size={18} />
@@ -252,8 +252,8 @@ function ConfirmarExclusao({ quantidade, bruto, liquido, porFiltro, apagando, on
                 height: 30,
                 padding: '0 16px',
                 borderRadius: 8,
-                border: '1px solid color-mix(in srgb, #ff6b6b 60%, transparent)',
-                background: 'color-mix(in srgb, #ff6b6b 22%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--erro) 60%, transparent)',
+                background: 'color-mix(in srgb, var(--erro) 22%, transparent)',
                 color: '#ffb3b3',
                 fontFamily: 'var(--font-main)',
                 fontSize: 11.5,
@@ -648,8 +648,8 @@ export default function VendasLista({ modelos, chatters, onMudou }) {
                   gap: 6,
                   padding: '0 12px',
                   borderRadius: 7,
-                  border: '1px solid color-mix(in srgb, #ff6b6b 55%, transparent)',
-                  background: 'color-mix(in srgb, #ff6b6b 18%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--erro) 55%, transparent)',
+                  background: 'color-mix(in srgb, var(--erro) 18%, transparent)',
                   color: '#ffb3b3',
                   fontFamily: 'var(--font-main)',
                   fontSize: 10.5,
@@ -676,7 +676,7 @@ export default function VendasLista({ modelos, chatters, onMudou }) {
               gap: 6,
               padding: '0 10px',
               borderRadius: 7,
-              border: '1px solid color-mix(in srgb, #ff6b6b 40%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--erro) 40%, transparent)',
               background: 'transparent',
               color: '#ffb3b3',
               fontFamily: 'var(--font-main)',
@@ -689,8 +689,8 @@ export default function VendasLista({ modelos, chatters, onMudou }) {
           </button>
         )}
 
-        {aviso && <span style={{ fontSize: 10.5, color: '#7bd88f' }}>{aviso}</span>}
-        {erro && <span style={{ fontSize: 10.5, color: '#ff6b6b' }}>{erro}</span>}
+        {aviso && <span style={{ fontSize: 10.5, color: 'var(--ok)' }}>{aviso}</span>}
+        {erro && <span style={{ fontSize: 10.5, color: 'var(--erro)' }}>{erro}</span>}
       </div>
 
       <div

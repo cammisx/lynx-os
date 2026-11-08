@@ -110,8 +110,8 @@ export default function RelatorioFinanceiro({ modelos, chatters }) {
     { titulo: 'Bruto', valor: moeda(resumo.total.bruto) },
     { titulo: 'Líquido', valor: moeda(resumo.total.liquido) },
     { titulo: 'Agência', valor: moeda(resumo.total.agencia), cor: 'var(--c1)' },
-    { titulo: 'Chatters', valor: moeda(resumo.total.chatter), cor: '#3B9EFF' },
-    { titulo: 'Sobra da agência', valor: moeda(resumo.total.agenciaLiquida), cor: '#7bd88f' },
+    { titulo: 'Chatters', valor: moeda(resumo.total.chatter), cor: 'var(--info)' },
+    { titulo: 'Sobra da agência', valor: moeda(resumo.total.agenciaLiquida), cor: 'var(--ok)' },
     { titulo: 'Repasse das modelos', valor: moeda(resumo.total.repasseModelo) },
   ];
 
@@ -180,7 +180,7 @@ export default function RelatorioFinanceiro({ modelos, chatters }) {
         </button>
       </div>
 
-      {erro && <span style={{ fontSize: 11, color: '#ff6b6b' }}>{erro}</span>}
+      {erro && <span style={{ fontSize: 11, color: 'var(--erro)' }}>{erro}</span>}
 
       <span style={{ fontSize: 9.5, color: 'var(--c2)', opacity: 0.8, marginTop: -4 }}>
         Entram só as transações do tipo Chat cujo centavo do valor bruto é o identificador do
@@ -199,7 +199,7 @@ export default function RelatorioFinanceiro({ modelos, chatters }) {
       </div>
 
       {resumo.semChatter.vendas > 0 && (
-        <span style={{ fontSize: 11, color: '#e8b93b' }}>
+        <span style={{ fontSize: 11, color: 'var(--aviso)' }}>
           {resumo.semChatter.vendas} venda(s) sem chatter atribuído, somando{' '}
           {moeda(resumo.semChatter.bruto)} de bruto. Confere o identificador na modelo.
         </span>
@@ -238,8 +238,8 @@ export default function RelatorioFinanceiro({ modelos, chatters }) {
                   <td style={{ ...celula, color: 'var(--c1)' }}>
                     {moeda(linha.agencia)} · {percentual(linha.comissao_agencia)}
                   </td>
-                  <td style={{ ...celula, color: '#3B9EFF' }}>{moeda(linha.chatter)}</td>
-                  <td style={{ ...celula, color: '#7bd88f' }}>{moeda(linha.agenciaLiquida)}</td>
+                  <td style={{ ...celula, color: 'var(--info)' }}>{moeda(linha.chatter)}</td>
+                  <td style={{ ...celula, color: 'var(--ok)' }}>{moeda(linha.agenciaLiquida)}</td>
                   <td style={celula}>{moeda(linha.repasseModelo)}</td>
                 </tr>
               ))}
@@ -282,7 +282,7 @@ export default function RelatorioFinanceiro({ modelos, chatters }) {
                   </td>
                   <td style={{ ...celula, color: 'var(--c2)' }}>{linha.vendas}</td>
                   <td style={celula}>{moeda(linha.liquido)}</td>
-                  <td style={{ ...celula, color: '#3B9EFF', fontWeight: 700 }}>{moeda(linha.chatter)}</td>
+                  <td style={{ ...celula, color: 'var(--info)', fontWeight: 700 }}>{moeda(linha.chatter)}</td>
                 </tr>
               ))}
               {!resumo.porChatter.length && (

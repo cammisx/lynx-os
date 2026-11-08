@@ -23,6 +23,10 @@
     "tema": {
       "type": "string",
       "description": "Perfil de cor do sistema escolhido pelo usu\u00e1rio"
+    },
+    "tema_modo": {
+      "type": "string",
+      "description": "Modo de cor: claro, escuro ou sistema"
     }
   },
   "required": [

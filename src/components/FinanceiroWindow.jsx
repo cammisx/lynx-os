@@ -71,7 +71,7 @@ export default function FinanceiroWindow({ onClose }) {
           })}
         </div>
 
-        {erro && <span style={{ fontSize: 11.5, color: '#ff6b6b' }}>{erro}</span>}
+        {erro && <span style={{ fontSize: 11.5, color: 'var(--erro)' }}>{erro}</span>}
 
         <div style={{ flex: 1, minHeight: 0 }}>
           {aba === 'importar' && <ImportarExtrato modelos={modelos} chatters={chatters} />}

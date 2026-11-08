@@ -142,10 +142,10 @@ const panelStyle = {
   display: 'flex',
   borderRadius: 12,
   background:
-    'linear-gradient(to bottom, color-mix(in srgb, white 4%, transparent) 0%, transparent 18%), color-mix(in srgb, var(--c8) 72%, transparent)',
+    'linear-gradient(to bottom, color-mix(in srgb, var(--ink-hex) 4%, transparent) 0%, transparent 18%), color-mix(in srgb, var(--c8) 72%, transparent)',
   backdropFilter: 'blur(32px) saturate(1.5)',
   WebkitBackdropFilter: 'blur(32px) saturate(1.5)',
-  border: '1px solid color-mix(in srgb, white 16%, color-mix(in srgb, var(--c1) 20%, transparent))',
+  border: '1px solid color-mix(in srgb, var(--ink-hex) 16%, color-mix(in srgb, var(--c1) 20%, transparent))',
   boxShadow: '0 16px 40px color-mix(in srgb, black 35%, transparent)',
   overflow: 'hidden',
   minWidth: 300,

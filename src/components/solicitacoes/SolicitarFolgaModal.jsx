@@ -413,7 +413,7 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
                   <DateTimePicker value={saida} onChange={setSaida} mode="time" label="Saída" />
                 </div>
               </div>
-              <span style={{ fontSize: 11, color: erroHorario ? '#ff6b6b' : 'var(--c2)' }}>
+              <span style={{ fontSize: 11, color: erroHorario ? 'var(--erro)' : 'var(--c2)' }}>
                 {erroHorario ||
                   (ocorrencia
                     ? `Turno das ${horaDe(ocorrencia.start)} às ${horaDe(ocorrencia.end)}.`
@@ -430,11 +430,11 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
                 gap: 7,
                 padding: '9px 11px',
                 borderRadius: 8,
-                background: 'color-mix(in srgb, #e8b93b 12%, transparent)',
-                border: '1px solid color-mix(in srgb, #e8b93b 40%, transparent)',
+                background: 'color-mix(in srgb, var(--aviso) 12%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--aviso) 40%, transparent)',
               }}
             >
-              <span style={{ fontSize: 11, color: '#e8b93b', lineHeight: 1.45 }}>
+              <span style={{ fontSize: 11, color: 'var(--aviso)', lineHeight: 1.45 }}>
                 Pedido fora do prazo: faltam {Math.max(0, Math.floor(antecedenciaHoras))}h para o
                 turno e o mínimo é {PRAZO_HORAS}h. Isso pode gerar falta.
               </span>
@@ -449,12 +449,12 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
                   style={{
                     ...AREA,
                     ...(faltaJustificativa
-                      ? { border: '1px solid color-mix(in srgb, #e8b93b 55%, transparent)' }
+                      ? { border: '1px solid color-mix(in srgb, var(--aviso) 55%, transparent)' }
                       : null),
                   }}
                 />
                 {faltaJustificativa && (
-                  <span style={{ fontSize: 10.5, color: '#e8b93b' }}>
+                  <span style={{ fontSize: 10.5, color: 'var(--aviso)' }}>
                     A justificativa é obrigatória para pedidos com menos de {PRAZO_HORAS}h.
                   </span>
                 )}
@@ -468,7 +468,7 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
             </span>
           )}
 
-          {erro && <span style={{ fontSize: 11, color: '#ff6b6b' }}>{erro}</span>}
+          {erro && <span style={{ fontSize: 11, color: 'var(--erro)' }}>{erro}</span>}
         </div>
 
         <div

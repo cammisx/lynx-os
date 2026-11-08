@@ -30,4 +30,4 @@ export const statusLabel = (status) =>
   ({ pendente: 'Aguardando', aprovada: 'Aprovada', recusada: 'Recusada' })[status] || 'Registrada';
 
 export const statusColor = (status) =>
-  ({ pendente: '#e8b93b', aprovada: '#7bd88f', recusada: '#ff6b6b' })[status] || 'var(--c2)';
+  ({ pendente: 'var(--aviso)', aprovada: 'var(--ok)', recusada: 'var(--erro)' })[status] || 'var(--c2)';

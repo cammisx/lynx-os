@@ -342,7 +342,7 @@ export default function ImportarExtrato({ modelos, chatters }) {
           </button>
         )}
         {aviso && (
-          <span style={{ fontSize: 11, color: aviso.erro ? '#ff6b6b' : '#7bd88f' }}>{aviso.texto}</span>
+          <span style={{ fontSize: 11, color: aviso.erro ? 'var(--erro)' : 'var(--ok)' }}>{aviso.texto}</span>
         )}
       </div>
 
@@ -365,18 +365,18 @@ export default function ImportarExtrato({ modelos, chatters }) {
             </div>
             <div style={cartao}>
               <span style={rotulo}>Atribuídas</span>
-              <span style={{ ...valorDestaque, color: '#7bd88f' }}>{conferencia.resumo.atribuidas}</span>
+              <span style={{ ...valorDestaque, color: 'var(--ok)' }}>{conferencia.resumo.atribuidas}</span>
             </div>
             <div style={cartao}>
               <span style={rotulo}>Mimos conferidos</span>
-              <span style={{ ...valorDestaque, color: '#3B9EFF' }}>{conferencia.resumo.mimosConferidos}</span>
+              <span style={{ ...valorDestaque, color: 'var(--info)' }}>{conferencia.resumo.mimosConferidos}</span>
             </div>
             <div style={cartao}>
               <span style={rotulo}>Mimos pendentes</span>
               <span
                 style={{
                   ...valorDestaque,
-                  color: conferencia.resumo.mimosPendentes ? '#e8b93b' : 'var(--c2)',
+                  color: conferencia.resumo.mimosPendentes ? 'var(--aviso)' : 'var(--c2)',
                 }}
               >
                 {conferencia.resumo.mimosPendentes}
@@ -384,7 +384,7 @@ export default function ImportarExtrato({ modelos, chatters }) {
             </div>
             <div style={cartao}>
               <span style={rotulo}>Sem dono</span>
-              <span style={{ ...valorDestaque, color: conferencia.resumo.semDono ? '#e8b93b' : 'var(--c2)' }}>
+              <span style={{ ...valorDestaque, color: conferencia.resumo.semDono ? 'var(--aviso)' : 'var(--c2)' }}>
                 {conferencia.resumo.semDono}
               </span>
             </div>
@@ -541,7 +541,7 @@ export default function ImportarExtrato({ modelos, chatters }) {
                       <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--c3)' }}>
                         {venda.tipo || 'Mimo'}
                       </span>
-                      <span style={{ fontSize: 10.5, color: '#e8b93b', fontWeight: 700 }}>
+                      <span style={{ fontSize: 10.5, color: 'var(--aviso)', fontWeight: 700 }}>
                         Aguardando aprovação
                       </span>
                     </div>
@@ -571,7 +571,7 @@ export default function ImportarExtrato({ modelos, chatters }) {
                   </div>
                 ))}
 
-                {erroPendente && <span style={{ fontSize: 11, color: '#ff6b6b' }}>{erroPendente}</span>}
+                {erroPendente && <span style={{ fontSize: 11, color: 'var(--erro)' }}>{erroPendente}</span>}
               </div>
 
               <div

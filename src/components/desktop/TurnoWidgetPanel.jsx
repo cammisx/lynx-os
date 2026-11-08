@@ -31,7 +31,7 @@ const BOTAO_SECUNDARIO = {
   padding: '0 6px',
   borderRadius: 8,
   border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
-  background: 'color-mix(in srgb, white 5%, transparent)',
+  background: 'color-mix(in srgb, var(--ink-hex) 5%, transparent)',
   color: 'var(--c2)',
   fontSize: 11,
   fontFamily: 'var(--font-main)',
@@ -243,7 +243,7 @@ export default function TurnoWidgetPanel({
         background: 'color-mix(in srgb, var(--c8) 32%, transparent)',
         backdropFilter: 'blur(28px) saturate(1.4)',
         WebkitBackdropFilter: 'blur(28px) saturate(1.4)',
-        border: '1px solid color-mix(in srgb, white 12%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--ink-hex) 12%, transparent)',
         boxShadow: '0 18px 48px rgba(0,0,0,0.45)',
         zIndex: 900,
         overflow: 'hidden',
@@ -261,7 +261,7 @@ export default function TurnoWidgetPanel({
           justifyContent: 'space-between',
           gap: 8,
           padding: '0 6px 0 10px',
-          borderBottom: '1px solid color-mix(in srgb, white 10%, transparent)',
+          borderBottom: '1px solid color-mix(in srgb, var(--ink-hex) 10%, transparent)',
           cursor: arrastando ? 'grabbing' : 'grab',
           userSelect: 'none',
         }}
@@ -311,7 +311,7 @@ export default function TurnoWidgetPanel({
 
         <span style={{ fontSize: 12.5, lineHeight: 1.45, color: 'var(--c3)' }}>
           {feedback ? (
-            <span style={{ color: feedback.error ? '#ff6b6b' : 'var(--c1)' }}>{feedback.text}</span>
+            <span style={{ color: feedback.error ? 'var(--erro)' : 'var(--c1)' }}>{feedback.text}</span>
           ) : (
             contexto
           )}
@@ -326,7 +326,7 @@ export default function TurnoWidgetPanel({
               padding: 0,
               border: 'none',
               background: 'transparent',
-              color: '#ff6b6b',
+              color: 'var(--erro)',
               fontSize: 11,
               fontFamily: 'var(--font-main)',
               textAlign: 'left',
@@ -347,7 +347,7 @@ export default function TurnoWidgetPanel({
             gap: 6,
             paddingTop: 9,
             marginTop: 1,
-            borderTop: '1px solid color-mix(in srgb, white 9%, transparent)',
+            borderTop: '1px solid color-mix(in srgb, var(--ink-hex) 9%, transparent)',
           }}
         >
           <button

@@ -165,7 +165,7 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
           backdropFilter: 'blur(20px) saturate(1.3)',
           WebkitBackdropFilter: 'blur(20px) saturate(1.3)',
           border:
-            '1px solid color-mix(in srgb, white 14%, color-mix(in srgb, var(--c1) 18%, transparent))',
+            '1px solid color-mix(in srgb, var(--ink-hex) 14%, color-mix(in srgb, var(--c1) 18%, transparent))',
           boxShadow: '0 16px 56px rgba(0,0,0,0.5)',
           fontFamily: 'var(--font-main)',
         }}
@@ -250,7 +250,7 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
         )}
 
         {erro && (
-          <span style={{ fontSize: 11, color: '#ff6b6b', lineHeight: 1.4 }}>{erro}</span>
+          <span style={{ fontSize: 11, color: 'var(--erro)', lineHeight: 1.4 }}>{erro}</span>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -298,9 +298,9 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
                 disabled={Boolean(saving)}
                 style={{
                   ...baseButton,
-                  background: 'color-mix(in srgb, #ff6b6b 16%, transparent)',
-                  border: '1px solid color-mix(in srgb, #ff6b6b 45%, transparent)',
-                  color: '#ff6b6b',
+                  background: 'color-mix(in srgb, var(--erro) 16%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--erro) 45%, transparent)',
+                  color: 'var(--erro)',
                   fontWeight: 700,
                 }}
               >
@@ -345,9 +345,9 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
                 disabled={Boolean(saving)}
                 style={{
                   ...baseButton,
-                  background: 'color-mix(in srgb, #ff6b6b 16%, transparent)',
-                  border: '1px solid color-mix(in srgb, #ff6b6b 45%, transparent)',
-                  color: '#ff6b6b',
+                  background: 'color-mix(in srgb, var(--erro) 16%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--erro) 45%, transparent)',
+                  color: 'var(--erro)',
                   fontWeight: 700,
                   opacity: saving ? 0.6 : 1,
                 }}

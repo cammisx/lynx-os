@@ -25,6 +25,15 @@
     "tema": {
       "type": "string"
     },
+    "modo": {
+      "type": "string",
+      "enum": [
+        "claro",
+        "escuro",
+        "sistema"
+      ],
+      "description": "Modo de cor escolhido: claro, escuro ou seguindo o sistema"
+    },
     "fonte_escala": {
       "type": "string"
     }

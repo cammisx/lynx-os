@@ -13,7 +13,7 @@ export const ACEITE_LABEL = {
 export const ACEITE_COLOR = {
   pendente: 'var(--c16)',
   aceito: '#4ade80',
-  recusado: '#ff6b6b',
+  recusado: 'var(--erro)',
   nao_confirmado: 'var(--c2)',
 };
 

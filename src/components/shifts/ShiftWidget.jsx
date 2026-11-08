@@ -150,7 +150,7 @@ export default function ShiftWidget({
               padding: 0,
               border: 'none',
               background: 'transparent',
-              color: '#ff6b6b',
+              color: 'var(--erro)',
               fontSize: 11,
               fontFamily: 'var(--font-main)',
               textAlign: 'left',
@@ -162,7 +162,7 @@ export default function ShiftWidget({
         )}
         {feedback ? (
           <span
-            style={{ fontSize: 11, color: feedback.error ? '#ff6b6b' : 'var(--c1)' }}
+            style={{ fontSize: 11, color: feedback.error ? 'var(--erro)' : 'var(--c1)' }}
           >
             {feedback.text}
           </span>

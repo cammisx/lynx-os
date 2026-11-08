@@ -88,7 +88,7 @@ const estadoDaPagina = (pagina) => {
     return {
       texto: pagina.ocupantes.some((item) => item.pausa) ? 'Em pausa' : 'Ocupada',
       cor: 'var(--c2)',
-      fundo: 'color-mix(in srgb, white 10%, transparent)',
+      fundo: 'color-mix(in srgb, var(--ink-hex) 10%, transparent)',
     };
   }
 
@@ -203,7 +203,7 @@ export default function PaginasWidgetPanel({
         background: 'color-mix(in srgb, var(--c8) 32%, transparent)',
         backdropFilter: 'blur(28px) saturate(1.4)',
         WebkitBackdropFilter: 'blur(28px) saturate(1.4)',
-        border: '1px solid color-mix(in srgb, white 12%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--ink-hex) 12%, transparent)',
         boxShadow: '0 18px 48px rgba(0,0,0,0.45)',
         zIndex: 900,
         overflow: 'hidden',
@@ -221,7 +221,7 @@ export default function PaginasWidgetPanel({
           justifyContent: 'space-between',
           gap: 8,
           padding: '0 6px 0 10px',
-          borderBottom: '1px solid color-mix(in srgb, white 10%, transparent)',
+          borderBottom: '1px solid color-mix(in srgb, var(--ink-hex) 10%, transparent)',
           cursor: arrastando ? 'grabbing' : 'grab',
           userSelect: 'none',
         }}
@@ -333,8 +333,8 @@ export default function PaginasWidgetPanel({
                 gap: 6,
                 padding: '9px 10px',
                 borderRadius: 10,
-                background: 'color-mix(in srgb, white 5%, transparent)',
-                border: '1px solid color-mix(in srgb, white 9%, transparent)',
+                background: 'color-mix(in srgb, var(--ink-hex) 5%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--ink-hex) 9%, transparent)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

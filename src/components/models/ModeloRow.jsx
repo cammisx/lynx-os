@@ -114,7 +114,7 @@ export default function ModeloRow({ model, onEdit, onArchive, onDelete }) {
                   borderRadius: 6,
                   border: 'none',
                   background: 'none',
-                  color: '#ff6b6b',
+                  color: 'var(--erro)',
                   fontSize: 11,
                   fontFamily: 'var(--font-main)',
                   cursor: 'pointer',

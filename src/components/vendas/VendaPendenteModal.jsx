@@ -247,7 +247,7 @@ export default function VendaPendenteModal({ notification, onClose, onSaved }) {
                 </span>
               )}
               {venda.motivo_recusa && (
-                <span style={{ fontSize: 11, color: '#ff6b6b', marginTop: 3 }}>
+                <span style={{ fontSize: 11, color: 'var(--erro)', marginTop: 3 }}>
                   Recusada: {venda.motivo_recusa}
                 </span>
               )}
@@ -300,7 +300,7 @@ export default function VendaPendenteModal({ notification, onClose, onSaved }) {
             </div>
           )}
 
-          {erro && <span style={{ fontSize: 11, color: '#ff6b6b' }}>{erro}</span>}
+          {erro && <span style={{ fontSize: 11, color: 'var(--erro)' }}>{erro}</span>}
         </div>
 
         <div
@@ -335,9 +335,9 @@ export default function VendaPendenteModal({ notification, onClose, onSaved }) {
                 onClick={() => setRecusando(true)}
                 style={{
                   ...BOTAO,
-                  border: '1px solid color-mix(in srgb, #ff6b6b 45%, transparent)',
-                  background: 'color-mix(in srgb, #ff6b6b 16%, transparent)',
-                  color: '#ff6b6b',
+                  border: '1px solid color-mix(in srgb, var(--erro) 45%, transparent)',
+                  background: 'color-mix(in srgb, var(--erro) 16%, transparent)',
+                  color: 'var(--erro)',
                 }}
               >
                 Recusar
@@ -378,9 +378,9 @@ export default function VendaPendenteModal({ notification, onClose, onSaved }) {
                 onClick={() => decidir('recusada')}
                 style={{
                   ...BOTAO,
-                  border: '1px solid color-mix(in srgb, #ff6b6b 45%, transparent)',
-                  background: 'color-mix(in srgb, #ff6b6b 22%, transparent)',
-                  color: '#ff6b6b',
+                  border: '1px solid color-mix(in srgb, var(--erro) 45%, transparent)',
+                  background: 'color-mix(in srgb, var(--erro) 22%, transparent)',
+                  color: 'var(--erro)',
                   opacity: salvando ? 0.6 : 1,
                 }}
               >

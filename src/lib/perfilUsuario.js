@@ -7,7 +7,7 @@
  */
 import { useEffect, useSyncExternalStore } from 'react';
 import { base44 } from '@/api/base44Client';
-import { aplicarTema, temaPorId } from '@/lib/temas';
+import { MODO_SISTEMA, aplicarTema, modoValido, temaPorId } from '@/lib/temas';
 import { aplicarFonte, fonteDoNavegador, tamanhoPorId } from '@/lib/fonte';
 import { buscarPerfil, salvarPerfilPublico } from '@/lib/perfis';
 import { PERFIL_PADRAO, iniciaisDe, mesclarPerfil, nomeDe } from '@/lib/perfilLogica';
@@ -47,6 +47,20 @@ const gravarLocal = (id, dados) => {
 
 export const perfilAtual = () => atual;
 
+/* Modo "sistema": quando o Windows troca entre claro e escuro, o app acompanha
+   sem precisar recarregar. */
+let observandoSistema = false;
+
+const observarSistema = () => {
+  if (observandoSistema || typeof window === 'undefined' || !window.matchMedia) return;
+  const consulta = window.matchMedia('(prefers-color-scheme: light)');
+  const aoMudar = () => {
+    if (atual.modo === MODO_SISTEMA) aplicarTema(atual.tema, atual.modo);
+  };
+  consulta.addEventListener?.('change', aoMudar);
+  observandoSistema = true;
+};
+
 export const assinarPerfil = (fn) => {
   ouvintes.add(fn);
   return () => ouvintes.delete(fn);
@@ -57,8 +71,9 @@ export const carregarPerfil = (user) => {
   carregadoPara = user.id;
   atual = mesclarPerfil(lerLocal(user.id), user);
   if (!atual.fonte) atual.fonte = fonteDoNavegador() || atual.fonte;
-  aplicarTema(atual.tema);
+  aplicarTema(atual.tema, atual.modo);
   aplicarFonte(atual.fonte);
+  observarSistema();
   avisar();
 
   /* O perfil público é a fonte que chega para todo mundo (a listagem de User
@@ -67,7 +82,7 @@ export const carregarPerfil = (user) => {
     if (publico) {
       atual = mesclarPerfil(atual, publico);
       gravarLocal(user.id, atual);
-      aplicarTema(atual.tema);
+      aplicarTema(atual.tema, atual.modo);
       aplicarFonte(atual.fonte);
       avisar();
       return;
@@ -81,6 +96,7 @@ export const carregarPerfil = (user) => {
         foto_url: atual.fotoUrl,
         subnick: atual.subnick,
         tema: atual.tema,
+        modo: atual.modo,
         fonte_escala: atual.fonte,
       });
     }
@@ -114,8 +130,8 @@ export const salvarPerfil = async (user, parcial = {}) => {
     if (doBanco) atual = mesclarPerfil(atual, doBanco);
   }
 
-  atual = { ...atual, ...parcial };
-  aplicarTema(atual.tema);
+  atual = { ...atual, ...parcial, modo: modoValido(atual.modo) };
+  aplicarTema(atual.tema, atual.modo);
   aplicarFonte(atual.fonte);
   if (user?.id) gravarLocal(user.id, atual);
   avisar();
@@ -132,6 +148,7 @@ export const salvarPerfil = async (user, parcial = {}) => {
       foto_url: atual.fotoUrl || '',
       subnick: atual.subnick || '',
       tema: atual.tema || '',
+      tema_modo: atual.modo || '',
       fonte_escala: atual.fonte || '',
     });
     noUser = Boolean(salvo && 'nome_exibicao' in salvo);
@@ -145,6 +162,7 @@ export const salvarPerfil = async (user, parcial = {}) => {
     foto_url: atual.fotoUrl,
     subnick: atual.subnick,
     tema: atual.tema,
+    modo: atual.modo,
     fonte_escala: atual.fonte,
   });
   const remoto = noUser || Boolean(publico);

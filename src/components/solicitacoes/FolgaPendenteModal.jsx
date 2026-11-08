@@ -40,9 +40,9 @@ const AREA = {
 };
 
 const STATUS = {
-  pendente: { texto: 'Aguardando revisão', cor: '#e8b93b' },
-  aprovada: { texto: 'Aprovada', cor: '#7bd88f' },
-  recusada: { texto: 'Recusada', cor: '#ff6b6b' },
+  pendente: { texto: 'Aguardando revisão', cor: 'var(--aviso)' },
+  aprovada: { texto: 'Aprovada', cor: 'var(--ok)' },
+  recusada: { texto: 'Recusada', cor: 'var(--erro)' },
 };
 
 const hora = (iso) => {
@@ -266,10 +266,10 @@ export default function FolgaPendenteModal({ notification, onClose, onSaved }) {
                   style={{
                     padding: '8px 11px',
                     borderRadius: 8,
-                    background: 'color-mix(in srgb, #e8b93b 12%, transparent)',
-                    border: '1px solid color-mix(in srgb, #e8b93b 40%, transparent)',
+                    background: 'color-mix(in srgb, var(--aviso) 12%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--aviso) 40%, transparent)',
                     fontSize: 11,
-                    color: '#e8b93b',
+                    color: 'var(--aviso)',
                     lineHeight: 1.45,
                   }}
                 >
@@ -286,7 +286,7 @@ export default function FolgaPendenteModal({ notification, onClose, onSaved }) {
               </div>
 
               {pedido.motivo_recusa && (
-                <span style={{ fontSize: 11, color: '#ff6b6b' }}>
+                <span style={{ fontSize: 11, color: 'var(--erro)' }}>
                   Recusada: {pedido.motivo_recusa}
                 </span>
               )}
@@ -307,7 +307,7 @@ export default function FolgaPendenteModal({ notification, onClose, onSaved }) {
             </>
           )}
 
-          {erro && <span style={{ fontSize: 11, color: '#ff6b6b' }}>{erro}</span>}
+          {erro && <span style={{ fontSize: 11, color: 'var(--erro)' }}>{erro}</span>}
         </div>
 
         <div
@@ -342,9 +342,9 @@ export default function FolgaPendenteModal({ notification, onClose, onSaved }) {
                 onClick={() => setRecusando(true)}
                 style={{
                   ...BOTAO,
-                  border: '1px solid color-mix(in srgb, #ff6b6b 45%, transparent)',
-                  background: 'color-mix(in srgb, #ff6b6b 16%, transparent)',
-                  color: '#ff6b6b',
+                  border: '1px solid color-mix(in srgb, var(--erro) 45%, transparent)',
+                  background: 'color-mix(in srgb, var(--erro) 16%, transparent)',
+                  color: 'var(--erro)',
                 }}
               >
                 Recusar
@@ -385,9 +385,9 @@ export default function FolgaPendenteModal({ notification, onClose, onSaved }) {
                 onClick={() => decidir('recusada')}
                 style={{
                   ...BOTAO,
-                  border: '1px solid color-mix(in srgb, #ff6b6b 45%, transparent)',
-                  background: 'color-mix(in srgb, #ff6b6b 22%, transparent)',
-                  color: '#ff6b6b',
+                  border: '1px solid color-mix(in srgb, var(--erro) 45%, transparent)',
+                  background: 'color-mix(in srgb, var(--erro) 22%, transparent)',
+                  color: 'var(--erro)',
                   opacity: salvando ? 0.6 : 1,
                 }}
               >

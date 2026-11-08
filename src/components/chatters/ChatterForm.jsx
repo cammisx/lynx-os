@@ -137,7 +137,7 @@ export default function ChatterForm({ user, chatter, onCancel, onSaved }) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {error && <span style={{ fontSize: 11, color: '#ff6b6b' }}>{error}</span>}
+        {error && <span style={{ fontSize: 11, color: 'var(--erro)' }}>{error}</span>}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button type="button" className="md-btn" onClick={onCancel} style={cancelStyle}>
             Cancelar

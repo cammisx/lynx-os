@@ -2,7 +2,7 @@
  * Regras do perfil sem tocar em rede nem em tela: dá para testar sozinho.
  * O que vem do banco manda; o que ficou salvo no navegador preenche o resto.
  */
-import { TEMA_PADRAO } from '@/lib/temas';
+import { MODO_PADRAO, TEMA_PADRAO, modoValido } from '@/lib/temas';
 import { FONTE_PADRAO } from '@/lib/fonte';
 
 export const PERFIL_PADRAO = {
@@ -10,6 +10,7 @@ export const PERFIL_PADRAO = {
   fotoUrl: '',
   subnick: '',
   tema: TEMA_PADRAO,
+  modo: MODO_PADRAO,
   fonte: FONTE_PADRAO,
 };
 
@@ -19,13 +20,15 @@ export const perfilDoUsuario = (user) => ({
   fotoUrl: user?.foto_url || '',
   subnick: user?.subnick || '',
   tema: user?.tema || '',
+  modo: user?.tema_modo || '',
   fonte: user?.fonte_escala || '',
 });
 
 export const mesclarPerfil = (local = {}, user = {}) => {
   const remoto = perfilDoUsuario(user);
   const doBanco = Object.fromEntries(Object.entries(remoto).filter(([, valor]) => valor));
-  return { ...PERFIL_PADRAO, ...(local || {}), ...doBanco };
+  const perfil = { ...PERFIL_PADRAO, ...(local || {}), ...doBanco };
+  return { ...perfil, modo: modoValido(perfil.modo) };
 };
 
 /** Nome que vale na tela: o do perfil manda, depois o da conta. */

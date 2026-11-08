@@ -179,7 +179,7 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
           onChange={(event) => setNome(event.target.value)}
           placeholder="Ex.: Modelo Aurora"
         />
-        {nomeError && <span style={{ fontSize: 10, color: '#ff6b6b' }}>{nomeError}</span>}
+        {nomeError && <span style={{ fontSize: 10, color: 'var(--erro)' }}>{nomeError}</span>}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -235,7 +235,7 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
       </div>
 
       {saveError && (
-        <span style={{ fontSize: 10.5, color: '#ff6b6b', lineHeight: 1.5 }}>{saveError}</span>
+        <span style={{ fontSize: 10.5, color: 'var(--erro)', lineHeight: 1.5 }}>{saveError}</span>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>

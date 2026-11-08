@@ -102,12 +102,12 @@ export const SEM_CHATTER = 'sem_chatter';
 export const SITUACOES = {
   centavo: {
     rotulo: 'Atribuída',
-    cor: '#7bd88f',
+    cor: 'var(--ok)',
     texto: 'Venda de Chat: o centavo do bruto casa com o identificador do chatter.',
   },
   mimo_registrado: {
     rotulo: 'Mimo conferido',
-    cor: '#3B9EFF',
+    cor: 'var(--info)',
     texto: 'Mimo já lançado e aprovado pelo chatter; atribui a quem lançou e não duplica.',
   },
   ja_importada: {
@@ -117,28 +117,28 @@ export const SITUACOES = {
   },
   mimo_sem_registro: {
     rotulo: 'Mimo sem registro',
-    cor: '#e8b93b',
+    cor: 'var(--aviso)',
     texto: 'Mimo que ninguém lançou no widget. Entra no extrato sem chatter.',
   },
   mimo_pendente: {
     rotulo: 'Mimo pendente',
-    cor: '#e8b93b',
+    cor: 'var(--aviso)',
     texto: 'O chatter lançou esse mimo, mas ele ainda não foi aprovado. Aprove no aviso para atribuir.',
   },
   mimo_recusado: {
     rotulo: 'Mimo recusado',
-    cor: '#ff6b6b',
+    cor: 'var(--erro)',
     texto: 'O lançamento desse mimo foi recusado no widget. A venda entra sem chatter.',
   },
   sem_dono: {
     rotulo: 'Sem dono',
-    cor: '#e8b93b',
+    cor: 'var(--aviso)',
     texto:
       'Assinatura, Postagem e as demais vendas fora do Chat entram sempre sem chatter. Só o Chat recebe dono pelo centavo.',
   },
   nao_confirmada: {
     rotulo: 'Não confirmada',
-    cor: '#e8b93b',
+    cor: 'var(--aviso)',
     texto: 'A situação do registro no extrato não é "Pagamento confirmado".',
   },
   duplicado: {

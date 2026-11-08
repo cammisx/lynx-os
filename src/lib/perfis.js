@@ -63,6 +63,7 @@ export const salvarPerfilPublico = async (usuarioId, dados = {}) => {
       foto_url: dados.foto_url,
       subnick: dados.subnick,
       tema: dados.tema,
+      modo: dados.modo,
       fonte_escala: dados.fonte_escala,
     }).filter(([, valor]) => valor !== undefined)
   );

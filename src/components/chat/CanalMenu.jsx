@@ -130,7 +130,7 @@ export default function CanalMenu({ canal, nome, posicao, salvando, erro, onAlte
       )}
 
       {erro && (
-        <span style={{ fontSize: 10, color: '#ff6b6b', padding: '4px 9px 6px' }}>{erro}</span>
+        <span style={{ fontSize: 10, color: 'var(--erro)', padding: '4px 9px 6px' }}>{erro}</span>
       )}
 
       <input

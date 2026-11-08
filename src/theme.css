@@ -21,12 +21,19 @@
   --c11: color-mix(in srgb, var(--c5) 40%, transparent);
   --c13: color-mix(in srgb, var(--c8) 75%, transparent);
   --c1-deep: color-mix(in srgb, var(--c1) 30%, var(--c8));
-  --c16: #3B9EFF;
+  --c16: var(--info);
   --c16-bg: rgba(59, 158, 255, 0.18);
   --c16-glow: rgba(59, 158, 255, 0.35);
   --c16-border: rgba(59, 158, 255, 0.5);
   --blur-glass: blur(16px);
   --blur-taskbar: blur(24px);
+  --ok: #7bd88f;
+  --erro: #ff6b6b;
+  --aviso: #e8b93b;
+  --info: #3B9EFF;
+  --edge: color-mix(in srgb, var(--ink-hex) 25%, transparent);
+  --edge-soft: color-mix(in srgb, var(--ink-hex) 12%, transparent);
+  --sombra-vidro: rgba(0, 0, 0, 0.5);
   --font-main: 'Roboto Mono', 'Courier New', monospace;
   --font-size-xs: 11px;
   --font-size-sm: 12px;
@@ -41,6 +48,30 @@
   --white-hi-mid: rgba(255, 255, 255, 0.35);
   --white-hi-soft: rgba(255, 255, 255, 0.10);
   --overlay-light: rgba(0, 0, 0, 0.18);
+}
+
+/* Modo diurno: os mesmos tokens, invertidos. O texto vira tinta escura, as
+   bordas que eram brancas passam a ser tinta e os sinais (ok/erro/aviso/info)
+   escurecem para continuarem legíveis no fundo claro. */
+[data-mode="light"] {
+  /* Texto secundário um pouco mais firme: 60% de tinta some no fundo claro. */
+  --c2: color-mix(in srgb, var(--ink-hex) 68%, transparent);
+  --c12: color-mix(in srgb, var(--ink-hex) 42%, transparent);
+  --ok: #17703C;
+  --erro: #B3261E;
+  --aviso: #7A5606;
+  --info: #1558B0;
+  --c16: #1558B0;
+  --c16-bg: rgba(21, 88, 176, 0.12);
+  --c16-glow: rgba(21, 88, 176, 0.22);
+  --c16-border: rgba(21, 88, 176, 0.45);
+  --white-hi-strong: rgba(0, 0, 0, 0.38);
+  --white-hi-mid: rgba(0, 0, 0, 0.22);
+  --white-hi-soft: rgba(0, 0, 0, 0.05);
+  --edge: color-mix(in srgb, var(--ink-hex) 20%, transparent);
+  --edge-soft: color-mix(in srgb, var(--ink-hex) 10%, transparent);
+  --sombra-vidro: rgba(28, 18, 22, 0.22);
+  --overlay-light: rgba(255, 255, 255, 0.25);
 }
 
 html,
@@ -69,7 +100,7 @@ body {
     linear-gradient(to bottom, var(--c4) 0%, transparent 18%),
     linear-gradient(to top, color-mix(in srgb, var(--c5) 30%, transparent) 0%, transparent 40%),
     linear-gradient(to right, color-mix(in srgb, var(--c6) 40%, transparent) 0%, color-mix(in srgb, var(--c5) 35%, transparent) 50%, color-mix(in srgb, var(--c1) 30%, transparent) 100%);
-  border-top: 1.5px solid color-mix(in srgb, white 25%, color-mix(in srgb, var(--c1) 35%, transparent));
+  border-top: 1.5px solid color-mix(in srgb, var(--ink-hex) 25%, color-mix(in srgb, var(--c1) 35%, transparent));
   backdrop-filter: var(--blur-taskbar);
   -webkit-backdrop-filter: var(--blur-taskbar);
   box-shadow: 0 -2px 24px color-mix(in srgb, var(--c1) 25%, transparent), 0 -1px 0 var(--c4) inset, inset 0 2px 12px var(--white-hi-soft), inset 0 -2px 8px color-mix(in srgb, var(--c5) 20%, rgba(0,0,0,0.15));
@@ -88,7 +119,7 @@ body {
   top: 0;
   bottom: 0;
   width: calc(100vw / 12);
-  border-right: 1px solid color-mix(in srgb, white 12%, transparent);
+  border-right: 1px solid var(--edge-soft);
   background-color: transparent;
   cursor: pointer;
   transition: background-color var(--transition-fast);
@@ -235,8 +266,8 @@ body {
 }
 
 .clk-punch-out {
-  color: #ff6b6b;
-  border-color: #ff6b6b;
+  color: var(--erro);
+  border-color: var(--erro);
 }
 
 .clk-punch-out:hover:not(:disabled) {
@@ -304,8 +335,8 @@ body {
 }
 
 .md-icon-btn.md-icon-danger:hover {
-  background-color: color-mix(in srgb, #ff6b6b 12%, transparent);
-  color: #ff6b6b;
+  background-color: color-mix(in srgb, var(--erro) 12%, transparent);
+  color: var(--erro);
 }
 
 .md-restore:hover {
@@ -453,13 +484,13 @@ body {
 }
 
 .ponto-danger {
-  background-color: color-mix(in srgb, #ff6b6b 18%, transparent);
-  border: 1px solid color-mix(in srgb, #ff6b6b 45%, transparent);
-  color: #ff6b6b;
+  background-color: color-mix(in srgb, var(--erro) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--erro) 45%, transparent);
+  color: var(--erro);
 }
 
 .ponto-danger:hover:not(:disabled) {
-  background-color: color-mix(in srgb, #ff6b6b 28%, transparent);
+  background-color: color-mix(in srgb, var(--erro) 28%, transparent);
 }
 
 .ponto-pulse {
@@ -503,23 +534,23 @@ body {
       color-mix(in srgb, var(--c5) 14%, transparent) 35%,
       color-mix(in srgb, var(--c1) 12%, transparent) 30%
     );
-  border-top-color: rgba(255, 255, 255, 0.4);
+  border-top-color: var(--edge);
   box-shadow:
-    0 -2px 24px color-mix(in srgb, var(--c1) 18%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    0 -2px 24px color-mix(in srgb, var(--c1) 14%, transparent),
+    inset 0 1px 0 var(--white-hi-strong);
 }
 
 [data-mode="light"] .taskbar-start {
-  border-right-color: rgba(0, 0, 0, 0.08);
+  border-right-color: var(--edge-soft);
 }
 
 [data-mode="light"] .taskbar-bell,
 [data-mode="light"] .taskbar-clock .clock-time {
-  color: #1A0510;
+  color: var(--ink-hex);
 }
 
 [data-mode="light"] .taskbar-clock .clock-date {
-  color: rgba(26, 5, 16, 0.6);
+  color: var(--c2);
 }
 @keyframes widget-pulse {
   0%, 100% {
@@ -560,7 +591,7 @@ body {
   margin-top: -3.5px;
   border-radius: 50%;
   background: var(--c1);
-  box-shadow: 0 0 0 1px color-mix(in srgb, white 32%, transparent), 0 2px 6px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 1px var(--edge), 0 2px 6px var(--sombra-vidro);
 }
 
 .glass-range::-moz-range-track {

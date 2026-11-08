@@ -110,14 +110,15 @@ export default function DesktopBackground() {
     const history = [];
     let background = '#1A0510';
     let bgOverride = null;
+    let alphaMain = 0.9;
+    let alphaGhost = 0.25;
 
     const readTheme = () => {
       const root = document.documentElement;
       const mode = root.getAttribute('data-mode') || 'dark';
-      if (mode === 'light') {
-        bgOverride = '#f5f5f5';
-        return;
-      }
+      /* No claro a seda continua viva, só que mais discreta sobre o fundo pálido. */
+      alphaMain = mode === 'light' ? 0.55 : 0.9;
+      alphaGhost = mode === 'light' ? 0.16 : 0.25;
       bgOverride = null;
       const estilo = window.getComputedStyle(root);
       const lerCor = (nome, reserva) => {
@@ -207,11 +208,11 @@ export default function DesktopBackground() {
       // fantasmas, do mais antigo para o mais recente
       for (let g = GHOST_COUNT; g >= 1; g -= 1) {
         const index = history.length - 1 - g * GHOST_STEP;
-        if (index >= 0) strokeY(history[index], gradient, 0.25, 4);
+        if (index >= 0) strokeY(history[index], gradient, alphaGhost, 4);
       }
 
       // linha principal
-      strokeY(ys, gradient, 0.9, 1);
+      strokeY(ys, gradient, alphaMain, 1);
       ctx.globalAlpha = 1;
 
       rafId = requestAnimationFrame(draw);

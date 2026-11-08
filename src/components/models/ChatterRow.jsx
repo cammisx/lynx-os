@@ -95,7 +95,7 @@ export default function ChatterRow({
       </div>
 
       {checked && error && (
-        <span style={{ fontSize: 10, color: '#ff6b6b', paddingLeft: 26 }}>{error}</span>
+        <span style={{ fontSize: 10, color: 'var(--erro)', paddingLeft: 26 }}>{error}</span>
       )}
     </div>
   );

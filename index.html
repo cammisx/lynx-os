@@ -6,6 +6,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="/manifest.json" />
     <title>Base44 APP</title>
+    <script>
+      /* Anti-flash: repinta o tema/modo guardado antes de qualquer CSS render.
+         O React reaplica logo depois, já com o perfil do banco. */
+      (function () {
+        try {
+          var bruto = window.localStorage.getItem('lynx:tema-atual');
+          if (!bruto) return;
+          var dados = JSON.parse(bruto) || {};
+          var paleta = dados.paleta || {};
+          var cores = paleta.cores || [];
+          var root = document.documentElement;
+          var claro = dados.modo === 'claro';
+          if (dados.tema) root.setAttribute('data-theme', dados.tema);
+          root.setAttribute('data-mode', claro ? 'light' : 'dark');
+          root.style.colorScheme = claro ? 'light' : 'dark';
+          ['--c1', '--c5', '--c6', '--c14'].forEach(function (nome, i) {
+            if (cores[i]) root.style.setProperty(nome, cores[i]);
+          });
+          if (paleta.fundo) root.style.setProperty('--c8', paleta.fundo);
+          if (paleta.ink) {
+            var h = String(paleta.ink).replace('#', '');
+            var n = parseInt(h.length === 3 ? h.replace(/./g, '$&$&') : h, 16);
+            if (!isNaN(n)) {
+              root.style.setProperty('--ink', ((n >> 16) & 255) + ', ' + ((n >> 8) & 255) + ', ' + (n & 255));
+              root.style.setProperty('--ink-hex', paleta.ink);
+            }
+          }
+        } catch (erro) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

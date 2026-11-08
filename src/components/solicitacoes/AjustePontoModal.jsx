@@ -485,12 +485,12 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
                 </span>
               </span>
               {ocorrencia?.andamento && (
-                <span style={{ color: '#7bd88f' }}>
+                <span style={{ color: 'var(--ok)' }}>
                   Turno em andamento: a correção entra na hora, sem passar pelo admin.
                 </span>
               )}
               {ocorrencia?.aSeguir && (
-                <span style={{ color: '#e8b93b' }}>
+                <span style={{ color: 'var(--aviso)' }}>
                   O turno ainda não começou. A correção também entra na hora, sem passar pelo admin.
                 </span>
               )}
@@ -579,7 +579,7 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
                 </div>
               ))}
               {pausaInvalida && (
-                <span style={{ fontSize: 10.5, color: '#e8b93b' }}>
+                <span style={{ fontSize: 10.5, color: 'var(--aviso)' }}>
                   O retorno da pausa precisa ser depois do início.
                 </span>
               )}
@@ -598,7 +598,7 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
             />
           </div>
 
-          {erro && <span style={{ fontSize: 11, color: '#ff6b6b' }}>{erro}</span>}
+          {erro && <span style={{ fontSize: 11, color: 'var(--erro)' }}>{erro}</span>}
         </div>
 
         <div

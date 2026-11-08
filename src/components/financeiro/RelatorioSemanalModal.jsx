@@ -169,7 +169,7 @@ export default function RelatorioSemanalModal({ modelos, chatters, onClose }) {
           background: 'color-mix(in srgb, var(--c8) 74%, transparent)',
           backdropFilter: 'blur(22px) saturate(1.3)',
           WebkitBackdropFilter: 'blur(22px) saturate(1.3)',
-          border: '1px solid color-mix(in srgb, white 14%, color-mix(in srgb, var(--c1) 18%, transparent))',
+          border: '1px solid color-mix(in srgb, var(--ink-hex) 14%, color-mix(in srgb, var(--c1) 18%, transparent))',
           boxShadow: '0 18px 60px rgba(0,0,0,0.55)',
           fontFamily: 'var(--font-main)',
           overflow: 'hidden',
@@ -320,7 +320,7 @@ export default function RelatorioSemanalModal({ modelos, chatters, onClose }) {
           </div>
 
           {aviso && (
-            <span style={{ fontSize: 11, color: aviso.erro ? '#ff6b6b' : '#7bd88f' }}>{aviso.texto}</span>
+            <span style={{ fontSize: 11, color: aviso.erro ? 'var(--erro)' : 'var(--ok)' }}>{aviso.texto}</span>
           )}
 
           <button

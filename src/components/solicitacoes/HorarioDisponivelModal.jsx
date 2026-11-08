@@ -220,13 +220,13 @@ export default function HorarioDisponivelModal({ notification, onClose, onSaved 
                   <DateTimePicker value={saida} onChange={setSaida} mode="time" label="Minha saída" />
                 </div>
               </div>
-              <span style={{ fontSize: 11, color: erroHorario ? '#ff6b6b' : 'var(--c2)' }}>
+              <span style={{ fontSize: 11, color: erroHorario ? 'var(--erro)' : 'var(--c2)' }}>
                 {erroHorario || (valido ? `Dentro de ${hora(inicio)}–${hora(fim)}.` : '')}
               </span>
             </>
           )}
 
-          {erro && <span style={{ fontSize: 11, color: '#ff6b6b' }}>{erro}</span>}
+          {erro && <span style={{ fontSize: 11, color: 'var(--erro)' }}>{erro}</span>}
         </div>
 
         <div
