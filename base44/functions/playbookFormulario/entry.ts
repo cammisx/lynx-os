@@ -441,7 +441,7 @@ export default async function (req: Request): Promise<Response> {
         texto: '',
         itens: (Array.isArray(secao?.itens) ? secao.itens : []).map((item: any) => ({
           id: String(item?.id || ''),
-          pergunta: String(item?.pergunta || ''),
+          pergunta: String(item?.pergunta || ''), 
           tipo: tipoDe(item),
           opcoes: Array.isArray(item?.opcoes) ? item.opcoes : [],
           outro: Boolean(item?.outro),
