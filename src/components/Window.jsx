@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CloseIcon } from '@/components/icons';
+import { CloseIcon, MaximizeIcon, MinimizeIcon, RestoreIcon } from '@/components/icons';
+import { useJanela } from '@/components/desktop/JanelaContext';
 
 const MIN_W = 420;
 const MIN_H = 260;
@@ -19,6 +20,10 @@ const areaUtil = () => {
   return { w: window.innerWidth / zoom, h: window.innerHeight / zoom };
 };
 
+/* A barra de tarefas ocupa 1,5/24 da altura da tela. Maximizada, a janela
+   para em cima dela, como no Windows. */
+const alturaBarra = () => (window.innerHeight * 1.5) / 24 / zoomAtual();
+
 const BORDAS = [
   { dir: 'n', style: { top: 0, left: 10, right: 10, height: 5 }, cursor: 'ns-resize' },
   { dir: 's', style: { bottom: 0, left: 10, right: 10, height: 5 }, cursor: 'ns-resize' },
@@ -30,7 +35,25 @@ const BORDAS = [
   { dir: 'se', style: { bottom: 0, right: 0, width: 12, height: 12 }, cursor: 'nwse-resize' },
 ];
 
+const botaoDaBarra = () => ({
+  width: 24,
+  height: 24,
+  borderRadius: 6,
+  border: 'none',
+  background: 'transparent',
+  color: 'var(--c2)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  cursor: 'pointer',
+  flexShrink: 0,
+});
+
 export default function Window({ title, icon: Icon, onClose, children, width = 620, height = 460 }) {
+  const janela = useJanela();
+  const [maximizado, setMaximizado] = useState(false);
+  const [, setReagir] = useState(0);
   const [size, setSize] = useState(() => {
     const area = areaUtil();
     return {
@@ -51,12 +74,18 @@ export default function Window({ title, icon: Icon, onClose, children, width = 6
   const [redimensionando, setRedimensionando] = useState(false);
   const sizeRef = useRef(size);
   const posRef = useRef(pos);
+  const maximizadoRef = useRef(maximizado);
   sizeRef.current = size;
   posRef.current = pos;
+  maximizadoRef.current = maximizado;
 
   /* Tela mudou (ou o tamanho da fonte mudou): a janela volta para dentro. */
   useEffect(() => {
     const ajustar = () => {
+      if (maximizadoRef.current) {
+        setReagir((n) => n + 1);
+        return;
+      }
       const area = areaUtil();
       const tamanho = {
         w: Math.min(sizeRef.current.w, Math.max(MIN_W, area.w - MARGEM * 2)),
@@ -77,6 +106,7 @@ export default function Window({ title, icon: Icon, onClose, children, width = 6
   }, []);
 
   const startDrag = (event) => {
+    if (maximizado) return;
     event.preventDefault();
     offsetRef.current = {
       dx: event.clientX - pos.x * zoomAtual(),
@@ -110,6 +140,7 @@ export default function Window({ title, icon: Icon, onClose, children, width = 6
      bordas de cima e da esquerda a posição anda junto, para a janela não
      "fugir" debaixo do mouse. */
   const startResize = (event, dir) => {
+    if (maximizado) return;
     event.preventDefault();
     event.stopPropagation();
     setRedimensionando(true);
@@ -164,15 +195,27 @@ export default function Window({ title, icon: Icon, onClose, children, width = 6
     window.addEventListener('mouseup', handleUp);
   };
 
+  const area = areaUtil();
+  const medidas = maximizado
+    ? {
+        left: MARGEM,
+        top: MARGEM,
+        width: Math.max(MIN_W, area.w - MARGEM * 2),
+        height: Math.max(MIN_H, area.h - alturaBarra() - MARGEM),
+      }
+    : { left: pos.x, top: pos.y, width: size.w, height: size.h };
+
   return createPortal(
     <div
+      onMouseDown={() => janela.onFocus && janela.onFocus()}
       style={{
         position: 'fixed',
-        left: pos.x,
-        top: pos.y,
-        width: size.w,
-        height: size.h,
-        zIndex: 8000,
+        left: medidas.left,
+        top: medidas.top,
+        width: medidas.width,
+        height: medidas.height,
+        zIndex: janela.zIndex || 8000,
+        display: janela.oculta ? 'none' : 'flex',
         background: 'color-mix(in srgb, var(--c8) 45%, transparent)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
@@ -181,7 +224,6 @@ export default function Window({ title, icon: Icon, onClose, children, width = 6
         boxShadow: redimensionando
           ? '0 22px 70px rgba(0,0,0,0.6)'
           : '0 16px 56px rgba(0,0,0,0.5)',
-        display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
         fontFamily: 'var(--font-main)',
@@ -199,7 +241,7 @@ export default function Window({ title, icon: Icon, onClose, children, width = 6
           justifyContent: 'space-between',
           gap: 8,
           borderBottom: '1px solid color-mix(in srgb, var(--c2) 10%, transparent)',
-          cursor: 'grab',
+          cursor: maximizado ? 'default' : 'grab',
           userSelect: 'none',
         }}
       >
@@ -219,29 +261,43 @@ export default function Window({ title, icon: Icon, onClose, children, width = 6
           </span>
         </span>
 
-        <button
-          type="button"
-          aria-label="Fechar"
-          onMouseDown={(event) => event.stopPropagation()}
-          onClick={onClose}
-          className="clk-nav-btn"
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: 6,
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--c2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 0,
-            cursor: 'pointer',
-            flexShrink: 0,
-          }}
-        >
-          <CloseIcon size={12} />
-        </button>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+          {janela.onMinimize ? (
+            <button
+              type="button"
+              aria-label="Minimizar"
+              title="Minimizar"
+              onMouseDown={(event) => event.stopPropagation()}
+              onClick={janela.onMinimize}
+              style={botaoDaBarra()}
+            >
+              <MinimizeIcon size={12} />
+            </button>
+          ) : null}
+
+          <button
+            type="button"
+            aria-label={maximizado ? 'Restaurar tamanho' : 'Maximizar'}
+            title={maximizado ? 'Restaurar tamanho' : 'Maximizar'}
+            onMouseDown={(event) => event.stopPropagation()}
+            onClick={() => setMaximizado((antes) => !antes)}
+            style={botaoDaBarra()}
+          >
+            {maximizado ? <RestoreIcon size={12} /> : <MaximizeIcon size={12} />}
+          </button>
+
+          <button
+            type="button"
+            aria-label="Fechar"
+            title="Fechar"
+            onMouseDown={(event) => event.stopPropagation()}
+            onClick={onClose}
+            className="clk-nav-btn"
+            style={botaoDaBarra()}
+          >
+            <CloseIcon size={12} />
+          </button>
+        </span>
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 16 }}>{children}</div>

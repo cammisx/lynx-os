@@ -312,3 +312,28 @@ export function MonitorIcon({ size = 16, className }) {
     </Svg>
   );
 }
+
+export function MinimizeIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M5 12h14" />
+    </Svg>
+  );
+}
+
+export function MaximizeIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <rect x="5" y="5" width="14" height="14" rx="1.6" />
+    </Svg>
+  );
+}
+
+export function RestoreIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <rect x="4" y="8" width="12" height="12" rx="1.6" />
+      <path d="M8 8V5.6A1.6 1.6 0 0 1 9.6 4H18.4A1.6 1.6 0 0 1 20 5.6v8.8A1.6 1.6 0 0 1 18.4 16H16" />
+    </Svg>
+  );
+}

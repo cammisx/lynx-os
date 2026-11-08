@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import '@/theme.css';
 import DesktopBackground from '@/components/DesktopBackground';
 import DesktopWidgets from '@/components/desktop/DesktopWidgets';
@@ -9,6 +9,8 @@ import TurnosWindow from '@/components/TurnosWindow';
 import FinanceiroWindow from '@/components/FinanceiroWindow';
 import ConfiguracoesWindow from '@/components/ConfiguracoesWindow';
 import PlaybookWindow from '@/components/PlaybookWindow';
+import { JanelaContext } from '@/components/desktop/JanelaContext';
+import useJanelas from '@/hooks/useJanelas';
 import { useAuth } from '@/lib/AuthContext';
 import { usePerfil } from '@/lib/perfilUsuario';
 import { TEMA_PADRAO, aplicarTema } from '@/lib/temas';
@@ -19,8 +21,18 @@ import useAvisarTurnosPendentes from '@/hooks/useAvisarTurnosPendentes';
 import useVersaoPublicada from '@/hooks/useVersaoPublicada';
 import { sincronizarAdminsUmaVez } from '@/lib/admins';
 
+/* Cada janela do menu iniciar é um componente; o id é o mesmo da taskbar. */
+const COMPONENTES = {
+  chatters: ChattersWindow,
+  modelos: ModelosWindow,
+  turnos: TurnosWindow,
+  financeiro: FinanceiroWindow,
+  config: ConfiguracoesWindow,
+  playbook: PlaybookWindow,
+};
+
 export default function Dashboard() {
-  const [openApp, setOpenApp] = useState(null);
+  const janelas = useJanelas();
   const { user } = useAuth();
   // Carrega o perfil (tema, nome, foto, fundo) antes de tudo aparecer na tela.
   const perfil = usePerfil(user);
@@ -60,21 +72,33 @@ export default function Dashboard() {
       />
       <ChatProvider>
         <DesktopWidgets />
-        <Taskbar onOpenApp={setOpenApp} />
+        <Taskbar
+          onOpenApp={janelas.abrir}
+          janelas={janelas.janelas}
+          janelaAtiva={janelas.ativa}
+          onAlternarJanela={janelas.alternar}
+        />
         <ChatSidebar />
       </ChatProvider>
 
-      {openApp === 'chatters' && <ChattersWindow onClose={() => setOpenApp(null)} />}
-
-      {openApp === 'modelos' && <ModelosWindow onClose={() => setOpenApp(null)} />}
-
-      {openApp === 'turnos' && <TurnosWindow onClose={() => setOpenApp(null)} />}
-
-      {openApp === 'financeiro' && <FinanceiroWindow onClose={() => setOpenApp(null)} />}
-
-      {openApp === 'config' && <ConfiguracoesWindow onClose={() => setOpenApp(null)} />}
-
-      {openApp === 'playbook' && <PlaybookWindow onClose={() => setOpenApp(null)} />}
+      {/* A ordem da lista é o empilhamento: a última aberta fica na frente. */}
+      {janelas.janelas.map((janela, indice) => {
+        const Componente = COMPONENTES[janela.id];
+        if (!Componente) return null;
+        return (
+          <JanelaContext.Provider
+            key={janela.id}
+            value={{
+              zIndex: 8000 + indice,
+              oculta: janela.minimizada,
+              onMinimize: () => janelas.minimizar(janela.id),
+              onFocus: () => janelas.abrir(janela.id),
+            }}
+          >
+            <Componente onClose={() => janelas.fechar(janela.id)} />
+          </JanelaContext.Provider>
+        );
+      })}
     </div>
   );
 }
