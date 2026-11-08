@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { MODAL_CAIXA } from '@/lib/modalStyles';
@@ -65,32 +65,46 @@ export default function PetReacoesModal({ onFechar, onSalvo }) {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
 
-  useEffect(() => {
-    let vivo = true;
-    (async () => {
+  /* Uma leitura só, com uma segunda tentativa: leitura perdida por excesso de
+     pedidos no mesmo instante não é motivo para dizer que a entidade não
+     existe. */
+  const carregar = useCallback(async () => {
+    setCarregando(true);
+    setErro('');
+    const ler = () => base44.entities.PetReacao.list('created_date', 500, 0);
+    try {
+      let lista;
       try {
-        const lista = asList(await base44.entities.PetReacao.list('created_date', 500, 0));
-        if (!vivo) return;
-        setLinhas(
-          lista.map((registro) => ({
-            id: registro.id,
-            pet: petValido(registro.pet),
-            tipo: tipoReacaoValido(registro.tipo),
-            texto: registro.texto || '',
-            original: registro.texto || '',
-          }))
-        );
-      } catch (falha) {
-        console.warn('[Pet] não consegui ler as reações:', falha?.message || falha);
-        if (vivo) setErro('A entidade PetReacao ainda não está publicada no Builder.');
-      } finally {
-        if (vivo) setCarregando(false);
+        lista = asList(await ler());
+      } catch (primeira) {
+        await new Promise((ok) => setTimeout(ok, 900));
+        lista = asList(await ler());
       }
-    })();
-    return () => {
-      vivo = false;
-    };
+      setLinhas(
+        lista.map((registro) => ({
+          id: registro.id,
+          pet: petValido(registro.pet),
+          tipo: tipoReacaoValido(registro.tipo),
+          texto: registro.texto || '',
+          original: registro.texto || '',
+        }))
+      );
+    } catch (falha) {
+      const detalhe = String(falha?.message || falha || '');
+      console.warn('[Pet] não consegui ler as reações:', detalhe);
+      setErro(
+        /not found|unknown|404|não existe/i.test(detalhe)
+          ? 'A entidade PetReacao não existe no servidor.'
+          : `Não consegui ler as reações (${detalhe || 'erro desconhecido'}).`
+      );
+    } finally {
+      setCarregando(false);
+    }
   }, []);
+
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
 
   const doConjunto = useMemo(
     () => linhas.filter((linha) => linha.pet === pet && linha.tipo === tipo),
@@ -232,7 +246,18 @@ export default function PetReacoesModal({ onFechar, onSalvo }) {
             ))}
           </div>
 
-          {erro ? <span style={{ fontSize: 10, color: 'var(--erro)' }}>{erro}</span> : null}
+          {erro ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 10, color: 'var(--erro)' }}>{erro}</span>
+              <button
+                type="button"
+                onClick={carregar}
+                style={{ ...botaoNeutro, padding: '4px 9px', fontSize: 9.5 }}
+              >
+                Tentar de novo
+              </button>
+            </div>
+          ) : null}
 
           <div
             className="glass-scroll"
