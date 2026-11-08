@@ -845,3 +845,65 @@ body {
     transform: rotate(182deg);
   }
 }
+
+/* Pet feliz: pulinho com escala, e o mesmo para o morcego, que vive girado. */
+@keyframes lynxPetFeliz {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  25% {
+    transform: translateY(-10px) scale(1.14);
+  }
+  50% {
+    transform: translateY(0) scale(1.02);
+  }
+  70% {
+    transform: translateY(-5px) scale(1.08);
+  }
+}
+
+@keyframes lynxPetFelizPendurado {
+  0%,
+  100% {
+    transform: rotate(180deg) scale(1);
+  }
+  25% {
+    transform: rotate(180deg) scale(1.14);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.02);
+  }
+  70% {
+    transform: rotate(180deg) scale(1.08);
+  }
+}
+
+/* Coraçãozinho subindo e sumindo quando o pet recebe carinho. */
+@keyframes lynxPetCoracao {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-38px) scale(1.05);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes lynxPetCoracao {
+    0%,
+    100% {
+      transform: none;
+      opacity: 0;
+    }
+    30%,
+    70% {
+      opacity: 1;
+    }
+  }
+}

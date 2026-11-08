@@ -45,6 +45,8 @@ export const PERFIL_PADRAO = {
      cor do pelo dele. */
   pet: PET_PADRAO,
   petCor: COR_PADRAO,
+  /* Nome dado ao bicho, mostrado no balão de fala e no tooltip. */
+  petNome: '',
 };
 
 /** Campos custom do User, quando publicados no Builder. */
@@ -66,6 +68,7 @@ export const perfilDoUsuario = (user) => ({
   agendaOrdem: user?.agenda_ordem ? emLista(user.agenda_ordem) : undefined,
   pet: user?.pet || '',
   petCor: user?.pet_cor || '',
+  petNome: user?.pet_nome || '',
 });
 
 export const mesclarPerfil = (local = {}, user = {}) => {
@@ -99,6 +102,7 @@ export const mesclarPerfil = (local = {}, user = {}) => {
     agendaOrdem: emLista(perfil.agendaOrdem),
     pet: petValido(perfil.pet),
     petCor: corValida(perfil.petCor),
+    petNome: String(perfil.petNome || '').trim().slice(0, 24),
   };
 };
 

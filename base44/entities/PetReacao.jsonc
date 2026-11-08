@@ -1,0 +1,22 @@
+{
+  "name": "PetReacao",
+  "type": "object",
+  "properties": {
+    "pet": {
+      "type": "string",
+      "enum": ["gato", "cachorro", "morcego"],
+      "description": "Pet que responde com esta frase"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": ["clique", "carinho"],
+      "default": "clique",
+      "description": "Interacao: clique normal ou fazer carinho"
+    },
+    "texto": {
+      "type": "string",
+      "description": "O que o pet fala"
+    }
+  },
+  "required": ["pet", "tipo", "texto"]
+}

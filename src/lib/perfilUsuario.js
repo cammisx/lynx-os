@@ -145,6 +145,7 @@ export const salvarBarraTarefas = async (user, { ordem = [], fixadas = [] } = {}
       agenda_ordem: escreverBarra(atual.agendaOrdem),
       pet: atual.pet || '',
       pet_cor: atual.petCor || '',
+      pet_nome: atual.petNome || '',
     });
     return { remoto: true };
   } catch (erro) {
@@ -183,6 +184,7 @@ export const salvarOrdemAgenda = async (user, ordem = []) => {
       agenda_ordem: escreverBarra(ordem),
       pet: atual.pet || '',
       pet_cor: atual.petCor || '',
+      pet_nome: atual.petNome || '',
     });
     return { remoto: true };
   } catch (erro) {
@@ -253,6 +255,7 @@ export const salvarPerfil = async (user, parcial = {}) => {
       agenda_ordem: escreverBarra(atual.agendaOrdem),
       pet: atual.pet || '',
       pet_cor: atual.petCor || '',
+      pet_nome: atual.petNome || '',
     });
     noUser = Boolean(salvo && 'nome_exibicao' in salvo);
   } catch (erro) {

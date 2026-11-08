@@ -141,7 +141,15 @@ export default function Dashboard() {
         estatico={perfil.fundoEstatico}
         semLinhas={perfil.fundoModo === 'sem'}
       />
-      <DesktopPet pet={perfil.pet} cor={perfil.petCor} />
+      <DesktopPet
+        pet={perfil.pet}
+        cor={perfil.petCor}
+        nome={perfil.petNome}
+        admin={user?.role === 'admin'}
+        onTrocarPet={(id) => salvarPerfil(user, { pet: id })}
+        onTrocarCor={(id) => salvarPerfil(user, { petCor: id })}
+        onNomear={(valor) => salvarPerfil(user, { petNome: valor })}
+      />
       <ChatProvider>
         <DesktopWidgets />
         <Taskbar

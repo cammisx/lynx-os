@@ -44,6 +44,10 @@
       "type": "string",
       "description": "Cor do pelo do pet: original, preto, branco, cinza, marrom ou rosa"
     },
+    "pet_nome": {
+      "type": "string",
+      "description": "Nome dado ao pet do desktop pelo usuario"
+    },
     "agenda_ordem": {
       "type": "string",
       "description": "Ordem das agendas das modelos no painel do relogio (ids separados por virgula)"
