@@ -160,6 +160,119 @@ body {
   background-color: color-mix(in srgb, var(--c1) 25%, transparent);
 }
 
+
+/* Janelas abertas, no meio da barra: ícone grande, sobe no hover e mostra o
+   nome, no espírito do dock do Mac. */
+.taskbar-janelas {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  height: 100%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 46vw;
+  overflow: visible;
+  z-index: 1;
+}
+
+.taskbar-janela {
+  position: relative;
+  width: 46px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--c8) 26%, transparent);
+  color: var(--c2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transform-origin: bottom center;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.85, 0.3, 1.25),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow 180ms ease;
+}
+
+.taskbar-janela:hover,
+.taskbar-janela:focus-visible {
+  transform: translateY(-8px) scale(1.18);
+  background: color-mix(in srgb, var(--c8) 62%, transparent);
+  border-color: color-mix(in srgb, var(--c1) 45%, transparent);
+  color: var(--c1);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35), 0 0 0 1px var(--white-hi-soft) inset;
+  outline: none;
+}
+
+/* os vizinhos crescem um pouco, dando o efeito de ímã do dock */
+.taskbar-janela:hover + .taskbar-janela,
+.taskbar-janela:has(+ .taskbar-janela:hover) {
+  transform: translateY(-3px) scale(1.07);
+}
+
+.taskbar-janela.is-ativa {
+  background: color-mix(in srgb, var(--c1) 16%, transparent);
+  border-color: color-mix(in srgb, var(--c1) 55%, transparent);
+  color: var(--c1);
+}
+
+.taskbar-janela.is-minimizada {
+  opacity: 0.5;
+}
+
+.taskbar-janela.is-minimizada:hover {
+  opacity: 1;
+}
+
+/* nome da janela, aparecendo acima como no dock */
+.taskbar-janela::after {
+  content: attr(data-rotulo);
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: 50%;
+  padding: 3px 9px;
+  border-radius: 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--c3);
+  background: color-mix(in srgb, var(--c8) 78%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c1) 22%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%) translateY(5px);
+  transition: opacity 140ms ease, transform 180ms cubic-bezier(0.2, 0.85, 0.3, 1.25);
+}
+
+.taskbar-janela:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.taskbar-janela-marca {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--c1);
+}
+
+.taskbar-janela-marca.is-apagada {
+  background: color-mix(in srgb, var(--c2) 45%, transparent);
+}
+
 .taskbar-right {
   display: flex;
   align-items: center;

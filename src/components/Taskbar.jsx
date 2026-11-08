@@ -138,64 +138,34 @@ export default function Taskbar({ onOpenApp, janelas = [], janelaAtiva = null, o
         onClick={() => setMenuOpen((prev) => !prev)}
       />
 
-      <div
-        className="taskbar-janelas"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-          height: '100%',
-          marginLeft: 'calc(100vw / 12 + 8px)',
-          overflow: 'hidden',
-        }}
-      >
+      <div className="taskbar-janelas">
         {janelas.map((janela) => {
           const meta = janelaPorId(janela.id);
           if (!meta) return null;
           const Icone = meta.Icone;
           const ativa = janelaAtiva === janela.id && !janela.minimizada;
+          const classes = [
+            'taskbar-janela',
+            ativa ? 'is-ativa' : '',
+            janela.minimizada ? 'is-minimizada' : '',
+          ]
+            .filter(Boolean)
+            .join(' ');
           return (
             <button
               key={janela.id}
               type="button"
+              className={classes}
               onClick={() => onAlternarJanela && onAlternarJanela(janela.id)}
-              title={janela.minimizada ? `Restaurar ${meta.titulo}` : `${meta.titulo} · minimizar`}
+              title={janela.minimizada ? `Restaurar ${meta.titulo}` : `Minimizar ${meta.titulo}`}
               aria-label={meta.titulo}
               aria-pressed={ativa}
-              style={{
-                position: 'relative',
-                width: 36,
-                height: 30,
-                borderRadius: 8,
-                border: ativa
-                  ? '1px solid color-mix(in srgb, var(--c1) 55%, transparent)'
-                  : '1px solid transparent',
-                background: ativa
-                  ? 'color-mix(in srgb, var(--c1) 16%, transparent)'
-                  : 'color-mix(in srgb, var(--c8) 28%, transparent)',
-                color: ativa ? 'var(--c1)' : 'var(--c2)',
-                opacity: janela.minimizada ? 0.55 : 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 0,
-                cursor: 'pointer',
-                flexShrink: 0,
-                transition: 'background-color 140ms ease, opacity 140ms ease',
-              }}
+              data-rotulo={meta.titulo}
             >
-              <Icone size={16} />
+              <Icone size={22} />
               <span
                 aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  bottom: 3,
-                  left: 10,
-                  right: 10,
-                  height: 2,
-                  borderRadius: 2,
-                  background: ativa ? 'var(--c1)' : 'transparent',
-                }}
+                className={`taskbar-janela-marca${ativa ? '' : ' is-apagada'}`}
               />
             </button>
           );
