@@ -4,6 +4,7 @@
  */
 import { MODO_PADRAO, TEMA_PADRAO, modoValido } from '@/lib/temas';
 import { FONTE_PADRAO } from '@/lib/fonte';
+import { emLista } from '@/lib/barraTarefas';
 
 /**
  * Fundo do desktop em três estados:
@@ -32,6 +33,9 @@ export const PERFIL_PADRAO = {
   fundoUrl: '',
   fundoEstatico: false,
   fundoModo: MODO_FUNDO_PADRAO,
+  /* Ordem dos ícones na barra de tarefas e quais ficam fixados nela. */
+  barraOrdem: [],
+  barraFixadas: [],
 };
 
 /** Campos custom do User, quando publicados no Builder. */
@@ -45,6 +49,10 @@ export const perfilDoUsuario = (user) => ({
   fundoUrl: user?.fundo_url || '',
   fundoEstatico: typeof user?.fundo_estatico === 'boolean' ? user.fundo_estatico : undefined,
   fundoModo: user?.fundo_modo || '',
+  /* Vazio vira undefined de propósito: assim o que está no navegador continua
+     valendo quando o campo ainda não existe no banco. */
+  barraOrdem: user?.barra_ordem ? emLista(user.barra_ordem) : undefined,
+  barraFixadas: user?.barra_fixadas ? emLista(user.barra_fixadas) : undefined,
 });
 
 export const mesclarPerfil = (local = {}, user = {}) => {
@@ -72,6 +80,8 @@ export const mesclarPerfil = (local = {}, user = {}) => {
     fundoModo,
     fundoEstatico: fundoModo === 'parado',
     fundoSemLinhas: fundoModo === 'sem',
+    barraOrdem: emLista(perfil.barraOrdem),
+    barraFixadas: emLista(perfil.barraFixadas),
   };
 };
 

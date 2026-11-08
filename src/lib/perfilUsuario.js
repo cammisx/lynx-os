@@ -10,6 +10,7 @@ import { base44 } from '@/api/base44Client';
 import { MODO_SISTEMA, aplicarTema, modoValido, temaPorId } from '@/lib/temas';
 import { aplicarFonte, fonteDoNavegador, tamanhoPorId } from '@/lib/fonte';
 import { buscarPerfil, salvarPerfilPublico } from '@/lib/perfis';
+import { escreverBarra } from '@/lib/barraTarefas';
 import { PERFIL_PADRAO, iniciaisDe, mesclarPerfil, nomeDe } from '@/lib/perfilLogica';
 import { espelharNomeNoChatter, propagarNomeNasModelos } from '@/lib/pessoas';
 import { emitChattersChanged } from '@/lib/desktopEvents';
@@ -108,6 +109,42 @@ export const carregarPerfil = (user) => {
   return atual;
 };
 
+/**
+ * Guarda a ordem dos ícones da barra de tarefas.
+ *
+ * É leve de propósito: só mexe nesses dois campos, sem repetir o salvamento
+ * completo do perfil (nome, foto, tema). Grava no navegador na hora, então a
+ * ordem sobrevive a um recarregamento mesmo que o banco recuse o campo.
+ */
+export const salvarBarraTarefas = async (user, { ordem = [], fixadas = [] } = {}) => {
+  atual = { ...atual, barraOrdem: ordem, barraFixadas: fixadas };
+  if (user?.id) gravarLocal(user.id, atual);
+  avisar();
+  if (!user?.id) return { remoto: false };
+
+  try {
+    /* Manda o perfil inteiro junto: assim a gravação nunca apaga nome, foto
+       ou tema, mesmo que a atualização do User substitua o registro. */
+    await base44.auth.updateMe({
+      nome_exibicao: atual.nomeExibicao || '',
+      foto_url: atual.fotoUrl || '',
+      subnick: atual.subnick || '',
+      tema: atual.tema || '',
+      tema_modo: atual.modo || '',
+      fonte_escala: atual.fonte || '',
+      fundo_url: atual.fundoUrl || '',
+      fundo_estatico: Boolean(atual.fundoEstatico),
+      fundo_modo: atual.fundoModo || '',
+      barra_ordem: escreverBarra(ordem),
+      barra_fixadas: escreverBarra(fixadas),
+    });
+    return { remoto: true };
+  } catch (erro) {
+    console.warn('[Perfil] o User recusou a ordem da barra:', erro?.message || erro);
+    return { remoto: false };
+  }
+};
+
 /** Nome trocado por outra janela (admin na lista de chatters) aparece aqui também. */
 export const refletirNomeDeUsuario = (usuarioId, nome) => {
   if (!usuarioId || usuarioId !== carregadoPara || !nome) return;
@@ -159,6 +196,8 @@ export const salvarPerfil = async (user, parcial = {}) => {
       fundo_url: atual.fundoUrl || '',
       fundo_estatico: Boolean(atual.fundoEstatico),
       fundo_modo: atual.fundoModo || '',
+      barra_ordem: escreverBarra(atual.barraOrdem),
+      barra_fixadas: escreverBarra(atual.barraFixadas),
     });
     noUser = Boolean(salvo && 'nome_exibicao' in salvo);
   } catch (erro) {

@@ -17,9 +17,18 @@ const proximaCamada = (itens) =>
 
 const criarItem = (id, z) => ({ id, aberta: true, minimizada: false, fixada: false, z });
 
-export const abrirItem = (itens, id, z) => {
+export const abrirItem = (itens, id, z, posicao) => {
   const item = itens.find((atual) => atual.id === id);
-  if (!item) return [...itens, criarItem(id, z)];
+  if (!item) {
+    const novo = criarItem(id, z);
+    /* Volta para a posição que ocupava na barra, não para o fim. */
+    if (Number.isInteger(posicao) && posicao >= 0 && posicao < itens.length) {
+      const copia = [...itens];
+      copia.splice(posicao, 0, novo);
+      return copia;
+    }
+    return [...itens, novo];
+  }
   return itens.map((atual) =>
     atual.id === id ? { ...atual, aberta: true, minimizada: false, z } : atual
   );

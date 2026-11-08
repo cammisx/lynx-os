@@ -40,6 +40,14 @@
       "type": "string",
       "enum": ["animado", "parado", "sem"],
       "description": "Fundo do desktop: animado, parado ou sem linhas"
+    },
+    "barra_ordem": {
+      "type": "string",
+      "description": "Ordem dos icones das janelas na barra de tarefas, separada por virgula"
+    },
+    "barra_fixadas": {
+      "type": "string",
+      "description": "Janelas fixadas na barra de tarefas, separadas por virgula"
     }
   },
   "required": [

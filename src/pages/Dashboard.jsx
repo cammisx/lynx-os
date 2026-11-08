@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import '@/theme.css';
 import DesktopBackground from '@/components/DesktopBackground';
 import DesktopWidgets from '@/components/desktop/DesktopWidgets';
@@ -14,7 +14,7 @@ import ConfirmarFechar from '@/components/desktop/ConfirmarFechar';
 import { janelaPorId } from '@/lib/janelas';
 import useJanelas from '@/hooks/useJanelas';
 import { useAuth } from '@/lib/AuthContext';
-import { usePerfil } from '@/lib/perfilUsuario';
+import { salvarBarraTarefas, usePerfil } from '@/lib/perfilUsuario';
 import { TEMA_PADRAO, aplicarTema } from '@/lib/temas';
 import { ChatProvider } from '@/components/chat/ChatProvider';
 import ChatSidebar from '@/components/chat/ChatSidebar';
@@ -34,7 +34,19 @@ const COMPONENTES = {
 };
 
 export default function Dashboard() {
-  const janelas = useJanelas();
+  /* Ordem dos ícones da barra: entra pelo perfil e volta para ele quando muda. */
+  const salvarBarra = useCallback(
+    ({ ordem, fixadas }) => {
+      salvarBarraTarefas(user, { ordem, fixadas });
+    },
+    [user]
+  );
+
+  const janelas = useJanelas({
+    ordemInicial: perfil.barraOrdem,
+    fixadasIniciais: perfil.barraFixadas,
+    aoMudar: salvarBarra,
+  });
   /* Janela esperando confirmação: só entra aqui quando tem alteração não salva. */
   const [fechando, setFechando] = useState(null);
 
