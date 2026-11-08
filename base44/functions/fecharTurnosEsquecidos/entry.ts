@@ -255,8 +255,14 @@ export const processarFechamento = async ({
       });
       fechadas += 1;
 
+      /* Só o aviso de saída automática conta como "já notificado": um aviso de
+         saída pendente da mesma ocorrência não pode engolir este. */
       const existing = await entities.Notificacao.filter(
-        { shift_id: entry.shiftId, ocorrencia_data: entry.dateKey },
+        {
+          shift_id: entry.shiftId,
+          ocorrencia_data: entry.dateKey,
+          tipo: 'saida_automatica',
+        },
         { limit: 1 }
       );
       const jaNotificado = Array.isArray(existing)
