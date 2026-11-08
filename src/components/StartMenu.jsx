@@ -166,7 +166,7 @@ export default function StartMenu({ open, onClose, onOpenApp, onOpenConfig }) {
         }}
       />
       <div style={panelStyle}>
-        <div style={bodyStyle}>
+        <div className="glass-scroll" style={bodyStyle}>
           {(isAdmin ? APPS : APPS_CHATTER).map((app) => (
             <button
               key={app.id}
