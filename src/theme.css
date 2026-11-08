@@ -319,8 +319,8 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: 0;
   border-radius: var(--radius-sm);
@@ -334,7 +334,7 @@ body {
   background-color: color-mix(in srgb, var(--c1) 12%, transparent);
 }
 
-/* O icone do chat e maior que o do sino: area propria para nao transbordar. */
+/* Chat e sino ocupam a mesma area; os dois icones ficam do mesmo tamanho optico. */
 .taskbar-chat {
   width: 36px;
   height: 36px;

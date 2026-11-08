@@ -249,8 +249,8 @@ export default function Taskbar({
           style={{ position: 'relative' }}
         >
           <svg
-            width="18"
-            height="18"
+            width="34"
+            height="34"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
