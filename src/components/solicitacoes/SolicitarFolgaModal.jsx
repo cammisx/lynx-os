@@ -305,6 +305,7 @@ export default function SolicitarFolgaModal({ usuario, onClose, onSaved }) {
     >
       <div
         role="dialog"
+        aria-modal="true"
         aria-label="Solicitar folga ou redução"
         style={MODAL_CAIXA}
       >

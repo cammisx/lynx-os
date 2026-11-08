@@ -211,6 +211,7 @@ export default function RegistrarVendaModal({ usuario, modeloPadraoId = '', onCl
     >
       <div
         role="dialog"
+        aria-modal="true"
         aria-label="Registrar mimo ou venda internacional"
         style={{
           width: 460,

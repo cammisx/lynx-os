@@ -387,6 +387,7 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
     >
       <div
         role="dialog"
+        aria-modal="true"
         aria-label="Ajuste de ponto"
         style={MODAL_CAIXA}
       >

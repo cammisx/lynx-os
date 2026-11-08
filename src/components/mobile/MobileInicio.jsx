@@ -1,5 +1,6 @@
 import { JANELAS } from '@/lib/janelas';
 import MobileResumoDia from '@/components/mobile/MobileResumoDia';
+import MobileAcoesRapidas from '@/components/mobile/MobileAcoesRapidas';
 
 /**
  * Tela inicial do celular: saudação curta e a grade com todos os apps, como
@@ -34,6 +35,8 @@ export default function MobileInicio({ nome = '', perfil, onAbrir, user }) {
       </div>
 
       <MobileResumoDia user={user} onAbrirTurnos={() => onAbrir('turnos')} />
+
+      <MobileAcoesRapidas user={user} />
 
       <div
         style={{
