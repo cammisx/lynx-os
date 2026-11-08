@@ -21,10 +21,13 @@ import usePreferenciaSom from '@/hooks/usePreferenciaSom';
 import useSonsCustom from '@/hooks/useSonsCustom';
 import CortarSomModal from '@/components/config/CortarSomModal';
 import {
+  lerEstadoServiceWorker,
   mostrarNotificacaoNavegador,
   navegadorSuportado,
+  ouvirEstadoServiceWorker,
   pedirPermissaoDoNavegador,
   permissaoDoNavegador,
+  registrarServiceWorker,
 } from '@/lib/notificacaoNavegador';
 
 const ABAS = [
@@ -100,6 +103,8 @@ export default function ConfiguracoesWindow({ onClose }) {
   const arquivoSomRef = useRef(null);
   const [avisoNavegador, setAvisoNavegador] = useState('');
   const [permissaoNavegador, setPermissaoNavegador] = useState(() => permissaoDoNavegador());
+  const [estadoWorker, setEstadoWorker] = useState(() => lerEstadoServiceWorker());
+  const [resultadoTeste, setResultadoTeste] = useState('');
   const [nome, setNome] = useState(perfil.nomeExibicao);
   const [subnick, setSubnick] = useState(perfil.subnick);
   const [foto, setFoto] = useState(perfil.fotoUrl);
@@ -315,6 +320,21 @@ export default function ConfiguracoesWindow({ onClose }) {
     if (somPref.pref.som === alvo) somPref.escolherSom(SOM_PADRAO);
     if (somPref.pref.som_chat === alvo) somPref.escolherSomChat('mensagem');
   };
+
+  useEffect(() => ouvirEstadoServiceWorker(setEstadoWorker), []);
+
+  /* Se o worker não entrou no primeiro carregamento, tenta de novo quando a
+     pessoa volta para a aba (a sessão já está pronta nessa hora). */
+  useEffect(() => {
+    if (!somPref.pref.notificar_navegador) return undefined;
+    if (estadoWorker.situacao === 'ok') return undefined;
+    registrarServiceWorker();
+    const ouvir = () => {
+      if (document.visibilityState === 'visible') registrarServiceWorker();
+    };
+    document.addEventListener('visibilitychange', ouvir);
+    return () => document.removeEventListener('visibilitychange', ouvir);
+  }, [somPref.pref.notificar_navegador, estadoWorker.situacao]);
 
   /* O aviso do navegador muda de história conforme o aparelho: no computador
      aparece no canto da tela; no celular, o iPhone só aceita com o app na
@@ -732,32 +752,60 @@ export default function ConfiguracoesWindow({ onClose }) {
               )}
               <span style={{ ...dicaStyle, opacity: 0.6 }}>{textoNavegador.rodape}</span>
               {somPref.pref.notificar_navegador && permissaoNavegador === 'granted' && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    mostrarNotificacaoNavegador({
-                      titulo: 'LynxOS',
-                      corpo: 'É assim que o aviso vai aparecer.',
-                      tag: 'lynx-teste',
-                      forcar: true,
-                    })
-                  }
-                  style={{
-                    alignSelf: 'flex-start',
-                    height: 26,
-                    padding: '0 10px',
-                    borderRadius: 7,
-                    border: '1px solid color-mix(in srgb, var(--c2) 26%, transparent)',
-                    background: 'transparent',
-                    color: 'var(--c3)',
-                    fontFamily: 'var(--font-main)',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Testar aviso
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setResultadoTeste('enviando…');
+                      const resultado = await mostrarNotificacaoNavegador({
+                        titulo: 'LynxOS',
+                        corpo: 'É assim que o aviso vai aparecer.',
+                        tag: 'lynx-teste',
+                        forcar: true,
+                      });
+                      setResultadoTeste(
+                        resultado?.ok ? 'aviso enviado' : `não saiu: ${resultado?.motivo || 'motivo desconhecido'}`
+                      );
+                    }}
+                    style={{
+                      alignSelf: 'flex-start',
+                      height: 26,
+                      padding: '0 10px',
+                      borderRadius: 7,
+                      border: '1px solid color-mix(in srgb, var(--c2) 26%, transparent)',
+                      background: 'transparent',
+                      color: 'var(--c3)',
+                      fontFamily: 'var(--font-main)',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Testar aviso
+                  </button>
+                  {resultadoTeste && (
+                    <span
+                      style={{
+                        fontSize: 9.5,
+                        color: resultadoTeste === 'aviso enviado' ? 'var(--ok)' : 'var(--c2)',
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {resultadoTeste}
+                    </span>
+                  )}
+                </div>
+              )}
+              {somPref.pref.notificar_navegador && estadoWorker.situacao === 'erro' && (
+                <span style={{ fontSize: 9.5, color: 'var(--erro)', lineHeight: 1.45 }}>
+                  O aviso do sistema não entrou: {estadoWorker.mensagem}. Sem ele, o celular não
+                  mostra notificação fora do app; o sino continua funcionando normalmente.
+                </span>
+              )}
+              {somPref.pref.notificar_navegador && estadoWorker.situacao === 'ok' && (
+                <span style={{ fontSize: 9.5, color: 'var(--ok)', lineHeight: 1.45 }}>
+                  Aviso do sistema pronto.
+                </span>
               )}
             </div>
           </div>

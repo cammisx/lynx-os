@@ -20,6 +20,42 @@ export const permissaoDoNavegador = () => {
 export const serviceWorkerSuportado = () =>
   typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
 
+/**
+ * Situação do service worker, para a tela de configurações poder dizer a
+ * verdade em vez de fingir que o aviso está ligado.
+ *   'inicial' | 'ok' | 'erro' | 'sem-suporte'
+ */
+let estadoWorker = { situacao: serviceWorkerSuportado() ? 'inicial' : 'sem-suporte', mensagem: '' };
+const ouvintesWorker = new Set();
+
+export const lerEstadoServiceWorker = () => estadoWorker;
+
+export const ouvirEstadoServiceWorker = (ouvinte) => {
+  ouvintesWorker.add(ouvinte);
+  return () => ouvintesWorker.delete(ouvinte);
+};
+
+const definirEstadoWorker = (situacao, mensagem = '') => {
+  estadoWorker = { situacao, mensagem };
+  ouvintesWorker.forEach((ouvinte) => {
+    try {
+      ouvinte(estadoWorker);
+    } catch (erro) {
+      // ouvinte quebrado não derruba o resto
+    }
+  });
+};
+
+const explicarFalha = (erro) => {
+  const nome = erro?.name || '';
+  const texto = String(erro?.message || erro || '');
+  if (nome === 'SecurityError' || /mime|content type/i.test(texto)) {
+    return 'o servidor entregou o arquivo do worker com o tipo errado';
+  }
+  if (/401|403|unauthor/i.test(texto)) return 'o servidor pediu login para entregar o worker';
+  return texto || 'erro desconhecido';
+};
+
 /** Guarda a ação de cada notificação mostrada, para o clique do sistema achar. */
 const cliques = new Map();
 let ponteLigada = false;
@@ -35,9 +71,14 @@ export const registrarServiceWorker = () => {
   registroPromessa = (async () => {
     try {
       const registro = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      definirEstadoWorker('ok');
       return registro;
     } catch (erro) {
       console.warn('[navegador] service worker', erro?.message || erro);
+      definirEstadoWorker('erro', explicarFalha(erro));
+      /* Outra tentativa depois de um tempo: no primeiro carregamento a sessão
+         pode ainda não estar pronta para o servidor entregar o arquivo. */
+      registroPromessa = null;
       return null;
     }
   })();
@@ -115,8 +156,11 @@ export const pedirPermissaoDoNavegador = async () => {
  * `aoClicar` recebe o clique para abrir a conversa.
  */
 export const mostrarNotificacaoNavegador = async ({ titulo, corpo, tag, aoClicar, forcar = false }) => {
-  if (!navegadorLigado()) return null;
-  if (!navegadorSuportado() || window.Notification.permission !== 'granted') return null;
+  if (!navegadorLigado()) return { ok: false, motivo: 'o aviso do navegador está desligado' };
+  if (!navegadorSuportado()) return { ok: false, motivo: 'este navegador não tem notificação de sistema' };
+  if (window.Notification.permission !== 'granted') {
+    return { ok: false, motivo: 'a permissão do navegador não está liberada' };
+  }
   // Aba na frente: o aviso do sistema só atrapalharia (o teste é exceção).
   if (
     !forcar &&
@@ -124,7 +168,7 @@ export const mostrarNotificacaoNavegador = async ({ titulo, corpo, tag, aoClicar
     document.visibilityState === 'visible' &&
     document.hasFocus()
   ) {
-    return null;
+    return { ok: false, motivo: 'a aba está na frente' };
   }
 
   const chave = tag || 'lynx-chat';
@@ -143,7 +187,7 @@ export const mostrarNotificacaoNavegador = async ({ titulo, corpo, tag, aoClicar
         tag: chave,
         data: { tag: chave, url: typeof location !== 'undefined' ? location.href : '/' },
       });
-      return registro;
+      return { ok: true, motivo: '' };
     } catch (erro) {
       console.warn('[navegador] notificação pelo service worker', erro?.message || erro);
     }
@@ -172,9 +216,9 @@ export const mostrarNotificacaoNavegador = async ({ titulo, corpo, tag, aoClicar
         // já fechada
       }
     }, 8000);
-    return aviso;
+    return { ok: true, motivo: '' };
   } catch (erro) {
     console.warn('[navegador] notificação', erro?.message || erro);
-    return null;
+    return { ok: false, motivo: `o navegador barrou a notificação (${explicarFalha(erro)})` };
   }
 };
