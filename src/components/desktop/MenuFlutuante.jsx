@@ -1,7 +1,20 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const MARGEM = 8;
+/* Folga entre o menu e a base: o ícone da barra cresce no hover, então um
+   respiro maior evita que ele encoste no menu. */
+const FOLGA = 14;
+
+/* O app aplica zoom no <html> quando a escala de fonte não é a Normal.
+   Dentro de uma raiz com zoom, `position: fixed` multiplica a coordenada
+   pelo zoom, enquanto o que medimos já vem multiplicado. Dividindo pelo
+   zoom as duas coisas falam a mesma língua. */
+const zoomDaRaiz = () => {
+  if (typeof window === 'undefined') return 1;
+  const valor = parseFloat(getComputedStyle(document.documentElement).zoom);
+  return Number.isFinite(valor) && valor > 0 ? valor : 1;
+};
 
 /**
  * Menu que flutua junto do cursor ou acima de um ícone.
@@ -21,30 +34,58 @@ export default function MenuFlutuante({ x = 0, y = 0, ancora = null, itens = [],
 
   /* Mede o menu de verdade antes de posicionar: estimar pela quantidade de
      itens erra quando tem separador ou texto que quebra linha. */
-  useLayoutEffect(() => {
+  const ajustar = useCallback(() => {
     const caixa = caixaRef.current;
     if (!caixa) return;
-    const { width, height } = caixa.getBoundingClientRect();
-    const tela = window.innerWidth;
-    const alturaTela = window.innerHeight;
+    /* offsetWidth/Height não sofrem com a animação de entrada (que dá um
+       scale de 0.98) nem com o zoom da raiz. */
+    const largura = caixa.offsetWidth;
+    const altura = caixa.offsetHeight;
+    const zoom = zoomDaRaiz();
+    const tela = window.innerWidth / zoom;
+    const alturaTela = window.innerHeight / zoom;
     const alvo = ancora?.current || ancora;
     const area = alvo?.getBoundingClientRect ? alvo.getBoundingClientRect() : null;
 
     let esquerda;
     let topo;
-    if (area) {
-      esquerda = area.left + area.width / 2 - width / 2;
-      topo = area.top - height - 8;
-      if (topo < MARGEM) topo = area.bottom + 8;
+    if (area && area.width) {
+      /* O centro horizontal do ícone não muda com o hover (a escala é
+         simétrica), mas o topo muda: por isso a altura vem da barra, que
+         não se mexe. */
+      const centro = (area.left + area.width / 2) / zoom;
+      const referencia = alvo.closest?.('.taskbar') || alvo.offsetParent || alvo;
+      const areaBase = referencia.getBoundingClientRect();
+      const topoBase = areaBase.top / zoom;
+      const fimBase = areaBase.bottom / zoom;
+      esquerda = centro - largura / 2;
+      topo = topoBase - altura - FOLGA;
+      if (topo < MARGEM) topo = fimBase + FOLGA;
     } else {
-      esquerda = x - width / 2;
-      topo = y + 4;
-      if (topo + height > alturaTela - MARGEM) topo = y - height - 4;
+      const px = x / zoom;
+      const py = y / zoom;
+      esquerda = px - largura / 2;
+      topo = py + 4;
+      if (topo + altura > alturaTela - MARGEM) topo = py - altura - 4;
     }
-    esquerda = Math.min(Math.max(MARGEM, esquerda), Math.max(MARGEM, tela - width - MARGEM));
-    topo = Math.min(Math.max(MARGEM, topo), Math.max(MARGEM, alturaTela - height - MARGEM));
+    esquerda = Math.min(Math.max(MARGEM, esquerda), Math.max(MARGEM, tela - largura - MARGEM));
+    topo = Math.min(Math.max(MARGEM, topo), Math.max(MARGEM, alturaTela - altura - MARGEM));
     setPos({ esquerda, topo });
-  }, [x, y, ancora, itens]);
+  }, [x, y, ancora]);
+
+  useLayoutEffect(() => {
+    ajustar();
+  }, [ajustar, itens]);
+
+  /* Se o tamanho do menu mudar depois (fonte carregando, item novo), ele se
+     reposiciona em vez de ficar torto. */
+  useEffect(() => {
+    const caixa = caixaRef.current;
+    if (!caixa || typeof ResizeObserver === 'undefined') return undefined;
+    const observador = new ResizeObserver(() => ajustar());
+    observador.observe(caixa);
+    return () => observador.disconnect();
+  }, [ajustar]);
 
   useEffect(() => {
     const foraDoMenu = (evento) => {
