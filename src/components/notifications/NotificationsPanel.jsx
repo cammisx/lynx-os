@@ -64,13 +64,12 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose, 
         }}
       >
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--c3)' }}>
-          {config ? 'Som de notificação' : 'Notificações'}
+          Notificações
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {!config && (
-            <button
-              type="button"
-              aria-label="Marcar todas como lidas"
+          <button
+            type="button"
+            aria-label="Marcar todas como lidas"
               title={
                 naoLidas.length
                   ? `Marcar ${naoLidas.length} como lidas`
@@ -94,9 +93,8 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose, 
                 opacity: naoLidas.length ? 1 : 0.55,
               }}
             >
-              <CheckAllIcon size={13} />
-            </button>
-          )}
+            <CheckAllIcon size={13} />
+          </button>
           <button
             type="button"
             aria-label="Abrir as configurações de notificação"

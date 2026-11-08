@@ -24,10 +24,6 @@ export default function MobileChat({ onVoltar }) {
     definirFocoDoChat(aberto ? canalAtivo?.id || 'lista' : null);
   }, [aberto, canalAtivo]);
 
-  useEffect(() => {
-    if (!canalAtivo) setAjustes(false);
-  }, [canalAtivo]);
-
   const botao = {
     width: 40,
     height: 40,
