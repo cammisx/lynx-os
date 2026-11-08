@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -59,13 +60,27 @@ const botaoStyle = (principal = true, desativado = false) => ({
   opacity: desativado ? 0.55 : 1,
 });
 
+const botaoPerigo = {
+  height: 30,
+  padding: '0 14px',
+  borderRadius: 8,
+  border: '1px solid color-mix(in srgb, var(--erro) 45%, transparent)',
+  background: 'color-mix(in srgb, var(--erro) 14%, transparent)',
+  color: 'var(--erro)',
+  fontFamily: 'var(--font-main)',
+  fontSize: 11.5,
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
 const SUBLIMITE = 60;
 
 export default function ConfiguracoesWindow({ onClose }) {
   const pequeno = useIsMobile();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const perfil = usePerfil(user);
   const [aba, setAba] = useState(() => consumirAbaConfig() || 'perfil');
+  const [confirmarSair, setConfirmarSair] = useState(false);
   const [nome, setNome] = useState(perfil.nomeExibicao);
   const [subnick, setSubnick] = useState(perfil.subnick);
   const [foto, setFoto] = useState(perfil.fotoUrl);
@@ -455,6 +470,25 @@ export default function ConfiguracoesWindow({ onClose }) {
                 {salvando ? 'Salvando...' : 'Salvar perfil'}
               </button>
               <span style={dicaStyle}>A foto e o subnick entram na hora que você salvar.</span>
+            </div>
+
+            <div
+              style={{
+                borderTop: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
+                paddingTop: 12,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                flexShrink: 0,
+              }}
+            >
+              <span style={labelStyle}>Sessão</span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button type="button" style={botaoPerigo} onClick={() => setConfirmarSair(true)}>
+                  Sair da conta
+                </button>
+                <span style={dicaStyle}>Encerra a sessão neste aparelho e volta para a tela de entrada.</span>
+              </div>
             </div>
           </div>
         )}
@@ -909,6 +943,103 @@ export default function ConfiguracoesWindow({ onClose }) {
           </div>
         )}
       </div>
+
+      {confirmarSair &&
+        createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9900,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20,
+              background: 'rgba(10,10,16,0.45)',
+              backdropFilter: 'blur(3px)',
+              WebkitBackdropFilter: 'blur(3px)',
+              fontFamily: 'var(--font-main)',
+            }}
+            onMouseDown={(evento) => {
+              if (evento.target === evento.currentTarget) setConfirmarSair(false);
+            }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="sair-conta-titulo"
+              style={{
+                width: 'min(380px, calc(100vw - 40px))',
+                borderRadius: 14,
+                border: '1px solid color-mix(in srgb, var(--c1) 30%, transparent)',
+                background: 'color-mix(in srgb, var(--c8) 82%, transparent)',
+                backdropFilter: 'blur(22px)',
+                WebkitBackdropFilter: 'blur(22px)',
+                boxShadow: '0 24px 70px rgba(0,0,0,0.6)',
+                padding: 18,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+              }}
+            >
+              <span
+                id="sair-conta-titulo"
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: 13,
+                  letterSpacing: '0.04em',
+                  color: 'var(--c1)',
+                }}
+              >
+                Sair da conta?
+              </span>
+              <span style={{ fontSize: 11.5, lineHeight: 1.55, color: 'var(--c3)' }}>
+                Você volta para a tela de entrada do Lynx OS e precisa entrar de novo para usar o sistema.
+              </span>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
+                <button
+                  type="button"
+                  onClick={() => setConfirmarSair(false)}
+                  style={{
+                    height: 30,
+                    padding: '0 14px',
+                    borderRadius: 9,
+                    border: '1px solid color-mix(in srgb, var(--c2) 25%, transparent)',
+                    background: 'transparent',
+                    color: 'var(--c3)',
+                    fontFamily: 'inherit',
+                    fontSize: 11,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmarSair(false);
+                    logout();
+                  }}
+                  style={{
+                    height: 30,
+                    padding: '0 14px',
+                    borderRadius: 9,
+                    border: '1px solid color-mix(in srgb, var(--erro) 45%, transparent)',
+                    background: 'color-mix(in srgb, var(--erro) 18%, transparent)',
+                    color: 'var(--erro)',
+                    fontFamily: 'inherit',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Sair
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </Window>
   );
 }
