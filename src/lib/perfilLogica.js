@@ -71,8 +71,7 @@ export const perfilDoUsuario = (user) => ({
   petNome: user?.pet_nome || '',
 });
 
-export const mesclarPerfil = (local = {}, user = {}) => {
-  const remoto = perfilDoUsuario(user);
+export const mesclarPerfilCom = (local = {}, remoto = {}) => {
   const doBanco = Object.fromEntries(Object.entries(remoto).filter(([, valor]) => valor));
   const perfil = { ...PERFIL_PADRAO, ...(local || {}), ...doBanco };
   /* O filtro acima descarta falsy, então um `false` vindo do banco sumiria.
@@ -105,6 +104,95 @@ export const mesclarPerfil = (local = {}, user = {}) => {
     petNome: String(perfil.petNome || '').trim().slice(0, 24),
   };
 };
+
+export const mesclarPerfil = (local = {}, user = {}) =>
+  mesclarPerfilCom(local, perfilDoUsuario(user));
+
+/* ------------------- preferências próprias de cada aparelho ------------------- */
+
+/** O que muda entre computador e celular. Nome, foto, subnick e ordens não. */
+export const CAMPOS_COMPARTILHADOS = [
+  'nomeExibicao',
+  'fotoUrl',
+  'subnick',
+  'barraOrdem',
+  'barraFixadas',
+  'agendaOrdem',
+];
+
+export const PREF_POR_APARELHO = [
+  'tema',
+  'modo',
+  'fonte',
+  'fonteApp',
+  'fundoUrl',
+  'fundoEstatico',
+  'fundoModo',
+  'pet',
+  'petCor',
+  'petNome',
+];
+
+/** Campo do User que guarda a versão de celular de cada preferência. */
+export const CAMPO_CELULAR = {
+  tema: 'tema_celular',
+  modo: 'tema_modo_celular',
+  fonte: 'fonte_escala_celular',
+  fonteApp: 'fonte_app_celular',
+  fundoUrl: 'fundo_url_celular',
+  fundoEstatico: 'fundo_estatico_celular',
+  fundoModo: 'fundo_modo_celular',
+  pet: 'pet_celular',
+  petCor: 'pet_cor_celular',
+  petNome: 'pet_nome_celular',
+};
+
+/** Mesma regra do uso no app (a casca mobile troca de layout em 768px). */
+export const ehCelular = () =>
+  typeof window !== 'undefined' && window.innerWidth > 0 && window.innerWidth < 768;
+
+/** Campos do conjunto do celular, como vêm do User. */
+export const perfilCelularDoUsuario = (user) => ({
+  tema: user?.tema_celular || '',
+  modo: user?.tema_modo_celular || '',
+  fonte: user?.fonte_escala_celular || '',
+  fonteApp: user?.fonte_app_celular || '',
+  fundoUrl: user?.fundo_url_celular || '',
+  fundoEstatico:
+    typeof user?.fundo_estatico_celular === 'boolean' ? user.fundo_estatico_celular : undefined,
+  fundoModo: user?.fundo_modo_celular || '',
+  pet: user?.pet_celular || '',
+  petCor: user?.pet_cor_celular || '',
+  petNome: user?.pet_nome_celular || '',
+});
+
+export const mesclarPerfilCelular = (local = {}, user = {}) =>
+  mesclarPerfilCom(local, perfilCelularDoUsuario(user));
+
+/** Só o que muda por aparelho, validado e com os derivados do fundo. */
+export const normalizarAparelho = (valores = {}) => ({
+  tema: valores.tema || TEMA_PADRAO,
+  modo: modoValido(valores.modo),
+  fonte: valores.fonte || FONTE_PADRAO,
+  fonteApp: fonteAppValida(valores.fonteApp),
+  fundoUrl: valores.fundoUrl || '',
+  fundoModo: modoFundoValido(valores.fundoModo),
+  fundoEstatico: modoFundoValido(valores.fundoModo) === 'parado',
+  fundoSemLinhas: modoFundoValido(valores.fundoModo) === 'sem',
+  pet: petValido(valores.pet),
+  petCor: corValida(valores.petCor),
+  petNome: String(valores.petNome || '').trim().slice(0, 24),
+});
+
+/** O que vale nos dois aparelhos, tirado de um perfil completo. */
+export const compartilhadoDoPerfil = (perfil = {}) => ({
+  nomeExibicao: perfil.nomeExibicao || '',
+  fotoUrl: perfil.fotoUrl || '',
+  subnick: perfil.subnick || '',
+  barraOrdem: emLista(perfil.barraOrdem),
+  barraFixadas: emLista(perfil.barraFixadas),
+  agendaOrdem: emLista(perfil.agendaOrdem),
+});
 
 /** Nome que vale na tela: o do perfil manda, depois o da conta. */
 export const nomeDe = (perfil, user) =>

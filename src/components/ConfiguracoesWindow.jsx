@@ -464,6 +464,17 @@ export default function ConfiguracoesWindow({ onClose }) {
             className="glass-scroll"
             style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}
           >
+            <span
+              style={{
+                fontSize: 9.5,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'var(--c2)',
+                opacity: 0.85,
+              }}
+            >
+              {pequeno ? 'Ajustes do celular' : 'Ajustes do computador'}
+            </span>
             <span style={{ ...labelStyle, marginTop: 2 }}>Tamanho da fonte</span>
             <span style={dicaStyle}>
               Vale para o sistema inteiro: chat, janelas, painéis e menus. O Normal é como sempre foi.

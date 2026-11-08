@@ -48,6 +48,48 @@
       "type": "string",
       "description": "Nome dado ao pet do desktop pelo usuario"
     },
+    "tema_celular": {
+      "type": "string",
+      "description": "Perfil de cor usado no celular (o do computador fica em tema)"
+    },
+    "tema_modo_celular": {
+      "type": "string",
+      "description": "Modo de cor no celular: claro, escuro ou sistema"
+    },
+    "fonte_escala_celular": {
+      "type": "string",
+      "description": "Tamanho da fonte usado no celular"
+    },
+    "fonte_app_celular": {
+      "type": "string",
+      "enum": ["mono", "classica", "redonda"],
+      "description": "Familia tipografica usada no celular"
+    },
+    "fundo_url_celular": {
+      "type": "string",
+      "description": "Imagem de fundo escolhida para o celular"
+    },
+    "fundo_estatico_celular": {
+      "type": "boolean",
+      "description": "Para a animacao da seda no celular"
+    },
+    "fundo_modo_celular": {
+      "type": "string",
+      "enum": ["animado", "parado", "sem"],
+      "description": "Fundo no celular: animado, parado ou sem linhas"
+    },
+    "pet_celular": {
+      "type": "string",
+      "description": "Pet escolhido para o celular"
+    },
+    "pet_cor_celular": {
+      "type": "string",
+      "description": "Cor do pet no celular"
+    },
+    "pet_nome_celular": {
+      "type": "string",
+      "description": "Nome do pet no celular"
+    },
     "agenda_ordem": {
       "type": "string",
       "description": "Ordem das agendas das modelos no painel do relogio (ids separados por virgula)"

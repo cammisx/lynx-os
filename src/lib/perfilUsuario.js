@@ -12,7 +12,17 @@ import { aplicarFonte, fonteDoNavegador, tamanhoPorId } from '@/lib/fonte';
 import { aplicarFonteApp, fonteAppDoNavegador, fonteAppValida } from '@/lib/fontesApp';
 import { buscarPerfil, salvarPerfilPublico } from '@/lib/perfis';
 import { escreverBarra } from '@/lib/barraTarefas';
-import { PERFIL_PADRAO, iniciaisDe, mesclarPerfil, nomeDe } from '@/lib/perfilLogica';
+import {
+  CAMPO_CELULAR,
+  PERFIL_PADRAO,
+  compartilhadoDoPerfil,
+  ehCelular,
+  iniciaisDe,
+  mesclarPerfil,
+  mesclarPerfilCelular,
+  nomeDe,
+  normalizarAparelho,
+} from '@/lib/perfilLogica';
 import { espelharNomeNoChatter, propagarNomeNasModelos } from '@/lib/pessoas';
 import { emitChattersChanged } from '@/lib/desktopEvents';
 
@@ -20,7 +30,69 @@ export { iniciaisDe, nomeDe };
 
 const PREFIXO = 'lynx:perfil:';
 
-let atual = { ...PERFIL_PADRAO };
+/* O perfil é dividido em duas partes: o que é seu e vale em qualquer lugar
+   (nome, foto, subnick, ordem das barras) e o que é do aparelho (tema, modo,
+   fonte, fundo, pet). Cada aparelho tem o seu conjunto; o celular usa os
+   campos com sufixo _celular no User. */
+let compartilhado = compartilhadoDoPerfil(PERFIL_PADRAO);
+let conjuntos = {
+  desktop: normalizarAparelho(PERFIL_PADRAO),
+  celular: normalizarAparelho(PERFIL_PADRAO),
+};
+let usandoCelular = false;
+
+const conjuntoAtivo = () => conjuntos[usandoCelular ? 'celular' : 'desktop'];
+
+const montarPerfil = () => ({ ...compartilhado, ...conjuntoAtivo() });
+
+let atual = montarPerfil();
+
+const gravarTudo = (id) => {
+  if (!id) return;
+  gravarLocal(id, { ...compartilhado, ...conjuntos.desktop, celular: { ...conjuntos.celular } });
+};
+
+const aplicarVisual = () => {
+  aplicarTema(atual.tema, atual.modo);
+  aplicarFonte(atual.fonte);
+  aplicarFonteApp(atual.fonteApp);
+};
+
+/** Monta o que vai para o User: os dois conjuntos, sempre juntos, para que
+    salvar no celular não apague o que está no computador. */
+const camposDoUser = (extras = {}) => {
+  const d = conjuntos.desktop;
+  const c = conjuntos.celular;
+  return {
+    nome_exibicao: compartilhado.nomeExibicao || '',
+    foto_url: compartilhado.fotoUrl || '',
+    subnick: compartilhado.subnick || '',
+    barra_ordem: escreverBarra(compartilhado.barraOrdem),
+    barra_fixadas: escreverBarra(compartilhado.barraFixadas),
+    agenda_ordem: escreverBarra(compartilhado.agendaOrdem),
+    tema: d.tema || '',
+    tema_modo: d.modo || '',
+    fonte_escala: d.fonte || '',
+    fonte_app: d.fonteApp || '',
+    fundo_url: d.fundoUrl || '',
+    fundo_estatico: Boolean(d.fundoEstatico),
+    fundo_modo: d.fundoModo || '',
+    pet: d.pet || '',
+    pet_cor: d.petCor || '',
+    pet_nome: d.petNome || '',
+    [CAMPO_CELULAR.tema]: c.tema || '',
+    [CAMPO_CELULAR.modo]: c.modo || '',
+    [CAMPO_CELULAR.fonte]: c.fonte || '',
+    [CAMPO_CELULAR.fonteApp]: c.fonteApp || '',
+    [CAMPO_CELULAR.fundoUrl]: c.fundoUrl || '',
+    [CAMPO_CELULAR.fundoEstatico]: Boolean(c.fundoEstatico),
+    [CAMPO_CELULAR.fundoModo]: c.fundoModo || '',
+    [CAMPO_CELULAR.pet]: c.pet || '',
+    [CAMPO_CELULAR.petCor]: c.petCor || '',
+    [CAMPO_CELULAR.petNome]: c.petNome || '',
+    ...extras,
+  };
+};
 let carregadoPara = null;
 const ouvintes = new Set();
 
@@ -63,6 +135,24 @@ const observarSistema = () => {
   observandoSistema = true;
 };
 
+/* Girar o celular ou estreitar a janela do computador troca o conjunto em uso,
+   sem recarregar a página. */
+let observandoAparelho = false;
+
+const observarAparelho = () => {
+  if (observandoAparelho || typeof window === 'undefined' || !window.matchMedia) return;
+  const consulta = window.matchMedia('(max-width: 767px)');
+  const aoMudar = () => {
+    if (consulta.matches === usandoCelular) return;
+    usandoCelular = consulta.matches;
+    atual = montarPerfil();
+    aplicarVisual();
+    avisar();
+  };
+  consulta.addEventListener?.('change', aoMudar);
+  observandoAparelho = true;
+};
+
 export const assinarPerfil = (fn) => {
   ouvintes.add(fn);
   return () => ouvintes.delete(fn);
@@ -71,24 +161,46 @@ export const assinarPerfil = (fn) => {
 export const carregarPerfil = (user) => {
   if (!user?.id || carregadoPara === user.id) return atual;
   carregadoPara = user.id;
-  atual = mesclarPerfil(lerLocal(user.id), user);
+  usandoCelular = ehCelular();
+
+  const local = lerLocal(user.id) || {};
+  const { celular: celularLocal, ...desktopLocal } = local;
+
+  /* O conjunto do celular nasce copiando o do computador: quem nunca abriu o
+     app no telefone vê o mesmo visual de sempre, e a partir daí os dois se
+     separam de verdade. */
+  const doComputador = mesclarPerfil(desktopLocal, user);
+  const doCelular = mesclarPerfilCelular({ ...doComputador, ...(celularLocal || {}) }, user);
+
+  compartilhado = compartilhadoDoPerfil(doComputador);
+  conjuntos = {
+    desktop: normalizarAparelho(doComputador),
+    celular: normalizarAparelho(doCelular),
+  };
+  atual = montarPerfil();
   if (!atual.fonte) atual.fonte = fonteDoNavegador() || atual.fonte;
   if (!atual.fonteApp) atual.fonteApp = fonteAppDoNavegador() || atual.fonteApp;
-  aplicarTema(atual.tema, atual.modo);
-  aplicarFonte(atual.fonte);
-  aplicarFonteApp(atual.fonteApp);
+  aplicarVisual();
   observarSistema();
+  observarAparelho();
   avisar();
 
   /* O perfil público é a fonte que chega para todo mundo (a listagem de User
      não devolve os campos extras). Chega depois, sem travar a tela. */
   buscarPerfil(user.id).then((publico) => {
     if (publico) {
-      atual = mesclarPerfil(atual, publico);
-      gravarLocal(user.id, atual);
-      aplicarTema(atual.tema, atual.modo);
-      aplicarFonte(atual.fonte);
-      aplicarFonteApp(atual.fonteApp);
+      /* O perfil público serve para os outros verem seu nome e foto: o visual
+         continua mandando por aqui, senão o celular herdaria o tema do
+         computador na primeira abertura. */
+      compartilhado = {
+        ...compartilhado,
+        nomeExibicao: publico.nome_exibicao || compartilhado.nomeExibicao,
+        fotoUrl: publico.foto_url || compartilhado.fotoUrl,
+        subnick: publico.subnick || compartilhado.subnick,
+      };
+      atual = montarPerfil();
+      gravarTudo(user.id);
+      aplicarVisual();
       avisar();
       return;
     }
@@ -121,32 +233,21 @@ export const carregarPerfil = (user) => {
  * ordem sobrevive a um recarregamento mesmo que o banco recuse o campo.
  */
 export const salvarBarraTarefas = async (user, { ordem = [], fixadas = [] } = {}) => {
-  atual = { ...atual, barraOrdem: ordem, barraFixadas: fixadas };
-  if (user?.id) gravarLocal(user.id, atual);
+  compartilhado = { ...compartilhado, barraOrdem: [...ordem], barraFixadas: [...fixadas] };
+  atual = montarPerfil();
+  gravarTudo(user?.id);
   avisar();
   if (!user?.id) return { remoto: false };
 
   try {
     /* Manda o perfil inteiro junto: assim a gravação nunca apaga nome, foto
        ou tema, mesmo que a atualização do User substitua o registro. */
-    await base44.auth.updateMe({
-      nome_exibicao: atual.nomeExibicao || '',
-      foto_url: atual.fotoUrl || '',
-      subnick: atual.subnick || '',
-      tema: atual.tema || '',
-      tema_modo: atual.modo || '',
-      fonte_escala: atual.fonte || '',
-      fonte_app: atual.fonteApp || '',
-      fundo_url: atual.fundoUrl || '',
-      fundo_estatico: Boolean(atual.fundoEstatico),
-      fundo_modo: atual.fundoModo || '',
-      barra_ordem: escreverBarra(ordem),
-      barra_fixadas: escreverBarra(fixadas),
-      agenda_ordem: escreverBarra(atual.agendaOrdem),
-      pet: atual.pet || '',
-      pet_cor: atual.petCor || '',
-      pet_nome: atual.petNome || '',
-    });
+    await base44.auth.updateMe(
+      camposDoUser({
+        barra_ordem: escreverBarra(ordem),
+        barra_fixadas: escreverBarra(fixadas),
+      })
+    );
     return { remoto: true };
   } catch (erro) {
     console.warn('[Perfil] o User recusou a ordem da barra:', erro?.message || erro);
@@ -162,30 +263,14 @@ export const salvarBarraTarefas = async (user, { ordem = [], fixadas = [] } = {}
  * mexe em nome, foto ou tema.
  */
 export const salvarOrdemAgenda = async (user, ordem = []) => {
-  atual = { ...atual, agendaOrdem: [...ordem] };
-  if (user?.id) gravarLocal(user.id, atual);
+  compartilhado = { ...compartilhado, agendaOrdem: [...ordem] };
+  atual = montarPerfil();
+  gravarTudo(user?.id);
   avisar();
   if (!user?.id) return { remoto: false };
 
   try {
-    await base44.auth.updateMe({
-      nome_exibicao: atual.nomeExibicao || '',
-      foto_url: atual.fotoUrl || '',
-      subnick: atual.subnick || '',
-      tema: atual.tema || '',
-      tema_modo: atual.modo || '',
-      fonte_escala: atual.fonte || '',
-      fonte_app: atual.fonteApp || '',
-      fundo_url: atual.fundoUrl || '',
-      fundo_estatico: Boolean(atual.fundoEstatico),
-      fundo_modo: atual.fundoModo || '',
-      barra_ordem: escreverBarra(atual.barraOrdem),
-      barra_fixadas: escreverBarra(atual.barraFixadas),
-      agenda_ordem: escreverBarra(ordem),
-      pet: atual.pet || '',
-      pet_cor: atual.petCor || '',
-      pet_nome: atual.petNome || '',
-    });
+    await base44.auth.updateMe(camposDoUser({ agenda_ordem: escreverBarra(ordem) }));
     return { remoto: true };
   } catch (erro) {
     console.warn('[Perfil] o User recusou a ordem da agenda:', erro?.message || erro);
@@ -197,8 +282,9 @@ export const salvarOrdemAgenda = async (user, ordem = []) => {
 export const refletirNomeDeUsuario = (usuarioId, nome) => {
   if (!usuarioId || usuarioId !== carregadoPara || !nome) return;
   if (atual.nomeExibicao === nome) return;
-  atual = { ...atual, nomeExibicao: nome };
-  gravarLocal(usuarioId, atual);
+  compartilhado = { ...compartilhado, nomeExibicao: nome };
+  atual = montarPerfil();
+  gravarTudo(usuarioId);
   avisar();
 };
 
@@ -221,15 +307,12 @@ export const salvarPerfil = async (user, parcial = {}) => {
   /* O spread não muda o `atual` antigo: para normalizar o modo é preciso ler
      do objeto já mesclado, senão a escolha nova é sobrescrita pela anterior. */
   const mesclado = { ...atual, ...parcial };
-  atual = {
-    ...mesclado,
-    modo: modoValido(mesclado.modo),
-    fonteApp: fonteAppValida(mesclado.fonteApp),
-  };
-  aplicarTema(atual.tema, atual.modo);
-  aplicarFonte(atual.fonte);
-  aplicarFonteApp(atual.fonteApp);
-  if (user?.id) gravarLocal(user.id, atual);
+  /* O que é do aparelho vai para o conjunto dele; o resto é compartilhado. */
+  conjuntos[usandoCelular ? 'celular' : 'desktop'] = normalizarAparelho(mesclado);
+  compartilhado = compartilhadoDoPerfil(mesclado);
+  atual = montarPerfil();
+  aplicarVisual();
+  gravarTudo(user?.id);
   avisar();
 
   if (!user?.id) return { remoto: false };
@@ -239,24 +322,7 @@ export const salvarPerfil = async (user, parcial = {}) => {
      a outra ainda vale. */
   let noUser = false;
   try {
-    const salvo = await base44.auth.updateMe({
-      nome_exibicao: atual.nomeExibicao || '',
-      foto_url: atual.fotoUrl || '',
-      subnick: atual.subnick || '',
-      tema: atual.tema || '',
-      tema_modo: atual.modo || '',
-      fonte_escala: atual.fonte || '',
-      fonte_app: atual.fonteApp || '',
-      fundo_url: atual.fundoUrl || '',
-      fundo_estatico: Boolean(atual.fundoEstatico),
-      fundo_modo: atual.fundoModo || '',
-      barra_ordem: escreverBarra(atual.barraOrdem),
-      barra_fixadas: escreverBarra(atual.barraFixadas),
-      agenda_ordem: escreverBarra(atual.agendaOrdem),
-      pet: atual.pet || '',
-      pet_cor: atual.petCor || '',
-      pet_nome: atual.petNome || '',
-    });
+    const salvo = await base44.auth.updateMe(camposDoUser());
     noUser = Boolean(salvo && 'nome_exibicao' in salvo);
   } catch (erro) {
     console.warn('[Perfil] o User recusou os campos extras:', erro?.message || erro);
