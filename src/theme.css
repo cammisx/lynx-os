@@ -834,3 +834,14 @@ body {
 .girando {
   animation: girar-atualizacao 900ms linear infinite;
 }
+
+/* Morcego do desktop: pendurado no topo, balançando devagar. */
+@keyframes lynxPetPendurado {
+  0%,
+  100% {
+    transform: rotate(178deg);
+  }
+  50% {
+    transform: rotate(182deg);
+  }
+}
