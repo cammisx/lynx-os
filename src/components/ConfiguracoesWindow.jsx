@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
@@ -16,8 +16,10 @@ import { prepararFundo } from '@/lib/fundo';
 import { useMarcarSujo } from '@/components/desktop/JanelaContext';
 import { AVISO_ABA_CONFIG, consumirAbaConfig } from '@/lib/configAba';
 import BlocoSom, { Interruptor } from '@/components/config/BlocoSom';
-import { SONS } from '@/lib/sons';
+import { SONS, SOM_PADRAO, formatarDuracaoSom, idSomCustom } from '@/lib/sons';
 import usePreferenciaSom from '@/hooks/usePreferenciaSom';
+import useSonsCustom from '@/hooks/useSonsCustom';
+import CortarSomModal from '@/components/config/CortarSomModal';
 import {
   navegadorSuportado,
   pedirPermissaoDoNavegador,
@@ -91,6 +93,10 @@ export default function ConfiguracoesWindow({ onClose }) {
   const [aba, setAba] = useState(() => consumirAbaConfig() || 'perfil');
   const [confirmarSair, setConfirmarSair] = useState(false);
   const somPref = usePreferenciaSom();
+  const galeria = useSonsCustom();
+  const [arquivoSom, setArquivoSom] = useState(null);
+  const [confirmandoSom, setConfirmandoSom] = useState('');
+  const arquivoSomRef = useRef(null);
   const [avisoNavegador, setAvisoNavegador] = useState('');
   const [permissaoNavegador, setPermissaoNavegador] = useState(() => permissaoDoNavegador());
   const [nome, setNome] = useState(perfil.nomeExibicao);
@@ -267,6 +273,48 @@ export default function ConfiguracoesWindow({ onClose }) {
     );
   };
 
+  /* Os quatro sons do código mais os áudios da galeria. O id do áudio enviado
+     é montado aqui para não depender da ordem dos efeitos do hook. */
+  const listaDeSons = useMemo(
+    () => [
+      ...SONS,
+      ...galeria.todos
+        .filter((item) => item?.id && item?.url)
+        .map((item) => ({
+          id: idSomCustom(item.id),
+          nome: item.nome || 'Meu som',
+          personalizado: true,
+          compartilhado: item.compartilhado === true,
+        })),
+    ],
+    [galeria.todos]
+  );
+
+  const escolherArquivoSom = (evento) => {
+    const arquivo = evento.target.files?.[0];
+    if (arquivoSomRef.current) arquivoSomRef.current.value = '';
+    if (!arquivo) return;
+    if (!arquivo.type?.startsWith('audio/') && !/\.(mp3|wav|m4a|ogg|oga|aac|flac|opus)$/i.test(arquivo.name || '')) {
+      setAviso({ erro: true, texto: 'Escolhe um arquivo de áudio.' });
+      return;
+    }
+    setArquivoSom(arquivo);
+  };
+
+  const removerSom = async (registro) => {
+    if (confirmandoSom !== registro.id) {
+      setConfirmandoSom(registro.id);
+      setTimeout(() => setConfirmandoSom((atual) => (atual === registro.id ? '' : atual)), 4000);
+      return;
+    }
+    setConfirmandoSom('');
+    const alvo = idSomCustom(registro.id);
+    await galeria.excluir(registro);
+    /* Se era o som escolhido, volta para o do código em vez de ficar mudo. */
+    if (somPref.pref.som === alvo) somPref.escolherSom(SOM_PADRAO);
+    if (somPref.pref.som_chat === alvo) somPref.escolherSomChat('mensagem');
+  };
+
   /* Aviso do navegador: o mesmo caminho do painel do sino, com a permissão
      pedida na hora em que a pessoa liga. */
   const mudarNavegador = async (valor) => {
@@ -387,7 +435,7 @@ export default function ConfiguracoesWindow({ onClose }) {
               ligado={somPref.pref.ativo}
               rotuloInterruptor="Ligar ou desligar o som das notificações"
               onAlternar={somPref.alternarSom}
-              sons={SONS}
+              sons={listaDeSons}
               escolhido={somPref.pref.som}
               onEscolher={somPref.escolherSom}
               volume={somPref.pref.volume}
@@ -401,13 +449,189 @@ export default function ConfiguracoesWindow({ onClose }) {
               ligado={somPref.pref.chat_ativo}
               rotuloInterruptor="Ligar ou desligar o som das mensagens"
               onAlternar={somPref.alternarSomChat}
-              sons={SONS}
+              sons={listaDeSons}
               escolhido={somPref.pref.som_chat}
               onEscolher={somPref.escolherSomChat}
               volume={somPref.pref.volume_chat}
               onVolume={somPref.mudarVolumeChat}
               rodape="Independente do som das notificações, e independente do outro aparelho."
             />
+
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+                padding: 12,
+                borderRadius: 12,
+                border: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
+                background: 'color-mix(in srgb, var(--c8) 40%, transparent)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={labelStyle}>Meus áudios</span>
+                  <span style={dicaStyle}>
+                    Até 4 segundos. Aparecem nos dois aparelhos; a escolha de qual tocar é de cada um.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => arquivoSomRef.current?.click()}
+                  style={{
+                    height: 30,
+                    padding: '0 12px',
+                    flexShrink: 0,
+                    borderRadius: 8,
+                    border: '1px solid color-mix(in srgb, var(--c1) 48%, transparent)',
+                    background: 'color-mix(in srgb, var(--c1) 16%, transparent)',
+                    color: 'var(--c1)',
+                    fontFamily: 'var(--font-main)',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Enviar áudio
+                </button>
+                <input
+                  ref={arquivoSomRef}
+                  type="file"
+                  accept="audio/*"
+                  onChange={escolherArquivoSom}
+                  style={{ display: 'none' }}
+                />
+              </div>
+
+              {galeria.meus.length === 0 ? (
+                <span style={{ fontSize: 10, color: 'var(--c2)', opacity: 0.7, lineHeight: 1.45 }}>
+                  Nenhum áudio enviado ainda. mp3, m4a ou wav de até 4 segundos, ou mais longo com o
+                  corte na hora.
+                </span>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {galeria.meus.map((registro) => {
+                    const confirmando = confirmandoSom === registro.id;
+                    return (
+                      <div
+                        key={registro.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '7px 9px',
+                          borderRadius: 9,
+                          border: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
+                          background: 'color-mix(in srgb, var(--c8) 45%, transparent)',
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => somPref.escolherSom(idSomCustom(registro.id))}
+                          title="Ouvir"
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1,
+                            textAlign: 'left',
+                            border: 'none',
+                            background: 'transparent',
+                            color: 'var(--c3)',
+                            fontFamily: 'var(--font-main)',
+                            cursor: 'pointer',
+                            padding: 0,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {registro.nome || 'Meu som'}
+                            {somPref.pref.som === idSomCustom(registro.id) ||
+                            somPref.pref.som_chat === idSomCustom(registro.id)
+                              ? ' ·'
+                              : ''}
+                          </span>
+                          <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.75 }}>
+                            {formatarDuracaoSom(registro.duracao)}
+                            {registro.compartilhado ? ' · compartilhado' : ''}
+                          </span>
+                        </button>
+
+                        <Interruptor
+                          ligado={registro.compartilhado === true}
+                          onMudar={() => galeria.alternarCompartilhado(registro)}
+                          rotulo={`Compartilhar ${registro.nome || 'áudio'}`}
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() => removerSom(registro)}
+                          style={{
+                            height: 24,
+                            padding: '0 8px',
+                            flexShrink: 0,
+                            borderRadius: 7,
+                            border: `1px solid color-mix(in srgb, var(--erro) ${confirmando ? 70 : 32}%, transparent)`,
+                            background: confirmando
+                              ? 'color-mix(in srgb, var(--erro) 22%, transparent)'
+                              : 'transparent',
+                            color: 'var(--erro)',
+                            fontFamily: 'var(--font-main)',
+                            fontSize: 9.5,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {confirmando ? 'Confirmar?' : 'Remover'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {galeria.compartilhados.filter((item) => item.usuario_id !== user?.id).length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ ...dicaStyle, opacity: 0.85 }}>Da galeria compartilhada</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    {galeria.compartilhados
+                      .filter((item) => item.usuario_id !== user?.id)
+                      .map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => somPref.escolherSom(idSomCustom(item.id))}
+                          title={`${item.nome || 'Som'}${item.autor ? ` · ${item.autor}` : ''}`}
+                          style={{
+                            maxWidth: 150,
+                            padding: '5px 9px',
+                            borderRadius: 999,
+                            border: '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
+                            background: 'color-mix(in srgb, var(--c2) 10%, transparent)',
+                            color: 'var(--c2)',
+                            fontFamily: 'var(--font-main)',
+                            fontSize: 9.5,
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {item.nome || 'Som'} · {item.autor || 'alguém'}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div
               style={{
@@ -1103,6 +1327,20 @@ export default function ConfiguracoesWindow({ onClose }) {
           </div>
         )}
       </div>
+
+      {arquivoSom && (
+        <CortarSomModal
+          arquivo={arquivoSom}
+          usuarioId={user?.id}
+          autor={perfil.nomeExibicao || user?.full_name || ''}
+          onFechar={() => setArquivoSom(null)}
+          onSalvo={() => {
+            setArquivoSom(null);
+            galeria.recarregar();
+            setAviso({ erro: false, texto: 'Som adicionado à galeria.' });
+          }}
+        />
+      )}
 
       {confirmarSair &&
         createPortal(

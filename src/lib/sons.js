@@ -33,7 +33,52 @@ export const SONS = [
 
 export const SOM_PADRAO = 'suave';
 
-export const somPorId = (id) => SONS.find((som) => som.id === id) || null;
+/* ------------------------------------------------------------------ */
+/* Galeria: os sons do código mais os áudios que a pessoa enviou        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Áudios enviados pela pessoa (entidade SomNotificacao). Vivem numa lista
+ * separada porque chegam do banco depois: o `registrarSonsCustom` é chamado
+ * pelo hook sempre que a galeria muda.
+ */
+let personalizados = [];
+
+const PREFIXO_CUSTOM = 'custom:';
+
+export const idSomCustom = (registroId) => `${PREFIXO_CUSTOM}${registroId}`;
+
+/** Duração curta para a lista da galeria: "3,4s". */
+export const formatarDuracaoSom = (valor) => {
+  const numero = Number(valor) || 0;
+  if (!numero) return 'curto';
+  return `${numero.toFixed(1).replace('.', ',')}s`;
+};
+
+export const ehSomCustom = (id) => typeof id === 'string' && id.startsWith(PREFIXO_CUSTOM);
+
+/** Registra a galeria carregada do banco. O id é `custom:<id do registro>`. */
+export const registrarSonsCustom = (lista = []) => {
+  personalizados = (lista || [])
+    .filter((item) => item?.id && item?.url)
+    .map((item) => ({
+      id: idSomCustom(item.id),
+      registroId: item.id,
+      nome: item.nome || 'Meu som',
+      arquivo: item.url,
+      compartilhado: item.compartilhado === true,
+      autor: item.autor || '',
+      personalizado: true,
+    }));
+};
+
+export const sonsPersonalizados = () => personalizados;
+
+/** Tudo o que pode ser escolhido: os quatro do código e os da galeria. */
+export const todosOsSons = () => [...SONS, ...personalizados];
+
+export const somPorId = (id) =>
+  SONS.find((som) => som.id === id) || personalizados.find((som) => som.id === id) || null;
 
 const cache = new Map();
 
@@ -66,6 +111,9 @@ export const preaquecerSons = () => {
   SONS.forEach((som) => elemento(som));
 };
 
+/** Pré-carrega um áudio da galeria (a prévia do seletor usa isto). */
+export const preaquecerSom = (id) => elemento(somPorId(id));
+
 const parar = (audio) => {
   if (!audio) return;
   try {
@@ -84,7 +132,8 @@ const JANELA_TOQUES = 60000;
 
 /** Toca o som escolhido. Volume em 0..1. */
 export const tocarSom = (id, volume = 0.6) => {
-  const som = somPorId(id);
+  /* Áudio apagado da galeria: em vez de ficar mudo, volta ao som do código. */
+  const som = somPorId(id) || (ehSomCustom(id) ? somPorId(SOM_PADRAO) : null);
   if (!som) return;
   const audio = elemento(som);
   if (!audio) return;

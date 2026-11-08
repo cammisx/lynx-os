@@ -1,0 +1,35 @@
+{
+  "name": "SomNotificacao",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome que a pessoa deu ao audio"
+    },
+    "url": {
+      "type": "string",
+      "description": "Endereco do arquivo (WAV de ate 4 segundos)"
+    },
+    "duracao": {
+      "type": "number",
+      "description": "Duracao do trecho em segundos"
+    },
+    "compartilhado": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se aparece na galeria compartilhada para todo mundo"
+    },
+    "usuario_id": {
+      "type": "string",
+      "description": "Dono do envio"
+    },
+    "autor": {
+      "type": "string",
+      "description": "Nome de quem enviou, mostrado na galeria compartilhada"
+    }
+  },
+  "required": [
+    "url",
+    "usuario_id"
+  ]
+}
