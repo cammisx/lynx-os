@@ -142,12 +142,51 @@ export const salvarBarraTarefas = async (user, { ordem = [], fixadas = [] } = {}
       fundo_modo: atual.fundoModo || '',
       barra_ordem: escreverBarra(ordem),
       barra_fixadas: escreverBarra(fixadas),
+      agenda_ordem: escreverBarra(atual.agendaOrdem),
       pet: atual.pet || '',
       pet_cor: atual.petCor || '',
     });
     return { remoto: true };
   } catch (erro) {
     console.warn('[Perfil] o User recusou a ordem da barra:', erro?.message || erro);
+    return { remoto: false };
+  }
+};
+
+/**
+ * Guarda a ordem das agendas das modelos no painel do relógio.
+ *
+ * Mesmo esquema da barra de tarefas: grava na hora no navegador, manda o
+ * perfil inteiro para o User e avisa quem estiver ouvindo. Trocar a ordem não
+ * mexe em nome, foto ou tema.
+ */
+export const salvarOrdemAgenda = async (user, ordem = []) => {
+  atual = { ...atual, agendaOrdem: [...ordem] };
+  if (user?.id) gravarLocal(user.id, atual);
+  avisar();
+  if (!user?.id) return { remoto: false };
+
+  try {
+    await base44.auth.updateMe({
+      nome_exibicao: atual.nomeExibicao || '',
+      foto_url: atual.fotoUrl || '',
+      subnick: atual.subnick || '',
+      tema: atual.tema || '',
+      tema_modo: atual.modo || '',
+      fonte_escala: atual.fonte || '',
+      fonte_app: atual.fonteApp || '',
+      fundo_url: atual.fundoUrl || '',
+      fundo_estatico: Boolean(atual.fundoEstatico),
+      fundo_modo: atual.fundoModo || '',
+      barra_ordem: escreverBarra(atual.barraOrdem),
+      barra_fixadas: escreverBarra(atual.barraFixadas),
+      agenda_ordem: escreverBarra(ordem),
+      pet: atual.pet || '',
+      pet_cor: atual.petCor || '',
+    });
+    return { remoto: true };
+  } catch (erro) {
+    console.warn('[Perfil] o User recusou a ordem da agenda:', erro?.message || erro);
     return { remoto: false };
   }
 };
@@ -211,6 +250,7 @@ export const salvarPerfil = async (user, parcial = {}) => {
       fundo_modo: atual.fundoModo || '',
       barra_ordem: escreverBarra(atual.barraOrdem),
       barra_fixadas: escreverBarra(atual.barraFixadas),
+      agenda_ordem: escreverBarra(atual.agendaOrdem),
       pet: atual.pet || '',
       pet_cor: atual.petCor || '',
     });

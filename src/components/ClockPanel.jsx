@@ -3,6 +3,14 @@ import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { SHIFTS_CHANGED } from '@/lib/desktopEvents';
 import { isRecusado } from '@/lib/aceite';
+import { chattersDaModelo, ehAdmin } from '@/lib/chat';
+import {
+  juntarOrdemAgenda,
+  moverNaOrdem,
+  ordemAgendaInicial,
+  ordenarModelos,
+} from '@/lib/agendaOrdem';
+import { salvarOrdemAgenda } from '@/lib/perfilUsuario';
 import useTurnoPonto from '@/hooks/useTurnoPonto';
 import ShiftWidget from '@/components/shifts/ShiftWidget';
 import WeekToolbar from '@/components/shifts/WeekToolbar';
@@ -30,7 +38,6 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
     user,
     userId,
     chatterNames,
-    ownShifts,
     models,
     pontoIndex,
     ponto,
@@ -42,6 +49,9 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
   const [weekShifts, setWeekShifts] = useState([]);
   const [activeTab, setActiveTab] = useState('agenda');
   const [tick, setTick] = useState(0);
+  /* Ordem das abas das modelos: preferência de quem está olhando. */
+  const [ordem, setOrdem] = useState(() => ordemAgendaInicial(user));
+  const [arrastando, setArrastando] = useState(null);
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -97,18 +107,43 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
     };
   }, [open, anchor, tick]);
 
-  // Chatter só vê a agenda das modelos em que ele tem turno marcado.
-  const modelosComTurno = useMemo(
-    () => new Set(ownShifts.map((shift) => shift.modelo_id).filter(Boolean)),
-    [ownShifts]
+  /* A agenda da modelo aparece para todo chatter vinculado a ela, tenha turno
+     marcado ou não. Admin continua vendo todas. */
+  const visibleModels = useMemo(() => {
+    const isAdmin = ehAdmin(user);
+    return models.filter(
+      (model) => !model.arquivada && (isAdmin || chattersDaModelo(model).includes(user?.id))
+    );
+  }, [models, user]);
+
+  const modelosEmOrdem = useMemo(
+    () => ordenarModelos(visibleModels, ordem),
+    [visibleModels, ordem]
   );
 
-  const visibleModels = useMemo(() => {
-    const isAdmin = user?.role === 'admin';
-    return models.filter(
-      (model) => !model.arquivada && (isAdmin || modelosComTurno.has(model.id))
-    );
-  }, [models, user, modelosComTurno]);
+  /* Todas as abas visíveis entram na ordem; modelo nova entra no fim. */
+  const ordemCompleta = useMemo(
+    () => juntarOrdemAgenda(modelosEmOrdem.map((model) => model.id), ordem),
+    [modelosEmOrdem, ordem]
+  );
+  const ordemRef = useRef(ordemCompleta);
+  ordemRef.current = ordemCompleta;
+
+  useEffect(() => {
+    const doBanco = ordemAgendaInicial(user);
+    if (doBanco.length) setOrdem((atual) => (atual.length ? atual : doBanco));
+  }, [user?.agenda_ordem]);
+
+  const moverAba = (origem, destino) => {
+    if (!origem || !destino || origem === destino) return;
+    setOrdem(moverNaOrdem(ordemCompleta, origem, destino));
+  };
+
+  const soltarAba = () => {
+    if (!arrastando) return;
+    setArrastando(null);
+    salvarOrdemAgenda(user, ordemRef.current);
+  };
 
   const archivedModels = useMemo(() => models.filter((model) => model.arquivada), [models]);
 
@@ -124,7 +159,7 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
 
   const tabs = [
     { id: 'agenda', label: 'Minha Agenda' },
-    ...visibleModels.map((model) => ({ id: model.id, label: model.nome })),
+    ...modelosEmOrdem.map((model) => ({ id: model.id, label: model.nome, ordenavel: true })),
   ];
   const activeTabSafe = tabs.some((tab) => tab.id === activeTab) ? activeTab : 'agenda';
 
@@ -187,6 +222,10 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
         tabs={tabs}
         activeTab={activeTabSafe}
         onTabChange={setActiveTab}
+        arrastando={arrastando}
+        onArrastarInicio={(id) => setArrastando(id)}
+        onArrastarSobre={(id) => moverAba(arrastando, id)}
+        onArrastarFim={soltarAba}
         weekLabel={weekLabel}
         onPrev={() => setAnchor((prev) => addDays(prev, -7))}
         onNext={() => setAnchor((prev) => addDays(prev, 7))}

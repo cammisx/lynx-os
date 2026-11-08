@@ -44,6 +44,10 @@
       "type": "string",
       "description": "Cor do pelo do pet: original, preto, branco, cinza, marrom ou rosa"
     },
+    "agenda_ordem": {
+      "type": "string",
+      "description": "Ordem das agendas das modelos no painel do relogio (ids separados por virgula)"
+    },
     "fonte_app": {
       "type": "string",
       "enum": ["mono", "classica", "redonda"],

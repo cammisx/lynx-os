@@ -28,6 +28,10 @@ export default function WeekToolbar({
   tabs,
   activeTab,
   onTabChange,
+  arrastando = null,
+  onArrastarInicio,
+  onArrastarSobre,
+  onArrastarFim,
   weekLabel,
   onPrev,
   onNext,
@@ -59,11 +63,36 @@ export default function WeekToolbar({
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0, overflow: 'hidden' }}>
         {tabs.map((tab) => {
           const isActive = tab.id === activeTab;
+          const arrastavel = Boolean(tab.ordenavel && onArrastarInicio);
+          const sendoArrastada = arrastando === tab.id;
           return (
             <button
               key={tab.id}
               type="button"
               onClick={() => onTabChange(tab.id)}
+              draggable={arrastavel}
+              onDragStart={
+                arrastavel
+                  ? (evento) => {
+                      evento.dataTransfer.effectAllowed = 'move';
+                      evento.dataTransfer.setData('text/plain', tab.id);
+                      onArrastarInicio(tab.id);
+                    }
+                  : undefined
+              }
+              onDragOver={
+                arrastavel
+                  ? (evento) => {
+                      if (!arrastando) return;
+                      evento.preventDefault();
+                      evento.dataTransfer.dropEffect = 'move';
+                      onArrastarSobre?.(tab.id);
+                    }
+                  : undefined
+              }
+              onDrop={arrastavel ? (evento) => evento.preventDefault() : undefined}
+              onDragEnd={arrastavel ? () => onArrastarFim?.() : undefined}
+              title={arrastavel ? 'Arraste para reordenar a sua visão' : undefined}
               style={{
                 background: 'none',
                 border: 'none',
@@ -75,9 +104,11 @@ export default function WeekToolbar({
                 color: isActive ? 'var(--c1)' : 'var(--c2)',
                 opacity: isActive ? 1 : 0.55,
                 fontWeight: isActive ? 600 : 400,
-                cursor: 'pointer',
+                cursor: arrastavel ? 'grab' : 'pointer',
                 whiteSpace: 'nowrap',
                 transition: 'color 150ms ease, opacity 150ms ease',
+                opacity: sendoArrastada ? 0.4 : isActive ? 1 : 0.55,
+                userSelect: 'none',
               }}
             >
               {tab.label}

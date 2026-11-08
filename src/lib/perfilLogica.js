@@ -39,6 +39,8 @@ export const PERFIL_PADRAO = {
   /* Ordem dos ícones na barra de tarefas e quais ficam fixados nela. */
   barraOrdem: [],
   barraFixadas: [],
+  /* Ordem das agendas das modelos no painel do relógio. */
+  agendaOrdem: [],
   /* Bicho que passeia pelo desktop (sem pet, gato, cachorro ou morcego) e a
      cor do pelo dele. */
   pet: PET_PADRAO,
@@ -61,6 +63,7 @@ export const perfilDoUsuario = (user) => ({
      valendo quando o campo ainda não existe no banco. */
   barraOrdem: user?.barra_ordem ? emLista(user.barra_ordem) : undefined,
   barraFixadas: user?.barra_fixadas ? emLista(user.barra_fixadas) : undefined,
+  agendaOrdem: user?.agenda_ordem ? emLista(user.agenda_ordem) : undefined,
   pet: user?.pet || '',
   petCor: user?.pet_cor || '',
 });
@@ -93,6 +96,7 @@ export const mesclarPerfil = (local = {}, user = {}) => {
     fundoSemLinhas: fundoModo === 'sem',
     barraOrdem: emLista(perfil.barraOrdem),
     barraFixadas: emLista(perfil.barraFixadas),
+    agendaOrdem: emLista(perfil.agendaOrdem),
     pet: petValido(perfil.pet),
     petCor: corValida(perfil.petCor),
   };
