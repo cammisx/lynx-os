@@ -1,7 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import usePopoverPos from '@/lib/popover';
 import { comTag, juntarTags, semTag, tagNormalizada } from '@/lib/conteudoPastas';
+
+/* A lista abre sempre para baixo, colada na borda esquerda do campo e na
+   mesma largura dele. Se não houver espaço embaixo, o campo sobe um pouco
+   dentro do formulário em vez de a lista pular para cima do campo. */
+const ALTURA_MAXIMA = 220;
+const ALTURA_MINIMA = 120;
+const FOLGA = 6;
 
 const painel = {
   position: 'fixed',
@@ -56,7 +62,31 @@ export default function SeletorTags({
   const [aberto, setAberto] = useState(false);
   const caixaRef = useRef(null);
   const painelRef = useRef(null);
-  const pos = usePopoverPos({ open: aberto, anchorRef: caixaRef, alturaMax: 220 });
+  const [pos, setPos] = useState(null);
+
+  const medir = useCallback(() => {
+    const caixa = caixaRef.current;
+    if (!caixa) return;
+
+    const inicial = caixa.getBoundingClientRect();
+    const abaixo = window.innerHeight - inicial.bottom - FOLGA - 8;
+
+    /* Pouco espaço embaixo: leva o campo para o meio da tela e mede de novo,
+       para a lista caber inteira abaixo dele. */
+    if (abaixo < ALTURA_MINIMA + 40) {
+      caixa.scrollIntoView({ block: 'center' });
+    }
+
+    const r = caixaRef.current?.getBoundingClientRect() || inicial;
+    const sobra = window.innerHeight - r.bottom - FOLGA - 8;
+    const largura = Math.round(r.width);
+    setPos({
+      left: Math.max(8, Math.min(Math.round(r.left), window.innerWidth - largura - 8)),
+      top: Math.round(r.bottom) + FOLGA,
+      width: largura,
+      maxHeight: Math.max(ALTURA_MINIMA, Math.min(ALTURA_MAXIMA, sobra)),
+    });
+  }, []);
 
   const escolhidas = juntarTags(valor);
 
@@ -69,6 +99,21 @@ export default function SeletorTags({
 
   const digitada = tagNormalizada(texto);
   const podeCriar = Boolean(digitada) && !juntarTags([...sugestoes, ...escolhidas]).includes(digitada);
+
+  useEffect(() => {
+    if (!aberto) {
+      setPos(null);
+      return undefined;
+    }
+    medir();
+    const aoMover = () => medir();
+    window.addEventListener('scroll', aoMover, true);
+    window.addEventListener('resize', aoMover);
+    return () => {
+      window.removeEventListener('scroll', aoMover, true);
+      window.removeEventListener('resize', aoMover);
+    };
+  }, [aberto, medir]);
 
   useEffect(() => {
     if (!aberto) return undefined;
@@ -217,7 +262,7 @@ export default function SeletorTags({
             <div
               className="glass-scroll"
               style={{
-                maxHeight: Math.max(120, pos.maxHeight - 12),
+                maxHeight: Math.max(ALTURA_MINIMA, pos.maxHeight - 12),
                 overflowY: 'auto',
                 overscrollBehavior: 'contain',
                 padding: '6px 5px',
