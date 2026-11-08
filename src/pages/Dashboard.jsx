@@ -53,7 +53,11 @@ export default function Dashboard() {
         background: 'var(--c8)',
       }}
     >
-      <DesktopBackground imagem={perfil.fundoUrl} estatico={perfil.fundoEstatico} />
+      <DesktopBackground
+        imagem={perfil.fundoUrl}
+        estatico={perfil.fundoEstatico}
+        semLinhas={perfil.fundoModo === 'sem'}
+      />
       <ChatProvider>
         <DesktopWidgets />
         <Taskbar onOpenApp={setOpenApp} />

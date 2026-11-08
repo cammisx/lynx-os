@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { iniciaisDe, nomeDe, salvarPerfil, usePerfil } from '@/lib/perfilUsuario';
 import { MODO_CLARO, MODO_ESCURO, MODO_SISTEMA, TEMAS, paletaDoTema, resolverModo } from '@/lib/temas';
 import { TAMANHOS } from '@/lib/fonte';
+import { MODOS_FUNDO } from '@/lib/perfilLogica';
 import { prepararFundo } from '@/lib/fundo';
 
 const ABAS = [
@@ -166,9 +167,12 @@ export default function ConfiguracoesWindow({ onClose }) {
     );
   };
 
-  const alternarSeda = async (estatico) => {
-    if (Boolean(perfil.fundoEstatico) === estatico) return;
-    const { remoto } = await salvarPerfil(user, { fundoEstatico: estatico });
+  const escolherFundo = async (fundoModo) => {
+    if ((perfil.fundoModo || 'animado') === fundoModo) return;
+    const { remoto } = await salvarPerfil(user, {
+      fundoModo,
+      fundoEstatico: fundoModo === 'parado',
+    });
     setAviso(
       remoto
         ? null
@@ -639,22 +643,19 @@ export default function ConfiguracoesWindow({ onClose }) {
               />
             </div>
 
-            <span style={{ ...labelStyle, marginTop: 6 }}>Animação do fundo</span>
+            <span style={{ ...labelStyle, marginTop: 6 }}>Linhas do fundo</span>
             <span style={dicaStyle}>
               A seda em movimento é bonita, mas gasta CPU. Parada, o fundo fica congelado no mesmo
-              desenho: bom pra PC modesto.
+              desenho. Sem linhas, sobra só a cor do tema: a opção mais leve.
             </span>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
-              {[
-                { id: false, nome: 'Animado', dica: 'Linhas em movimento' },
-                { id: true, nome: 'Parado', dica: 'Sem animação' },
-              ].map(({ id, nome, dica }) => {
-                const ativo = Boolean(perfil.fundoEstatico) === id;
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+              {MODOS_FUNDO.map(({ id, nome, dica }) => {
+                const ativo = (perfil.fundoModo || 'animado') === id;
                 return (
                   <button
-                    key={String(id)}
+                    key={id}
                     type="button"
-                    onClick={() => alternarSeda(id)}
+                    onClick={() => escolherFundo(id)}
                     title={dica}
                     style={{
                       display: 'flex',

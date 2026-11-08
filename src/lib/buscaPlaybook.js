@@ -79,5 +79,17 @@ export const filtrarSecoes = (secoes, termo) => {
     .filter(Boolean);
 };
 
+/**
+ * Perguntas que a leitura mostra.
+ * Sem busca, só as respondidas (pergunta em branco não interessa ao chatter).
+ * Com busca, todas: procurar "tamanho" precisa abrir a pergunta, mesmo que
+ * ela ainda não tenha resposta.
+ */
+export const itensParaLeitura = (secao, termo) => {
+  const itens = (secao?.itens || []).filter((item) => String(item?.pergunta || '').trim());
+  if (String(termo || '').trim()) return itens;
+  return itens.filter((item) => String(item?.resposta || '').trim());
+};
+
 export const contarItens = (secoes) =>
   (secoes || []).reduce((soma, secao) => soma + (secao?.itens?.length || 0), 0);

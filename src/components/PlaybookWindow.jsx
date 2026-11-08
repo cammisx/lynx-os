@@ -11,7 +11,7 @@ import {
   UsersIcon,
 } from '@/components/icons';
 import { SearchIcon } from '@/components/chat/chatIcons';
-import { contarItens, filtrarSecoes, pedacosDestacados } from '@/lib/buscaPlaybook';
+import { contarItens, filtrarSecoes, itensParaLeitura, pedacosDestacados } from '@/lib/buscaPlaybook';
 import usePlaybooks from '@/hooks/usePlaybooks';
 import {
   ROTULO_DO_TIPO,
@@ -20,7 +20,6 @@ import {
   conviteValido,
   dataCurta,
   ehEscolha,
-  itensVisiveis,
   linkDoFormulario,
   normalizarItem,
   pendenciasDaSecao,
@@ -160,6 +159,7 @@ function TextoComMarca({ texto, termo }) {
 function ItemLeitura({ item, termo }) {
   const [copiado, setCopiado] = useState(false);
   const relogio = useRef(null);
+  const semResposta = !String(item.resposta || '').trim();
 
   useEffect(() => () => clearTimeout(relogio.current), []);
 
@@ -179,10 +179,23 @@ function ItemLeitura({ item, termo }) {
         </span>
       ) : null}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-        <span style={{ ...estiloResposta, flex: 1, minWidth: 0 }}>
-          <TextoComMarca texto={item.resposta} termo={termo} />
+        <span
+          style={{
+            ...estiloResposta,
+            flex: 1,
+            minWidth: 0,
+            ...(semResposta
+              ? { color: 'var(--c2)', opacity: 0.7, fontStyle: 'italic', fontSize: 10.5 }
+              : null),
+          }}
+        >
+          {semResposta ? (
+            'sem resposta'
+          ) : (
+            <TextoComMarca texto={item.resposta} termo={termo} />
+          )}
         </span>
-        {item.copiar ? (
+        {item.copiar && !semResposta ? (
           <button
             type="button"
             onClick={copiar}
@@ -212,7 +225,7 @@ function Leitura({ playbook, termo = '' }) {
   const secoes = (playbook?.secoes || [])
     .map((secao) => ({
       ...secao,
-      itens: itensVisiveis(secao),
+      itens: itensParaLeitura(secao, termo),
       descricao: String(secao?.descricao || ''),
       texto: String(secao?.texto || ''),
     }))
@@ -907,7 +920,7 @@ export default function PlaybookWindow({ onClose }) {
     const termo = busca.trim();
     if (!termo || !ativo) return null;
     const secoes = (ativo.secoes || [])
-      .map((secao) => ({ ...secao, itens: itensVisiveis(secao) }))
+      .map((secao) => ({ ...secao, itens: itensParaLeitura(secao, termo) }))
       .filter((secao) => secao.itens.length || String(secao.texto || '').trim());
     return contarItens(filtrarSecoes(secoes, termo));
   }, [ativo, busca]);

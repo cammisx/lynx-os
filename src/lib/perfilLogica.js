@@ -5,6 +5,23 @@
 import { MODO_PADRAO, TEMA_PADRAO, modoValido } from '@/lib/temas';
 import { FONTE_PADRAO } from '@/lib/fonte';
 
+/**
+ * Fundo do desktop em três estados:
+ *  animado — a seda de linhas se mexe;
+ *  parado  — a seda aparece, mas congelada (economiza CPU);
+ *  sem     — nenhuma linha, só a cor do tema (ou a foto do usuário).
+ */
+export const MODOS_FUNDO = [
+  { id: 'animado', nome: 'Animado', dica: 'Linhas em movimento' },
+  { id: 'parado', nome: 'Parado', dica: 'Linhas paradas' },
+  { id: 'sem', nome: 'Sem linhas', dica: 'Fundo liso' },
+];
+
+export const MODO_FUNDO_PADRAO = 'animado';
+
+export const modoFundoValido = (valor) =>
+  MODOS_FUNDO.some((item) => item.id === valor) ? valor : MODO_FUNDO_PADRAO;
+
 export const PERFIL_PADRAO = {
   nomeExibicao: '',
   fotoUrl: '',
@@ -14,6 +31,7 @@ export const PERFIL_PADRAO = {
   fonte: FONTE_PADRAO,
   fundoUrl: '',
   fundoEstatico: false,
+  fundoModo: MODO_FUNDO_PADRAO,
 };
 
 /** Campos custom do User, quando publicados no Builder. */
@@ -26,6 +44,7 @@ export const perfilDoUsuario = (user) => ({
   fonte: user?.fonte_escala || '',
   fundoUrl: user?.fundo_url || '',
   fundoEstatico: typeof user?.fundo_estatico === 'boolean' ? user.fundo_estatico : undefined,
+  fundoModo: user?.fundo_modo || '',
 });
 
 export const mesclarPerfil = (local = {}, user = {}) => {
@@ -40,7 +59,20 @@ export const mesclarPerfil = (local = {}, user = {}) => {
     typeof estaticoRemoto === 'boolean'
       ? estaticoRemoto || Boolean((local || {}).fundoEstatico)
       : Boolean(perfil.fundoEstatico);
-  return { ...perfil, modo: modoValido(perfil.modo), fundoEstatico };
+
+  /* O modo é a verdade; o booleano antigo só serve de ponto de partida para
+     quem já tinha escolhido "parado" antes de existir a terceira opção. */
+  const fundoModo = modoFundoValido(
+    remoto.fundoModo || (local || {}).fundoModo || (fundoEstatico ? 'parado' : MODO_FUNDO_PADRAO)
+  );
+
+  return {
+    ...perfil,
+    modo: modoValido(perfil.modo),
+    fundoModo,
+    fundoEstatico: fundoModo === 'parado',
+    fundoSemLinhas: fundoModo === 'sem',
+  };
 };
 
 /** Nome que vale na tela: o do perfil manda, depois o da conta. */

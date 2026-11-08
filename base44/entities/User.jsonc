@@ -35,6 +35,11 @@
     "fundo_estatico": {
       "type": "boolean",
       "description": "Para a animacao da seda do fundo (modo leve)"
+    },
+    "fundo_modo": {
+      "type": "string",
+      "enum": ["animado", "parado", "sem"],
+      "description": "Fundo do desktop: animado, parado ou sem linhas"
     }
   },
   "required": [

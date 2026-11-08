@@ -66,6 +66,7 @@ export const salvarPerfilPublico = async (usuarioId, dados = {}) => {
       modo: dados.modo,
       fundo_url: dados.fundoUrl,
       fundo_estatico: Boolean(dados.fundoEstatico),
+      fundo_modo: dados.fundoModo,
       fonte_escala: dados.fonte_escala,
     }).filter(([, valor]) => valor !== undefined)
   );

@@ -98,11 +98,15 @@ function makeNoise2D() {
  *
  * `estatico` congela a seda: em vez de animar, desenha um quadro só — mesmo
  * desenho, sem gastar CPU. Serve para PCs mais modestos.
+ *
+ * `semLinhas` desliga a seda de vez: sobra só a cor do tema (ou a foto), sem
+ * nenhum desenho por cima. É a opção mais leve das três.
  */
-export default function DesktopBackground({ imagem = '', estatico = false }) {
+export default function DesktopBackground({ imagem = '', estatico = false, semLinhas = false }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
+    if (semLinhas) return undefined;
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
     const ctx = canvas.getContext('2d');
@@ -278,7 +282,7 @@ export default function DesktopBackground({ imagem = '', estatico = false }) {
       window.removeEventListener('resize', aoRedimensionar);
       history.length = 0;
     };
-  }, [imagem, estatico]);
+  }, [imagem, estatico, semLinhas]);
 
   return (
     <>
@@ -319,7 +323,7 @@ export default function DesktopBackground({ imagem = '', estatico = false }) {
           width: '100%',
           height: '100%',
           zIndex: 0,
-          display: 'block',
+          display: semLinhas ? 'none' : 'block',
           pointerEvents: 'none',
         }}
       />
