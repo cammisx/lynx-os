@@ -7,19 +7,8 @@
     },
     "som": {
       "type": "string",
-      "enum": [
-        "suave",
-        "alerta",
-        "scifi",
-        "mensagem"
-      ],
-      "enumColors": [
-        "blue",
-        "purple",
-        "teal",
-        "orange"
-      ],
-      "default": "suave"
+      "default": "suave",
+      "description": "Som das notificacoes no computador. Aceita som da galeria (custom:<id>)"
     },
     "ativo": {
       "type": "boolean",
@@ -31,19 +20,8 @@
     },
     "som_chat": {
       "type": "string",
-      "enum": [
-        "suave",
-        "alerta",
-        "scifi",
-        "mensagem"
-      ],
-      "enumColors": [
-        "blue",
-        "purple",
-        "teal",
-        "orange"
-      ],
-      "default": "mensagem"
+      "default": "mensagem",
+      "description": "Som das mensagens no computador. Aceita som da galeria (custom:<id>)"
     },
     "chat_ativo": {
       "type": "boolean",
@@ -66,7 +44,36 @@
     "notificar_navegador": {
       "type": "boolean",
       "default": false,
-      "description": "Mostrar notificação do navegador quando chega mensagem"
+      "description": "Mostrar notificação do navegador no computador"
+    },
+    "som_celular": {
+      "type": "string",
+      "description": "Som das notificacoes no celular"
+    },
+    "ativo_celular": {
+      "type": "boolean",
+      "description": "Som das notificacoes ligado no celular"
+    },
+    "volume_celular": {
+      "type": "number",
+      "description": "Volume das notificacoes no celular (0-100)"
+    },
+    "som_chat_celular": {
+      "type": "string",
+      "description": "Som das mensagens no celular"
+    },
+    "chat_ativo_celular": {
+      "type": "boolean",
+      "description": "Som das mensagens ligado no celular"
+    },
+    "volume_chat_celular": {
+      "type": "number",
+      "description": "Volume das mensagens no celular (0-100)"
+    },
+    "notificar_navegador_celular": {
+      "type": "boolean",
+      "default": false,
+      "description": "Mostrar notificacao do navegador no celular"
     }
   },
   "required": [
