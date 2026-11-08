@@ -15,10 +15,19 @@ import PetSprite from '@/components/desktop/PetSprite';
 import { prepararFundo } from '@/lib/fundo';
 import { useMarcarSujo } from '@/components/desktop/JanelaContext';
 import { AVISO_ABA_CONFIG, consumirAbaConfig } from '@/lib/configAba';
+import BlocoSom, { Interruptor } from '@/components/config/BlocoSom';
+import { SONS } from '@/lib/sons';
+import usePreferenciaSom from '@/hooks/usePreferenciaSom';
+import {
+  navegadorSuportado,
+  pedirPermissaoDoNavegador,
+  permissaoDoNavegador,
+} from '@/lib/notificacaoNavegador';
 
 const ABAS = [
   { id: 'perfil', label: 'Perfil' },
   { id: 'preferencias', label: 'Preferências' },
+  { id: 'notificacoes', label: 'Notificações' },
 ];
 
 const inputStyle = {
@@ -81,6 +90,9 @@ export default function ConfiguracoesWindow({ onClose }) {
   const perfil = usePerfil(user);
   const [aba, setAba] = useState(() => consumirAbaConfig() || 'perfil');
   const [confirmarSair, setConfirmarSair] = useState(false);
+  const somPref = usePreferenciaSom();
+  const [avisoNavegador, setAvisoNavegador] = useState('');
+  const [permissaoNavegador, setPermissaoNavegador] = useState(() => permissaoDoNavegador());
   const [nome, setNome] = useState(perfil.nomeExibicao);
   const [subnick, setSubnick] = useState(perfil.subnick);
   const [foto, setFoto] = useState(perfil.fotoUrl);
@@ -255,6 +267,28 @@ export default function ConfiguracoesWindow({ onClose }) {
     );
   };
 
+  /* Aviso do navegador: o mesmo caminho do painel do sino, com a permissão
+     pedida na hora em que a pessoa liga. */
+  const mudarNavegador = async (valor) => {
+    if (!valor) {
+      setAvisoNavegador('');
+      somPref.alternarNotificacaoNavegador(false);
+      return;
+    }
+    if (!navegadorSuportado()) {
+      setAvisoNavegador('Este navegador não tem notificação de sistema.');
+      return;
+    }
+    const autorizado = await pedirPermissaoDoNavegador();
+    setPermissaoNavegador(permissaoDoNavegador());
+    if (!autorizado) {
+      setAvisoNavegador('O navegador bloqueou. Libere a permissão nas configurações do site.');
+      return;
+    }
+    setAvisoNavegador('');
+    somPref.alternarNotificacaoNavegador(true);
+  };
+
   const trocarFonte = async (id) => {
     const { remoto } = await salvarPerfil(user, { fonte: id });
     setAviso(
@@ -328,6 +362,129 @@ export default function ConfiguracoesWindow({ onClose }) {
           <span style={{ fontSize: 11, color: aviso.erro ? 'var(--erro)' : 'var(--ok)', flexShrink: 0 }}>
             {aviso.texto}
           </span>
+        )}
+
+        {aba === 'notificacoes' && (
+          <div
+            className="glass-scroll"
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+              paddingRight: 2,
+            }}
+          >
+            <BlocoSom
+              titulo="Som das notificações"
+              dica={
+                pequeno
+                  ? 'Avisos do sistema no celular: turno, ponto, vaga livre, menção.'
+                  : 'Avisos do sistema no computador: turno, ponto, vaga livre, menção.'
+              }
+              ligado={somPref.pref.ativo}
+              rotuloInterruptor="Ligar ou desligar o som das notificações"
+              onAlternar={somPref.alternarSom}
+              sons={SONS}
+              escolhido={somPref.pref.som}
+              onEscolher={somPref.escolherSom}
+              volume={somPref.pref.volume}
+              onVolume={somPref.mudarVolume}
+              rodape={`Vale só para o ${pequeno ? 'celular' : 'computador'}. O outro aparelho tem o som dele.`}
+            />
+
+            <BlocoSom
+              titulo="Som das mensagens"
+              dica="Quando chega mensagem nova no chat."
+              ligado={somPref.pref.chat_ativo}
+              rotuloInterruptor="Ligar ou desligar o som das mensagens"
+              onAlternar={somPref.alternarSomChat}
+              sons={SONS}
+              escolhido={somPref.pref.som_chat}
+              onEscolher={somPref.escolherSomChat}
+              volume={somPref.pref.volume_chat}
+              onVolume={somPref.mudarVolumeChat}
+              rodape="Independente do som das notificações, e independente do outro aparelho."
+            />
+
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+                padding: 12,
+                borderRadius: 12,
+                border: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
+                background: 'color-mix(in srgb, var(--c8) 40%, transparent)',
+              }}
+            >
+              <span style={labelStyle}>Avisos por e-mail</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontSize: 11, color: 'var(--c3)' }}>Quando me mencionarem</span>
+                  <span style={dicaStyle}>Chega no e-mail da sua conta.</span>
+                </div>
+                <Interruptor
+                  ligado={somPref.pref.notificar_email}
+                  onMudar={somPref.alternarEmailMencoes}
+                  rotulo="Avisar por e-mail quando me mencionarem"
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontSize: 11, color: 'var(--c3)' }}>Todas as mensagens</span>
+                  <span style={dicaStyle}>Dos canais que eu participo. Enche a caixa, use com critério.</span>
+                </div>
+                <Interruptor
+                  ligado={somPref.pref.email_todas}
+                  onMudar={somPref.alternarEmailTodas}
+                  rotulo="Avisar por e-mail em todas as mensagens"
+                />
+              </div>
+              <span style={{ ...dicaStyle, opacity: 0.6 }}>
+                E-mail vale para a conta inteira: vale no computador e no celular.
+              </span>
+            </div>
+
+            {!pequeno && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                  padding: 12,
+                  borderRadius: 12,
+                  border: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
+                  background: 'color-mix(in srgb, var(--c8) 40%, transparent)',
+                }}
+              >
+                <span style={labelStyle}>Notificação no navegador</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{ fontSize: 11, color: 'var(--c3)' }}>Avisar fora da aba</span>
+                    <span style={dicaStyle}>Aparece no canto da tela, mesmo com o sistema minimizado.</span>
+                  </div>
+                  <Interruptor
+                    ligado={somPref.pref.notificar_navegador}
+                    onMudar={mudarNavegador}
+                    rotulo="Mostrar notificação do navegador"
+                  />
+                </div>
+                {(avisoNavegador ||
+                  (somPref.pref.notificar_navegador && permissaoNavegador === 'denied')) && (
+                  <span style={{ fontSize: 9.5, color: 'var(--erro)', lineHeight: 1.45 }}>
+                    {avisoNavegador ||
+                      'O navegador está bloqueando. Libere a permissão nas configurações do site.'}
+                  </span>
+                )}
+                <span style={{ ...dicaStyle, opacity: 0.6 }}>
+                  Cada navegador guarda a própria permissão, então isso vale só neste computador.
+                </span>
+              </div>
+            )}
+          </div>
         )}
 
         {aba === 'perfil' && (
