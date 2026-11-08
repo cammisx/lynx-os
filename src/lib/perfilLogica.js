@@ -4,6 +4,7 @@
  */
 import { MODO_PADRAO, TEMA_PADRAO, modoValido } from '@/lib/temas';
 import { FONTE_PADRAO } from '@/lib/fonte';
+import { FONTE_APP_PADRAO, fonteAppValida } from '@/lib/fontesApp';
 import { emLista } from '@/lib/barraTarefas';
 import { COR_PADRAO, PET_PADRAO, corValida, petValido } from '@/lib/pets';
 
@@ -31,6 +32,7 @@ export const PERFIL_PADRAO = {
   tema: TEMA_PADRAO,
   modo: MODO_PADRAO,
   fonte: FONTE_PADRAO,
+  fonteApp: FONTE_APP_PADRAO,
   fundoUrl: '',
   fundoEstatico: false,
   fundoModo: MODO_FUNDO_PADRAO,
@@ -51,6 +53,7 @@ export const perfilDoUsuario = (user) => ({
   tema: user?.tema || '',
   modo: user?.tema_modo || '',
   fonte: user?.fonte_escala || '',
+  fonteApp: user?.fonte_app || '',
   fundoUrl: user?.fundo_url || '',
   fundoEstatico: typeof user?.fundo_estatico === 'boolean' ? user.fundo_estatico : undefined,
   fundoModo: user?.fundo_modo || '',
@@ -84,6 +87,7 @@ export const mesclarPerfil = (local = {}, user = {}) => {
   return {
     ...perfil,
     modo: modoValido(perfil.modo),
+    fonteApp: fonteAppValida(perfil.fonteApp),
     fundoModo,
     fundoEstatico: fundoModo === 'parado',
     fundoSemLinhas: fundoModo === 'sem',

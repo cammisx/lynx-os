@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { iniciaisDe, nomeDe, salvarPerfil, usePerfil } from '@/lib/perfilUsuario';
 import { MODO_CLARO, MODO_ESCURO, MODO_SISTEMA, TEMAS, paletaDoTema, resolverModo } from '@/lib/temas';
 import { TAMANHOS } from '@/lib/fonte';
+import { FONTES_APP } from '@/lib/fontesApp';
 import { MODOS_FUNDO } from '@/lib/perfilLogica';
 import { CORES_PET, PETS_DISPONIVEIS, spriteDe, temPet } from '@/lib/pets';
 import PetSprite from '@/components/desktop/PetSprite';
@@ -225,6 +226,15 @@ export default function ConfiguracoesWindow({ onClose }) {
       remoto
         ? null
         : { erro: false, texto: 'Modo aplicado neste navegador. Falta publicar o campo modo no Builder.' }
+    );
+  };
+
+  const trocarFonteApp = async (id) => {
+    const { remoto } = await salvarPerfil(user, { fonteApp: id });
+    setAviso(
+      remoto
+        ? null
+        : { erro: false, texto: 'Fonte aplicada neste navegador. Falta publicar o campo fonte_app no Builder.' }
     );
   };
 
@@ -501,6 +511,65 @@ export default function ConfiguracoesWindow({ onClose }) {
                       }}
                     >
                       {tamanho.nome}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <span style={{ ...labelStyle, marginTop: 6 }}>Fonte do sistema</span>
+            <span style={dicaStyle}>
+              Três famílias para o app inteiro: texto das janelas, chat e títulos. Vale só para você.
+            </span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+              {FONTES_APP.map((fonte) => {
+                const ativo = perfil.fonteApp === fonte.id;
+                return (
+                  <button
+                    key={fonte.id}
+                    type="button"
+                    onClick={() => trocarFonteApp(fonte.id)}
+                    title={fonte.dica}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '10px 6px',
+                      borderRadius: 10,
+                      border: ativo
+                        ? '1px solid color-mix(in srgb, var(--c1) 70%, transparent)'
+                        : '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+                      background: ativo
+                        ? 'color-mix(in srgb, var(--c1) 14%, transparent)'
+                        : 'color-mix(in srgb, var(--c8) 45%, transparent)',
+                      cursor: 'pointer',
+                      transition: 'border-color 150ms ease, background-color 150ms ease',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: fonte.familia,
+                        fontSize: 16,
+                        fontWeight: 700,
+                        lineHeight: 1.1,
+                        color: ativo ? 'var(--c1)' : 'var(--c3)',
+                      }}
+                    >
+                      Aa
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: fonte.familia,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        letterSpacing: '0.02em',
+                        color: ativo ? 'var(--c1)' : 'var(--c2)',
+                        textAlign: 'center',
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {fonte.nome}
                     </span>
                   </button>
                 );

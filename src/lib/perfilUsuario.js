@@ -9,6 +9,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { base44 } from '@/api/base44Client';
 import { MODO_SISTEMA, aplicarTema, modoValido, temaPorId } from '@/lib/temas';
 import { aplicarFonte, fonteDoNavegador, tamanhoPorId } from '@/lib/fonte';
+import { aplicarFonteApp, fonteAppDoNavegador, fonteAppValida } from '@/lib/fontesApp';
 import { buscarPerfil, salvarPerfilPublico } from '@/lib/perfis';
 import { escreverBarra } from '@/lib/barraTarefas';
 import { PERFIL_PADRAO, iniciaisDe, mesclarPerfil, nomeDe } from '@/lib/perfilLogica';
@@ -72,8 +73,10 @@ export const carregarPerfil = (user) => {
   carregadoPara = user.id;
   atual = mesclarPerfil(lerLocal(user.id), user);
   if (!atual.fonte) atual.fonte = fonteDoNavegador() || atual.fonte;
+  if (!atual.fonteApp) atual.fonteApp = fonteAppDoNavegador() || atual.fonteApp;
   aplicarTema(atual.tema, atual.modo);
   aplicarFonte(atual.fonte);
+  aplicarFonteApp(atual.fonteApp);
   observarSistema();
   avisar();
 
@@ -85,6 +88,7 @@ export const carregarPerfil = (user) => {
       gravarLocal(user.id, atual);
       aplicarTema(atual.tema, atual.modo);
       aplicarFonte(atual.fonte);
+      aplicarFonteApp(atual.fonteApp);
       avisar();
       return;
     }
@@ -132,6 +136,7 @@ export const salvarBarraTarefas = async (user, { ordem = [], fixadas = [] } = {}
       tema: atual.tema || '',
       tema_modo: atual.modo || '',
       fonte_escala: atual.fonte || '',
+      fonte_app: atual.fonteApp || '',
       fundo_url: atual.fundoUrl || '',
       fundo_estatico: Boolean(atual.fundoEstatico),
       fundo_modo: atual.fundoModo || '',
@@ -175,9 +180,14 @@ export const salvarPerfil = async (user, parcial = {}) => {
   /* O spread não muda o `atual` antigo: para normalizar o modo é preciso ler
      do objeto já mesclado, senão a escolha nova é sobrescrita pela anterior. */
   const mesclado = { ...atual, ...parcial };
-  atual = { ...mesclado, modo: modoValido(mesclado.modo) };
+  atual = {
+    ...mesclado,
+    modo: modoValido(mesclado.modo),
+    fonteApp: fonteAppValida(mesclado.fonteApp),
+  };
   aplicarTema(atual.tema, atual.modo);
   aplicarFonte(atual.fonte);
+  aplicarFonteApp(atual.fonteApp);
   if (user?.id) gravarLocal(user.id, atual);
   avisar();
 
@@ -195,6 +205,7 @@ export const salvarPerfil = async (user, parcial = {}) => {
       tema: atual.tema || '',
       tema_modo: atual.modo || '',
       fonte_escala: atual.fonte || '',
+      fonte_app: atual.fonteApp || '',
       fundo_url: atual.fundoUrl || '',
       fundo_estatico: Boolean(atual.fundoEstatico),
       fundo_modo: atual.fundoModo || '',

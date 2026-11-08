@@ -44,6 +44,11 @@
       "type": "string",
       "description": "Cor do pelo do pet: original, preto, branco, cinza, marrom ou rosa"
     },
+    "fonte_app": {
+      "type": "string",
+      "enum": ["mono", "classica", "redonda"],
+      "description": "Familia tipografica do sistema escolhida pelo usuario"
+    },
     "fundo_modo": {
       "type": "string",
       "enum": ["animado", "parado", "sem"],
