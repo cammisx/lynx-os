@@ -77,8 +77,7 @@ export default function ModalItem({
 
   const mudar = (campoAlvo, valor) => setDados((atual) => ({ ...atual, [campoAlvo]: valor }));
 
-  const escolherImagem = async (evento) => {
-    const arquivo = evento.target.files?.[0];
+  const subirImagem = async (arquivo) => {
     if (!arquivo) return;
     if (!arquivo.type?.startsWith('image/')) {
       setFalha('O arquivo precisa ser uma imagem.');
@@ -102,6 +101,26 @@ export default function ModalItem({
       if (arquivoRef.current) arquivoRef.current.value = '';
     }
   };
+
+  const escolherImagem = (evento) => subirImagem(evento.target.files?.[0]);
+
+  /* Ctrl+V em qualquer lugar do formulário: se veio imagem na área de
+     transferência, ela vira a capa do item. Texto continua indo para o campo
+     que estiver em foco, sem interferência. */
+  useEffect(() => {
+    if (somenteLeitura) return undefined;
+    const aoColar = (evento) => {
+      const itens = Array.from(evento.clipboardData?.items || []);
+      const imagem = itens.find((item) => item.kind === 'file' && item.type?.startsWith('image/'));
+      if (!imagem) return;
+      const arquivo = imagem.getAsFile();
+      if (!arquivo) return;
+      evento.preventDefault();
+      subirImagem(arquivo);
+    };
+    document.addEventListener('paste', aoColar);
+    return () => document.removeEventListener('paste', aoColar);
+  }, [somenteLeitura]);
 
   const partes = partesDaDuracao(dados.duracao_seg || 0);
 
@@ -240,22 +259,12 @@ export default function ModalItem({
               )}
               {mostrarErro('imagem_url') ? <span style={erroTexto}>{erros.imagem_url}</span> : null}
 
-              <span style={{ fontSize: 9.5, color: 'var(--c2)', opacity: 0.75 }}>
-                JPG, PNG ou WEBP. A imagem é reduzida antes de subir.
+              <span style={{ fontSize: 9.5, color: 'var(--c2)', opacity: 0.75, lineHeight: 1.5 }}>
+                {somenteLeitura
+                  ? 'Imagem do item.'
+                  : 'Escolha o arquivo ou cole com Ctrl+V. JPG, PNG ou WEBP; a imagem é reduzida antes de subir.'}
               </span>
             </div>
-          </div>
-
-          {/* nome */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={rotulo}>Nome (opcional)</span>
-            <input
-              value={dados.nome}
-              onChange={(evento) => mudar('nome', evento.target.value)}
-              disabled={somenteLeitura}
-              placeholder="Como você chama esse item"
-              style={{ ...campo, opacity: somenteLeitura ? 0.7 : 1 }}
-            />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

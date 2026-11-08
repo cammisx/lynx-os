@@ -166,10 +166,9 @@ export const validarItem = (item = {}) => {
   return erros;
 };
 
-/** Nome que aparece no cartão: o nome do item ou o tipo com a data. */
+/** Título do cartão: o tipo com a data (o item não tem mais campo de nome). */
 export const tituloDoItem = (item) => {
   const nome = String(item?.nome || '').trim();
   if (nome) return nome;
-  const tipo = tipoLabel(item?.tipo).toLowerCase();
-  return item?.data ? `${tipoLabel(item.tipo)} de ${diaTexto(item.data)}` : 'Item sem nome';
+  return item?.data ? `${tipoLabel(item.tipo)} de ${diaTexto(item.data)}` : 'Item sem data';
 };
