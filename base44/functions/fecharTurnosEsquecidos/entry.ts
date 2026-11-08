@@ -275,11 +275,9 @@ export const processarFechamento = async ({
           titulo: 'Saída marcada automaticamente',
           mensagem: `Seu turno em ${modeloNome} de ${dateLabel(
             entry.dateKey
-          )} foi fechado no fim previsto, às ${timeLabel(
+          )} foi fechado automaticamente no fim previsto, às ${timeLabel(
             window.end
-          )}, porque você estava fora do app. Saída registrada às ${timeLabel(
-            window.end
-          )}. Se você saiu em outro horário, ajuste aqui.`,
+          )}, porque você estava fora do app. Se saiu em outro horário, ajuste aqui.`,
           tipo: 'saida_automatica',
           turno_inicio: new Date(window.start).toISOString(),
           turno_fim: new Date(window.end).toISOString(),
