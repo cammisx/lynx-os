@@ -306,6 +306,7 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
             userId={userId}
             chatterNames={chatterNames}
             pontoIndex={pontoIndex}
+            modelo={activeTabSafe === 'agenda' ? null : visibleModels.find((item) => item.id === activeTabSafe) || null}
             agendaPessoal={activeTabSafe === 'agenda'}
           />
         </div>

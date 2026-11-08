@@ -5,6 +5,11 @@ import GlassSelect from '@/components/GlassSelect';
 import DateTimePicker, { formatDateKey } from '@/components/DateTimePicker';
 import RepeatFields from '@/components/shifts/RepeatFields';
 import { buildChatterNames } from '@/lib/chatterNames';
+import { useAuth } from '@/lib/AuthContext';
+import { ehAdmin } from '@/lib/chat';
+import { conflitosDeTurno, descreverConflito } from '@/lib/vagas';
+
+const asList = (resultado) => (Array.isArray(resultado) ? resultado : resultado?.items || []);
 
 const labelStyle = {
   fontSize: 10,
@@ -39,6 +44,11 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
   );
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  /* Choques de agenda encontrados no último salvamento. Só o admin chega aqui:
+     para o chatter o aviso é bloqueio, sem botão de seguir. */
+  const [choques, setChoques] = useState([]);
+  const { user } = useAuth();
+  const souAdmin = ehAdmin(user);
 
   const chatterNames = useMemo(() => buildChatterNames(chatters), [chatters]);
 
@@ -103,7 +113,7 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
     );
   };
 
-  const save = async () => {
+  const save = async (ciente = false) => {
     if (saving) return;
     if (!modeloId) {
       setError('Escolha uma modelo.');
@@ -138,6 +148,7 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
     }
 
     setError('');
+    setChoques([]);
     setSaving(true);
     const usuario = usersById[usuarioId];
     const modelo = models.find((item) => item.id === modeloId);
@@ -169,6 +180,49 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
         new Date(shift.fim).getTime() !== new Date(payload.fim).getTime() ||
         JSON.stringify(shift.dias_semana || []) !== JSON.stringify(payload.dias_semana || []) ||
         String(shift.repetir_ate || '') !== String(payload.repetir_ate || ''));
+
+    /* Uma modelo, um chatter por horário. O choque é sempre comparado dentro
+       da mesma modelo: o mesmo chatter pode cobrir duas modelos ao mesmo tempo. */
+    let agenda = [];
+    try {
+      agenda = asList(
+        await base44.entities.Shift.filter({ modelo_id: modeloId }, '-inicio', 500)
+      );
+    } catch (falha) {
+      console.warn('[ShiftForm] agenda da modelo', falha);
+    }
+    const conflitos = conflitosDeTurno({
+      candidato: payload,
+      existentes: agenda,
+      ignorarId: shift?.id || '',
+    });
+
+    if (conflitos.length && !ciente) {
+      setSaving(false);
+      if (!souAdmin) {
+        setError(
+          `Esse horário já tem gente escalada nesta modelo: ${descreverConflito(conflitos[0])}.`
+        );
+        return;
+      }
+      setChoques(conflitos);
+      return;
+    }
+
+    if (conflitos.length) {
+      payload.sobreposicao = {
+        consentida: true,
+        por: user?.id || '',
+        nome: user?.full_name || user?.email || '',
+        em: new Date().toISOString(),
+        turnos: conflitos.slice(0, 30).map((choque) => ({
+          shift_id: choque.shiftId,
+          usuario_nome: choque.usuarioNome,
+          inicio: new Date(choque.inicio).toISOString(),
+          fim: new Date(choque.fim).toISOString(),
+        })),
+      };
+    }
 
     try {
       if (shift) {
@@ -256,6 +310,39 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
       />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
+        {choques.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              padding: '9px 10px',
+              borderRadius: 9,
+              border: '1px solid color-mix(in srgb, var(--erro) 45%, transparent)',
+              background: 'color-mix(in srgb, var(--erro) 12%, transparent)',
+            }}
+          >
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--erro)' }}>
+              Esta modelo já tem chatter nesse horário
+            </span>
+            {choques.slice(0, 3).map((choque) => (
+              <span
+                key={`${choque.shiftId}-${choque.inicio}`}
+                style={{ fontSize: 10.5, color: 'var(--c3)', lineHeight: 1.4 }}
+              >
+                {descreverConflito(choque)}
+              </span>
+            ))}
+            {choques.length > 3 && (
+              <span style={{ fontSize: 10, color: 'var(--c2)', opacity: 0.75 }}>
+                e mais {choques.length - 3} horário(s)
+              </span>
+            )}
+            <span style={{ fontSize: 10, color: 'var(--c2)', opacity: 0.85, lineHeight: 1.4 }}>
+              Salvar assim mesmo fica registrado no turno como sobreposição consentida.
+            </span>
+          </div>
+        )}
         {error && <span style={{ fontSize: 11, color: 'var(--erro)' }}>{error}</span>}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button type="button" className="md-btn" onClick={onCancel} style={cancelStyle}>
@@ -264,11 +351,11 @@ export default function ShiftForm({ users, models, chatters, shift, defaultDate,
           <button
             type="button"
             className="md-primary"
-            onClick={save}
+            onClick={() => save(choques.length > 0)}
             disabled={saving}
             style={primaryStyle}
           >
-            {saving ? 'Salvando…' : 'Salvar'}
+            {saving ? 'Salvando…' : choques.length ? 'Ciente, salvar assim' : 'Salvar'}
           </button>
         </div>
       </div>

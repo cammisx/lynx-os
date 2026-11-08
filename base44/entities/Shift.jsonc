@@ -125,6 +125,46 @@
         }
       }
     },
+    "sobreposicao": {
+      "type": "object",
+      "properties": {
+        "consentida": {
+          "type": "boolean"
+        },
+        "por": {
+          "type": "string"
+        },
+        "nome": {
+          "type": "string"
+        },
+        "em": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "turnos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "shift_id": {
+                "type": "string"
+              },
+              "usuario_nome": {
+                "type": "string"
+              },
+              "inicio": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "fim": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
     "cancelamentos": {
       "type": "array",
       "items": {

@@ -26,6 +26,20 @@
       "type": "number",
       "default": 50
     },
+    "janela_operacao": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "inicio": {
+            "type": "string"
+          },
+          "fim": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "arquivada": {
       "type": "boolean",
       "default": false

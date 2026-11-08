@@ -1,5 +1,6 @@
 import { emitNotificationsChanged } from '@/lib/desktopEvents';
 import { nomeDaPessoa } from '@/lib/pessoas';
+import { conflitosDeTurno } from '@/lib/vagas';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
@@ -97,8 +98,48 @@ export async function avisarHorarioDisponivel(
   return criadas;
 }
 
-/** Cria o turno de quem se ofereceu e fecha as notificações daquele horário. */
+/** Turnos da modelo, do mais antigo para o mais novo. Serve para saber quem chegou antes. */
+const agendaDaModelo = async (base44, modeloId) => {
+  if (!modeloId) return [];
+  try {
+    return asList(await base44.entities.Shift.filter({ modelo_id: modeloId }, '-inicio', 500));
+  } catch (error) {
+    console.warn('[Cobertura] agenda', error);
+    return [];
+  }
+};
+
+const maisAntigo = (a, b) => {
+  const dataA = new Date(a?.created_date || 0).getTime();
+  const dataB = new Date(b?.created_date || 0).getTime();
+  return dataA - dataB;
+};
+
+/**
+ * Cria o turno de quem se ofereceu e fecha as notificações daquele horário.
+ *
+ * Uma modelo tem um chatter por horário, então a cobertura passa pela mesma
+ * conferência do formulário. Dois cliques ao mesmo tempo podem criar dois
+ * turnos, porque o banco não tem trava: depois de criar, o turno perde a
+ * disputa e se apaga sozinho se já existia alguém cobrindo antes dele.
+ */
 export async function criarCobertura(base44, { notification, usuario, inicio, fim }) {
+  const modeloId = notification?.modelo_id || '';
+  const candidato = {
+    modelo_id: modeloId,
+    usuario_id: usuario?.id || '',
+    inicio: new Date(inicio).toISOString(),
+    fim: new Date(fim).toISOString(),
+  };
+
+  const antes = await agendaDaModelo(base44, modeloId);
+  const choques = conflitosDeTurno({ candidato, existentes: antes });
+  if (choques.length) {
+    throw new Error(
+      `${choques[0].usuarioNome || 'Outra pessoa'} já está cobrindo esse horário nesta modelo.`
+    );
+  }
+
   const turno = await base44.entities.Shift.create({
     usuario_id: usuario?.id || '',
     usuario_nome: usuario ? nomeDaPessoa(usuario) : '',
@@ -111,6 +152,25 @@ export async function criarCobertura(base44, { notification, usuario, inicio, fi
     aceite_em: new Date().toISOString(),
     repeticao: 'nenhuma',
   });
+
+  /* Corrida: quem criou primeiro fica com o horário. */
+  const depois = await agendaDaModelo(base44, modeloId);
+  const rivais = conflitosDeTurno({
+    candidato,
+    existentes: depois.filter((item) => item.id !== turno.id),
+  })
+    .map((choque) => depois.find((item) => item.id === choque.shiftId))
+    .filter(Boolean);
+
+  const perdeu = rivais.some((rival) => maisAntigo(rival, turno) < 0);
+  if (perdeu) {
+    await base44.entities.Shift.delete(turno.id).catch((error) =>
+      console.warn('[Cobertura] desfazer', error)
+    );
+    throw new Error(
+      `${rivais[0]?.usuario_nome || 'Outra pessoa'} cobriu esse horário antes de você.`
+    );
+  }
 
   try {
     await base44.entities.Notificacao.update(notification.id, {

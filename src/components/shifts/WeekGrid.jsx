@@ -2,6 +2,7 @@ import { useState } from 'react';
 import ShiftTooltip from '@/components/shifts/ShiftTooltip';
 import { expandShift } from '@/lib/shiftRepeat';
 import { localDateKey, occurrenceKey } from '@/lib/ponto';
+import { janelasVagas } from '@/lib/vagas';
 
 const DAY_MS = 86400000;
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -95,10 +96,14 @@ export default function WeekGrid({
   userId,
   chatterNames = {},
   pontoIndex,
+  modelo = null,
   agendaPessoal = false,
 }) {
   const [hover, setHover] = useState(null);
   const blocksByDay = buildBlocks(days, shifts, pontoIndex);
+  /* Área da modelo sem ninguém escalado. Na agenda pessoal do chatter não faz
+     sentido: ali a coluna mostra só o que é dele, em todas as modelos. */
+  const vagasPorDia = agendaPessoal ? [] : janelasVagas({ shifts, dias, modelo });
   const totalBlocks = blocksByDay.reduce((sum, list) => sum + list.length, 0);
 
   return (
@@ -172,6 +177,39 @@ export default function WeekGrid({
 
           {blocksByDay.map((blocks, index) => (
             <div key={days[index].toISOString()} style={{ position: 'relative', height: '100%' }}>
+              {(vagasPorDia[index] || []).map((vaga) => (
+                <div
+                  key={`vago-${vaga.start}`}
+                  style={{
+                    position: 'absolute',
+                    top: `${vaga.top}%`,
+                    height: `${vaga.height}%`,
+                    left: 2,
+                    right: 2,
+                    borderRadius: 8,
+                    border: '1px dashed color-mix(in srgb, var(--c1) 17%, transparent)',
+                    background: 'color-mix(in srgb, var(--c1) 3%, transparent)',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {vaga.height > 8 && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 3,
+                        left: 4,
+                        fontSize: 8,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: 'var(--c1)',
+                        opacity: 0.45,
+                      }}
+                    >
+                      vago
+                    </span>
+                  )}
+                </div>
+              ))}
               {blocks.map((block) => {
                 const shift = block.shift;
                 const isOwn = shift.usuario_id && shift.usuario_id === userId;
