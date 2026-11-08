@@ -6,7 +6,7 @@ import ShiftForm from '@/components/shifts/ShiftForm';
 import GlassSelect from '@/components/GlassSelect';
 import { CalendarIcon, PlusIcon, PencilIcon, RefreshIcon, TrashIcon } from '@/components/icons';
 import { emitShiftsChanged } from '@/lib/desktopEvents';
-import { daysLabel, sortDays } from '@/lib/shiftRepeat';
+import { daysLabel, expandShift, hasWeekdays, sortDays } from '@/lib/shiftRepeat';
 import { ACEITE_COLOR, ACEITE_LABEL, aceiteOf } from '@/lib/aceite';
 import { buildChatterNames, chatterName } from '@/lib/chatterNames';
 
@@ -25,6 +25,17 @@ const addDays = (date, days) =>
 
 const shortDate = (date) =>
   date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+const horaCurta = (value) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+};
 
 const formatMoment = (value) => {
   if (!value) return '—';
@@ -102,13 +113,38 @@ export default function TurnosWindow({ onClose }) {
 
   const loadShifts = async () => {
     const weekEnd = new Date(weekStartMs + 7 * DAY_MS);
-    const query = {
+    const daSemana = {
       inicio: { $lt: weekEnd.toISOString() },
       fim: { $gt: new Date(weekStartMs).toISOString() },
     };
-    if (modelFilter !== 'todas' && modelFilter !== 'arquivadas') query.modelo_id = modelFilter;
-    const result = await base44.entities.Shift.filter(query, { sort: 'inicio', limit: 200 });
-    setShifts(asList(result));
+    /* Série semanal foi criada em outra semana: o início e o fim dela não
+       caem aqui, mas as ocorrências caem. Sem esta segunda busca o turno
+       aparecia na agenda e não aparecia nesta lista. */
+    const serie = {
+      dias_semana: { $exists: true },
+      inicio: { $lt: weekEnd.toISOString() },
+    };
+    if (modelFilter !== 'todas' && modelFilter !== 'arquivadas') {
+      daSemana.modelo_id = modelFilter;
+      serie.modelo_id = modelFilter;
+    }
+
+    const [resultadoSemana, resultadoSerie] = await Promise.all([
+      base44.entities.Shift.filter(daSemana, { sort: 'inicio', limit: 200 }),
+      base44.entities.Shift.filter(serie, { sort: 'inicio', limit: 200 }),
+    ]);
+
+    const porId = new Map();
+    asList(resultadoSemana).forEach((shift) => porId.set(shift.id, shift));
+    asList(resultadoSerie).forEach((shift) => {
+      /* Só entra a série que realmente tem dia nesta semana. */
+      const ocorrencias = expandShift(shift, weekStartMs, weekStartMs + 7 * DAY_MS);
+      if (ocorrencias.length) porId.set(shift.id, shift);
+    });
+
+    setShifts(
+      [...porId.values()].sort((a, b) => new Date(a.inicio || 0) - new Date(b.inicio || 0))
+    );
   };
 
   useEffect(() => {
@@ -346,8 +382,12 @@ export default function TurnosWindow({ onClose }) {
                         {displayShiftName(shift)}
                       </span>
                       <span style={{ fontSize: 11, color: 'var(--c2)' }}>
-                        {shift.modelo_nome || 'Sem modelo'} · {formatMoment(shift.inicio)} –{' '}
-                        {formatMoment(shift.fim)}
+                        {shift.modelo_nome || 'Sem modelo'} ·{' '}
+                        {hasWeekdays(shift)
+                          ? `${horaCurta(shift.inicio)} – ${horaCurta(shift.fim)}${
+                              shift.repetir_ate ? ` · até ${shortDate(new Date(shift.repetir_ate))}` : ''
+                            }`
+                          : `${formatMoment(shift.inicio)} – ${formatMoment(shift.fim)}`}
                         <span style={{ fontSize: 10, color: 'var(--c2)' }}> · {repeatLabel}</span>
                       </span>
                     </div>

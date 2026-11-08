@@ -47,7 +47,7 @@ export const ehEscolha = (tipo) => tipo === TIPOS.RADIO || tipo === TIPOS.CHECKB
  * novo no próximo carregamento. É o jeito de atualizar o padrão para todo
  * mundo sem pedir que ninguém reedite pergunta por pergunta.
  */
-export const VERSAO_TEMPLATE = 2;
+export const VERSAO_TEMPLATE = 3;
 
 /** O cabeçalho que a modelo vê no topo do formulário. */
 export const CABECALHO_MODELO = {
@@ -66,7 +66,9 @@ const QUESTIONARIO_MODELO = [
   {
     titulo: 'Identificação',
     itens: [
-      { pergunta: 'E-mail', tipo: TIPOS.CURTO, obrigatoria: true },
+      /* Acessos primeiro: é o que a equipe mais precisa ter à mão. */
+      { pergunta: 'E-mail', tipo: TIPOS.CURTO, obrigatoria: true, copiar: true },
+      { pergunta: 'Senha', tipo: TIPOS.CURTO, obrigatoria: true, copiar: true },
       { pergunta: 'Seu nome pode ser informado?', tipo: TIPOS.CURTO, obrigatoria: true },
       {
         pergunta: 'Como prefere ser chamada? Quais apelidos autoriza?',
