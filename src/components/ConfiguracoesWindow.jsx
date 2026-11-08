@@ -25,6 +25,7 @@ const ABAS = [
   { id: 'perfil', label: 'Perfil' },
   { id: 'preferencias', label: 'Preferências' },
   { id: 'notificacoes', label: 'Notificações' },
+  { id: 'chat', label: 'Chat' },
 ];
 
 const inputStyle = {
@@ -414,20 +415,6 @@ export default function ConfiguracoesWindow({ onClose }) {
               rodape={`Vale só para o ${pequeno ? 'celular' : 'computador'}. O outro aparelho tem o som dele.`}
             />
 
-            <BlocoSom
-              titulo="Som das mensagens"
-              dica="Quando chega mensagem nova no chat."
-              ligado={somPref.pref.chat_ativo}
-              rotuloInterruptor="Ligar ou desligar o som das mensagens"
-              onAlternar={somPref.alternarSomChat}
-              sons={listaDeSons}
-              escolhido={somPref.pref.som_chat}
-              onEscolher={somPref.escolherSomChat}
-              volume={somPref.pref.volume_chat}
-              onVolume={somPref.mudarVolumeChat}
-              rodape="Independente do som das notificações, e independente do outro aparelho."
-            />
-
             <div
               style={{
                 display: 'flex',
@@ -604,6 +591,36 @@ export default function ConfiguracoesWindow({ onClose }) {
               )}
             </div>
 
+          </div>
+        )}
+
+        {aba === 'chat' && (
+          <div
+            className="glass-scroll"
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+              paddingRight: 2,
+            }}
+          >
+            <BlocoSom
+              titulo="Som das mensagens"
+              dica="Quando chega mensagem nova no chat."
+              ligado={somPref.pref.chat_ativo}
+              rotuloInterruptor="Ligar ou desligar o som das mensagens"
+              onAlternar={somPref.alternarSomChat}
+              sons={listaDeSons}
+              escolhido={somPref.pref.som_chat}
+              onEscolher={somPref.escolherSomChat}
+              volume={somPref.pref.volume_chat}
+              onVolume={somPref.mudarVolumeChat}
+              rodape="Independente do som das notificações, e independente do outro aparelho."
+            />
+
             <div
               style={{
                 display: 'flex',
@@ -643,6 +660,9 @@ export default function ConfiguracoesWindow({ onClose }) {
               </span>
             </div>
 
+            <span style={{ ...dicaStyle, opacity: 0.6 }}>
+              Os áudios que você envia aparecem na galeria da aba Notificações.
+            </span>
           </div>
         )}
 

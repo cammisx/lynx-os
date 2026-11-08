@@ -4,24 +4,19 @@ import { useChatPanel } from '@/components/chat/ChatProvider';
 import CanalLista from '@/components/chat/CanalLista';
 import ChatConversa from '@/components/chat/ChatConversa';
 import NovoChatModal from '@/components/chat/NovoChatModal';
-import ChatAjustes from '@/components/chat/ChatAjustes';
 import { definirFocoDoChat } from '@/lib/sons';
+import { abrirConfigNaAba } from '@/lib/configAba';
 import ChatIcon from '@/components/icons/ChatIcon';
 
 /** Barra fixa do lado direito do desktop. */
 export default function ChatSidebar() {
   const { aberto, fechar, canalAtivo, fecharCanal, erro, totalNaoLidas, recarregar } = useChatPanel();
   const [novo, setNovo] = useState(false);
-  const [ajustes, setAjustes] = useState(false);
 
   /* O som das mensagens só toca quando a pessoa não está vendo o canal. */
   useEffect(() => {
     definirFocoDoChat(aberto ? canalAtivo?.id || 'lista' : null);
   }, [aberto, canalAtivo]);
-
-  useEffect(() => {
-    if (!canalAtivo) setAjustes(false);
-  }, [canalAtivo]);
 
   if (!aberto) return null;
 
@@ -103,9 +98,8 @@ export default function ChatSidebar() {
             type="button"
             style={botaoHeader}
             className="chat-icone"
-            aria-label="Ajustes do som das mensagens"
-            aria-expanded={ajustes}
-            onClick={() => setAjustes((anterior) => !anterior)}
+            aria-label="Abrir as configurações do chat"
+            onClick={() => abrirConfigNaAba('chat')}
           >
             <GearIcon size={13} />
           </button>
@@ -128,10 +122,6 @@ export default function ChatSidebar() {
             <CloseIcon size={13} />
           </button>
         </div>
-
-        {ajustes && (
-          <ChatAjustes onFechar={() => setAjustes(false)} />
-        )}
 
         {erro && (
           <div

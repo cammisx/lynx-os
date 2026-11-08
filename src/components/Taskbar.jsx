@@ -290,7 +290,6 @@ export default function Taskbar({
           anchorRef={bellRef}
           onOpen={openNotification}
           onClose={() => setBellOpen(false)}
-          preferencia={preferenciaSom}
           onMarcarTodas={markAllRead}
         />
       )}

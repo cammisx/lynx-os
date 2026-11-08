@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
+import { abrirConfigNaAba } from '@/lib/configAba';
 import { GearIcon, PlusIcon } from '@/components/icons';
 import { BackIcon } from '@/components/chat/chatIcons';
 import ChatIcon from '@/components/icons/ChatIcon';
 import CanalLista from '@/components/chat/CanalLista';
 import ChatConversa from '@/components/chat/ChatConversa';
-import ChatAjustes from '@/components/chat/ChatAjustes';
 import NovoChatModal from '@/components/chat/NovoChatModal';
 import { useChatPanel } from '@/components/chat/ChatProvider';
 import { definirFocoDoChat } from '@/lib/sons';
@@ -19,7 +19,6 @@ import { definirFocoDoChat } from '@/lib/sons';
 export default function MobileChat({ onVoltar }) {
   const { aberto, canalAtivo, fecharCanal, erro, totalNaoLidas, recarregar } = useChatPanel();
   const [novo, setNovo] = useState(false);
-  const [ajustes, setAjustes] = useState(false);
 
   useEffect(() => {
     definirFocoDoChat(aberto ? canalAtivo?.id || 'lista' : null);
@@ -76,10 +75,6 @@ export default function MobileChat({ onVoltar }) {
           style={botao}
           aria-label={canalAtivo ? 'Voltar para os canais' : 'Voltar ao início'}
           onClick={() => {
-            if (ajustes) {
-              setAjustes(false);
-              return;
-            }
             if (canalAtivo) fecharCanal();
             else onVoltar?.();
           }}
@@ -119,9 +114,8 @@ export default function MobileChat({ onVoltar }) {
         <button
           type="button"
           style={botao}
-          aria-label="Som das mensagens"
-          aria-expanded={ajustes}
-          onClick={() => setAjustes((antes) => !antes)}
+          aria-label="Abrir as configurações do chat"
+          onClick={() => abrirConfigNaAba('chat')}
         >
           <GearIcon size={16} />
         </button>
@@ -134,8 +128,6 @@ export default function MobileChat({ onVoltar }) {
           <PlusIcon size={17} />
         </button>
       </div>
-
-      {ajustes ? <ChatAjustes onFechar={() => setAjustes(false)} /> : null}
 
       {erro ? (
         <div

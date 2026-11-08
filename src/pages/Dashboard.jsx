@@ -15,7 +15,7 @@ import { JanelaContext } from '@/components/desktop/JanelaContext';
 import ConfirmarFechar from '@/components/desktop/ConfirmarFechar';
 import { janelaPorId } from '@/lib/janelas';
 import { SEPARADOR, useMenuContexto } from '@/components/desktop/MenuContexto';
-import { AVISO_ABA_CONFIG, pedirAbaConfig } from '@/lib/configAba';
+import { abrirConfigNaAba, registrarAbridorConfig } from '@/lib/configAba';
 import useJanelas from '@/hooks/useJanelas';
 import { useAuth } from '@/lib/AuthContext';
 import { salvarBarraTarefas, salvarPerfil, usePerfil } from '@/lib/perfilUsuario';
@@ -90,11 +90,9 @@ export default function Dashboard() {
   const { registrar } = useMenuContexto();
   const itensDesktop = useRef([]);
   const janelasAbertas = janelas.itens.filter((item) => item.aberta);
-  const irParaConfig = (aba) => {
-    pedirAbaConfig(aba);
-    janelas.abrir('config');
-    window.dispatchEvent(new CustomEvent(AVISO_ABA_CONFIG, { detail: aba }));
-  };
+  const abrirJanelaConfig = janelas.abrir;
+  useEffect(() => registrarAbridorConfig(() => abrirJanelaConfig('config')), [abrirJanelaConfig]);
+  const irParaConfig = (aba) => abrirConfigNaAba(aba);
 
   itensDesktop.current = [
     { id: 'preferencias', rotulo: 'Preferências', acao: () => irParaConfig('preferencias') },

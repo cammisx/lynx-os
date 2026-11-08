@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useChatPanel } from '@/components/chat/ChatProvider';
 import MobileStatusBar from '@/components/mobile/MobileStatusBar';
 import MobileDock from '@/components/mobile/MobileDock';
@@ -7,6 +7,7 @@ import MobilePet from '@/components/mobile/MobilePet';
 import MobileChat from '@/components/mobile/MobileChat';
 import ClockPanel from '@/components/ClockPanel';
 import { nomeDe } from '@/lib/perfilLogica';
+import { registrarAbridorConfig } from '@/lib/configAba';
 
 /**
  * Casca do sistema no celular.
@@ -44,6 +45,10 @@ export default function MobileShell({ user, perfil, janelas }) {
     minimizarTodas();
     chat.abrir();
   };
+
+  /* Abrir Configurações de qualquer canto do celular (engrenagem do chat, do
+     sino) passa por aqui, para respeitar a regra de uma tela por vez. */
+  useEffect(() => registrarAbridorConfig(() => abrirJanela('config')), [janelas]);
 
   const ir = (aba) => {
     if (aba === 'inicio') {
