@@ -14,13 +14,13 @@ export default function ChatIcon({ size = 20, ...rest }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.4}
+      strokeWidth={1.3}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
       {...rest}
     >
-      <path d="M3.5 14a4 4 0 0 0 4 4h9l4 4V8a4 4 0 0 0-4-4h-9a4 4 0 0 0-4 4z" />
+      <path d="M3.5 11a6 6 0 0 0 6 6h7l4 4V10a6 6 0 0 0-6-6h-7a6 6 0 0 0-6 6z" />
     </svg>
   );
 }
