@@ -96,6 +96,26 @@ export default function Dashboard() {
   useEffect(() => registrarAbridorConfig(() => abrirJanelaConfig('config')), [abrirJanelaConfig]);
   const irParaConfig = (aba) => abrirConfigNaAba(aba);
 
+  /* Atalhos de janela no clique direito: o chatter só leva Playbook e
+     Conteúdo, as mesmas que ele enxerga no celular. Chatters, Turnos e
+     Financeiro são de admin. */
+  const admin = user?.role === 'admin';
+  const atalhosJanelas = admin
+    ? [
+        { id: 'abrir-chatters', rotulo: 'Abrir Chatters', acao: () => janelas.abrir('chatters') },
+        { id: 'abrir-turnos', rotulo: 'Abrir Turnos', acao: () => janelas.abrir('turnos') },
+        {
+          id: 'abrir-financeiro',
+          rotulo: 'Abrir Financeiro',
+          acao: () => janelas.abrir('financeiro'),
+        },
+        { id: 'abrir-playbook', rotulo: 'Abrir Playbook', acao: () => janelas.abrir('playbook') },
+      ]
+    : [
+        { id: 'abrir-playbook', rotulo: 'Abrir Playbook', acao: () => janelas.abrir('playbook') },
+        { id: 'abrir-conteudo', rotulo: 'Abrir Conteúdo', acao: () => janelas.abrir('conteudo') },
+      ];
+
   itensDesktop.current = [
     { id: 'preferencias', rotulo: 'Preferências', acao: () => irParaConfig('preferencias') },
     {
@@ -104,11 +124,8 @@ export default function Dashboard() {
       acao: () => salvarPerfil(user, { modo: perfil.modo === MODO_CLARO ? MODO_ESCURO : MODO_CLARO }),
     },
     SEPARADOR,
-    { id: 'abrir-chatters', rotulo: 'Abrir Chatters', acao: () => janelas.abrir('chatters') },
-    { id: 'abrir-turnos', rotulo: 'Abrir Turnos', acao: () => janelas.abrir('turnos') },
-    { id: 'abrir-financeiro', rotulo: 'Abrir Financeiro', acao: () => janelas.abrir('financeiro') },
+    ...atalhosJanelas,
     SEPARADOR,
-    { id: 'abrir-playbook', rotulo: 'Abrir Playbook', acao: () => janelas.abrir('playbook') },
     {
       id: 'fechar-todas',
       rotulo: `Fechar todas as janelas${janelasAbertas.length ? ` (${janelasAbertas.length})` : ''}`,
