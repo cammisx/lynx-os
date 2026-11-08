@@ -1,15 +1,15 @@
-import { CalendarIcon, MoneyIcon, MoreIcon, BookIcon } from '@/components/icons';
+import { ImageIcon, MoreIcon, BookIcon } from '@/components/icons';
 import ChatIcon from '@/components/icons/ChatIcon';
 
 /**
  * Barra inferior do celular, no estilo do dock do iOS: cinco lugares, ícone
  * em cima e nome embaixo, com marca embaixo do que está aberto.
+ * O resto do sistema mora no "Mais", junto com o status do shift e das páginas.
  */
 export const ABAS_MOBILE = [
   { id: 'chat', rotulo: 'Chat', Icone: ChatIcon },
-  { id: 'turnos', rotulo: 'Turnos', Icone: CalendarIcon },
-  { id: 'financeiro', rotulo: 'Financeiro', Icone: MoneyIcon },
   { id: 'playbook', rotulo: 'Playbook', Icone: BookIcon },
+  { id: 'conteudo', rotulo: 'Conteúdo', Icone: ImageIcon },
   { id: 'inicio', rotulo: 'Mais', Icone: MoreIcon },
 ];
 

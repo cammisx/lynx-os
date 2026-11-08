@@ -1,10 +1,11 @@
 import { JANELAS } from '@/lib/janelas';
 import MobileResumoDia from '@/components/mobile/MobileResumoDia';
+import MobileStatusPaginas from '@/components/mobile/MobileStatusPaginas';
 import MobileAcoesRapidas from '@/components/mobile/MobileAcoesRapidas';
 
 /**
- * Tela inicial do celular: saudação curta e a grade com todos os apps, como
- * a home de um Android ou iPhone. Cada ícone abre a janela correspondente.
+ * Tela inicial do celular (o "Mais" do dock): saudação, status do shift, status
+ * das páginas, ações rápidas e a grade com o resto do sistema.
  */
 export default function MobileInicio({ nome = '', perfil, onAbrir, user }) {
   const hora = new Date().getHours();
@@ -35,6 +36,8 @@ export default function MobileInicio({ nome = '', perfil, onAbrir, user }) {
       </div>
 
       <MobileResumoDia user={user} onAbrirTurnos={() => onAbrir('turnos')} />
+
+      <MobileStatusPaginas />
 
       <MobileAcoesRapidas user={user} />
 
