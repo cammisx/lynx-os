@@ -130,7 +130,10 @@ export const salvarPerfil = async (user, parcial = {}) => {
     if (doBanco) atual = mesclarPerfil(atual, doBanco);
   }
 
-  atual = { ...atual, ...parcial, modo: modoValido(atual.modo) };
+  /* O spread não muda o `atual` antigo: para normalizar o modo é preciso ler
+     do objeto já mesclado, senão a escolha nova é sobrescrita pela anterior. */
+  const mesclado = { ...atual, ...parcial };
+  atual = { ...mesclado, modo: modoValido(mesclado.modo) };
   aplicarTema(atual.tema, atual.modo);
   aplicarFonte(atual.fonte);
   if (user?.id) gravarLocal(user.id, atual);
