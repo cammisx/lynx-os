@@ -120,7 +120,9 @@ export default function DesktopPet({ pet, cor }) {
     </div>
   ) : null;
 
-  /* Morcego: de cabeça para baixo, preso no topo, balançando. */
+  /* Morcego: de cabeça para baixo, preso no topo, balançando. A rotação gira
+     em torno do próprio centro: assim o bicho ocupa a mesma caixa e as patas
+     (que ficam para cima) encostam no teto, sem sumir para fora da tela. */
   if (pendurado) {
     const balanco = carinho
       ? 'rotate(180deg) scale(1.08)'
@@ -154,7 +156,6 @@ export default function DesktopPet({ pet, cor }) {
             pointerEvents: 'auto',
             cursor: 'pointer',
             lineHeight: 0,
-            transformOrigin: '50% 0%',
             transform: balanco,
             animation:
               animado && !carinho ? 'lynxPetPendurado 4.6s ease-in-out infinite' : 'none',
