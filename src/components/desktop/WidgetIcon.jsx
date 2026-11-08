@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import TurnoIcon from '@/components/icons/TurnoIcon';
 import {
   LABEL_OFFSET,
-  TASKBAR_SAFE,
   WIDGET_ICON,
   WIDGET_LABEL,
   WIDGET_TILE,
@@ -11,22 +10,89 @@ import {
 
 const TILE = WIDGET_TILE;
 const TILE_H = WIDGET_TILE_H;
-const TASKBAR = TASKBAR_SAFE;
 
-const clamp = (x, y) => ({
-  x: Math.min(Math.max(0, x), Math.max(0, window.innerWidth - TILE)),
-  y: Math.min(Math.max(0, y), Math.max(0, window.innerHeight - TASKBAR - TILE_H)),
-});
+/* Folga mínima entre o desenho do ícone e a borda da tela. */
+const BORDA = 2;
+
+/* O app aplica zoom no <html> quando a escala de fonte não é a Normal:
+   dentro de uma raiz com zoom, o px do estilo não é o px do mouse. */
+const zoomDaRaiz = () => {
+  if (typeof window === 'undefined') return 1;
+  const valor = parseFloat(getComputedStyle(document.documentElement).zoom);
+  return Number.isFinite(valor) && valor > 0 ? valor : 1;
+};
+
+/* A barra de tarefas ocupa 1.5/24 da altura da tela (ver .taskbar no tema). */
+const alturaDaBarra = () =>
+  typeof window === 'undefined' ? 0 : (window.innerHeight * 1.5) / 24;
+
+/* Chute inicial da folga em volta do desenho, corrigido pela medição real. */
+const CAIXA_ESTIMADA = {
+  esq: (TILE - WIDGET_ICON) / 2,
+  dir: (TILE - WIDGET_ICON) / 2,
+  topo: (TILE_H - WIDGET_ICON) / 2,
+  base: (TILE_H - WIDGET_ICON) / 2,
+};
+
+/*
+ * O quadrado do ícone tem área transparente em volta: 20px de cada lado e um
+ * vazio em cima e embaixo. Limitar a posição pelo quadrado fazia o desenho
+ * parar longe da borda. Então medimos o conteúdo de verdade (ícone + legenda)
+ * e deixamos ELE encostar nos cantos, não a caixa invisível.
+ */
+const clamp = (x, y, caixa = { esq: 0, dir: 0, topo: 0, base: 0 }) => {
+  const zoom = zoomDaRaiz();
+  const largura = window.innerWidth / zoom;
+  const altura = window.innerHeight / zoom;
+  const minX = -caixa.esq + BORDA;
+  const maxX = largura - TILE + caixa.dir - BORDA;
+  const minY = -caixa.topo + BORDA;
+  const maxY = altura - alturaDaBarra() / zoom - (TILE_H - caixa.base) - BORDA;
+  return {
+    x: Math.min(Math.max(minX, x), Math.max(minX, maxX)),
+    y: Math.min(Math.max(minY, y), Math.max(minY, maxY)),
+  };
+};
 
 /**
  * Ícone do widget no desktop. Arrasta pra reposicionar e abre com duplo clique.
  * Clique simples só seleciona, pra ninguém abrir sem querer no meio de um arrasto.
  */
 export default function WidgetIcon({ label, Icon = TurnoIcon, position, onOpen, onCommit, pulsando = false }) {
-  const [pos, setPos] = useState(() => clamp(position.icone_x, position.icone_y));
+  const [pos, setPos] = useState(() =>
+    clamp(position.icone_x, position.icone_y, CAIXA_ESTIMADA)
+  );
   const [arrastando, setArrastando] = useState(false);
   const [selecionado, setSelecionado] = useState(false);
   const containerRef = useRef(null);
+  const conteudoRef = useRef(null);
+  /* Quanto o desenho está afastado de cada lado do quadrado. */
+  const [caixa, setCaixa] = useState(CAIXA_ESTIMADA);
+  const caixaRef2 = useRef(caixa);
+  caixaRef2.current = caixa;
+
+  const medir = useCallback(() => {
+    const tile = containerRef.current;
+    const conteudo = conteudoRef.current;
+    if (!tile || !conteudo) return;
+    const zoom = zoomDaRaiz();
+    const a = tile.getBoundingClientRect();
+    const b = conteudo.getBoundingClientRect();
+    const proxima = {
+      esq: Math.max(0, (b.left - a.left) / zoom),
+      topo: Math.max(0, (b.top - a.top) / zoom),
+      dir: Math.max(0, (a.right - b.right) / zoom),
+      base: Math.max(0, (a.bottom - b.bottom) / zoom),
+    };
+    setCaixa((antes) =>
+      Math.abs(antes.esq - proxima.esq) < 0.5 &&
+      Math.abs(antes.topo - proxima.topo) < 0.5 &&
+      Math.abs(antes.dir - proxima.dir) < 0.5 &&
+      Math.abs(antes.base - proxima.base) < 0.5
+        ? antes
+        : proxima
+    );
+  }, []);
   const drag = useRef(null);
   const posRef = useRef(pos);
   posRef.current = pos;
@@ -43,15 +109,26 @@ export default function WidgetIcon({ label, Icon = TurnoIcon, position, onOpen, 
 
   useEffect(() => {
     if (drag.current) return;
-    setPos(clamp(position.icone_x, position.icone_y));
-  }, [position.icone_x, position.icone_y]);
+    setPos(clamp(position.icone_x, position.icone_y, caixa));
+  }, [position.icone_x, position.icone_y, caixa]);
+
+  useLayoutEffect(() => {
+    medir();
+  }, [medir, label]);
+
+  useEffect(() => {
+    const aoMudarTamanho = () => medir();
+    window.addEventListener('resize', aoMudarTamanho);
+    return () => window.removeEventListener('resize', aoMudarTamanho);
+  }, [medir]);
 
   const startDrag = (event) => {
     if (event.button !== 0) return;
     event.preventDefault();
+    const zoom = zoomDaRaiz();
     drag.current = {
-      dx: event.clientX - pos.x,
-      dy: event.clientY - pos.y,
+      dx: event.clientX / zoom - pos.x,
+      dy: event.clientY / zoom - pos.y,
       moveu: false,
     };
     setArrastando(true);
@@ -59,7 +136,12 @@ export default function WidgetIcon({ label, Icon = TurnoIcon, position, onOpen, 
     const handleMove = (moveEvent) => {
       const data = drag.current;
       if (!data) return;
-      const next = clamp(moveEvent.clientX - data.dx, moveEvent.clientY - data.dy);
+      const z = zoomDaRaiz();
+      const next = clamp(
+        moveEvent.clientX / z - data.dx,
+        moveEvent.clientY / z - data.dy,
+        caixaRef2.current
+      );
       if (next.x !== pos.x || next.y !== pos.y) data.moveu = true;
       setPos(next);
     };
@@ -113,6 +195,10 @@ export default function WidgetIcon({ label, Icon = TurnoIcon, position, onOpen, 
         zIndex: 1,
       }}
     >
+      <div
+        ref={conteudoRef}
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+      >
       <div style={{ position: 'relative', display: 'flex' }}>
         <Icon size={WIDGET_ICON} />
         {pulsando && (
@@ -146,6 +232,7 @@ export default function WidgetIcon({ label, Icon = TurnoIcon, position, onOpen, 
       >
         {label}
       </span>
+      </div>
     </div>
   );
 }
