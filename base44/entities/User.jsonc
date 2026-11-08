@@ -111,6 +111,11 @@
     "barra_fixadas": {
       "type": "string",
       "description": "Janelas fixadas na barra de tarefas, separadas por virgula"
+    },
+    "tutorial_visto": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se a pessoa ja passou pelo tutorial de primeiro acesso"
     }
   },
   "required": [

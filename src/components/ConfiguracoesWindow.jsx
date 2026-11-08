@@ -19,6 +19,8 @@ import BlocoSom, { Interruptor } from '@/components/config/BlocoSom';
 import { SONS, SOM_PADRAO, formatarDuracaoSom, idSomCustom } from '@/lib/sons';
 import usePreferenciaSom from '@/hooks/usePreferenciaSom';
 import useSonsCustom from '@/hooks/useSonsCustom';
+import { useNavigate } from 'react-router-dom';
+import { ROTA_TUTORIAL } from '@/lib/tutorial';
 import CortarSomModal from '@/components/config/CortarSomModal';
 
 const ABAS = [
@@ -84,6 +86,7 @@ const SUBLIMITE = 60;
 
 export default function ConfiguracoesWindow({ onClose }) {
   const pequeno = useIsMobile();
+  const navegar = useNavigate();
   const { user, logout } = useAuth();
   const perfil = usePerfil(user);
   const [aba, setAba] = useState(() => consumirAbaConfig() || 'perfil');
@@ -1311,6 +1314,33 @@ export default function ConfiguracoesWindow({ onClose }) {
             )}
               </>
             )}
+
+            {/* Rever o tour do sistema: útil para quem chega agora e para
+                lembrar onde fica alguma coisa. */}
+            <span style={{ ...labelStyle, marginTop: 10 }}>Primeiros passos</span>
+            <span style={dicaStyle}>
+              O tour do sistema inteiro, do primeiro acesso ao último detalhe. Serve para rever
+              quando quiser, sem atrapalhar quem já conhece.
+            </span>
+            <button
+              type="button"
+              onClick={() => navegar(ROTA_TUTORIAL)}
+              style={{
+                alignSelf: 'flex-start',
+                height: 32,
+                padding: '0 14px',
+                borderRadius: 9,
+                border: '1px solid color-mix(in srgb, var(--c1) 45%, transparent)',
+                background: 'color-mix(in srgb, var(--c1) 14%, transparent)',
+                color: 'var(--c1)',
+                fontFamily: 'var(--font-main)',
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Ver o tutorial de novo
+            </button>
           </div>
         )}
       </div>

@@ -28,6 +28,8 @@ import useAvisarTurnosPendentes from '@/hooks/useAvisarTurnosPendentes';
 import useVersaoPublicada from '@/hooks/useVersaoPublicada';
 import { sincronizarAdminsUmaVez } from '@/lib/admins';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useNavigate } from 'react-router-dom';
+import { ROTA_TUTORIAL, precisaDeTutorial } from '@/lib/tutorial';
 import MobileShell from '@/components/mobile/MobileShell';
 
 /* Cada janela do menu iniciar é um componente; o id é o mesmo da taskbar. */
@@ -43,6 +45,7 @@ const COMPONENTES = {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navegar = useNavigate();
   /* Abaixo de 768px o sistema vira o modo celular: uma tela por vez. */
   const telaPequena = useIsMobile();
   // Carrega o perfil (tema, nome, foto, fundo) antes de tudo aparecer na tela.
@@ -124,6 +127,7 @@ export default function Dashboard() {
       rotulo: perfil.modo === MODO_CLARO ? 'Mudar para o modo escuro' : 'Mudar para o modo claro',
       acao: () => salvarPerfil(user, { modo: perfil.modo === MODO_CLARO ? MODO_ESCURO : MODO_CLARO }),
     },
+    { id: 'tutorial', rotulo: 'Ver o tutorial', acao: () => navegar(ROTA_TUTORIAL) },
     SEPARADOR,
     ...atalhosJanelas,
     SEPARADOR,
@@ -146,6 +150,16 @@ export default function Dashboard() {
       }),
     [registrar]
   );
+
+  /* Primeiro acesso: quem nunca viu o tutorial passa por ele antes da mesa. */
+  const faltaTutorial = precisaDeTutorial(user);
+  useEffect(() => {
+    if (faltaTutorial) navegar(ROTA_TUTORIAL, { replace: true });
+  }, [faltaTutorial, navegar]);
+
+  if (faltaTutorial) {
+    return <div style={{ position: 'fixed', inset: 0, background: 'var(--c8)' }} />;
+  }
 
   return (
     <div
