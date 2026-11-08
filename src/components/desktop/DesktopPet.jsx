@@ -19,8 +19,8 @@ const DURACAO_FALA = 2600;
  * Quem prefere menos animação no sistema vê o pet parado, mas ele ainda
  * responde ao carinho.
  */
-export default function DesktopPet({ pet }) {
-  const sprite = spriteDe(pet);
+export default function DesktopPet({ pet, cor }) {
+  const sprite = spriteDe(pet, cor);
   const ativo = temPet(pet);
 
   const [posicao, setPosicao] = useState({ x: 0.5, dir: 1, andando: false, quadro: 0 });
@@ -32,7 +32,7 @@ export default function DesktopPet({ pet }) {
   useEffect(() => {
     animadoRef.current = !window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
     setPosicao((atual) => ({ ...atual, x: 0.25 + Math.random() * 0.5, dir: Math.random() < 0.5 ? -1 : 1 }));
-  }, [pet]);
+  }, [pet, cor]);
 
   useEffect(() => {
     if (!ativo) return undefined;

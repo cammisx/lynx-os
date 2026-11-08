@@ -5,7 +5,7 @@
  * A escolha é do usuário: sem pet, gato, cachorro ou morcego. Fica salva no
  * perfil, igual ao tema e ao fundo, então cada pessoa vê o bicho que quis.
  */
-import { SPRITES } from '@/lib/petsSprites';
+import { CORES, SPRITES } from '@/lib/petsSprites';
 
 export const PET_PADRAO = 'nenhum';
 
@@ -16,12 +16,29 @@ export const PETS_DISPONIVEIS = [
   { id: 'morcego', nome: 'Morcego', dica: 'Acorda quando o sol cai' },
 ];
 
+/* Cores de pelo oferecidas para qualquer pet. */
+export const CORES_PET = CORES;
+
+export const COR_PADRAO = 'original';
+
+export const corValida = (valor) =>
+  CORES_PET.some((item) => item.id === valor) ? valor : COR_PADRAO;
+
+export const nomeDaCor = (cor) =>
+  CORES_PET.find((item) => item.id === corValida(cor))?.nome || 'Original';
+
 export const petValido = (valor) =>
   PETS_DISPONIVEIS.some((item) => item.id === valor) ? valor : PET_PADRAO;
 
 export const temPet = (valor) => petValido(valor) !== 'nenhum';
 
-export const spriteDe = (pet) => SPRITES[petValido(pet)] || null;
+/** O desenho do pet na cor escolhida. Os quadros são os mesmos; muda a paleta. */
+export const spriteDe = (pet, cor) => {
+  const base = SPRITES[petValido(pet)];
+  if (!base) return null;
+  const chave = base.paletas[corValida(cor)] ? corValida(cor) : COR_PADRAO;
+  return { quadros: base.quadros, paleta: base.paletas[chave] };
+};
 
 export const nomeDoPet = (pet) => PETS_DISPONIVEIS.find((item) => item.id === petValido(pet))?.nome || 'Sem pet';
 

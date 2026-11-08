@@ -7,7 +7,7 @@ import { iniciaisDe, nomeDe, salvarPerfil, usePerfil } from '@/lib/perfilUsuario
 import { MODO_CLARO, MODO_ESCURO, MODO_SISTEMA, TEMAS, paletaDoTema, resolverModo } from '@/lib/temas';
 import { TAMANHOS } from '@/lib/fonte';
 import { MODOS_FUNDO } from '@/lib/perfilLogica';
-import { PETS_DISPONIVEIS, spriteDe } from '@/lib/pets';
+import { CORES_PET, PETS_DISPONIVEIS, spriteDe, temPet } from '@/lib/pets';
 import PetSprite from '@/components/desktop/PetSprite';
 import { prepararFundo } from '@/lib/fundo';
 import { useMarcarSujo } from '@/components/desktop/JanelaContext';
@@ -183,6 +183,16 @@ export default function ConfiguracoesWindow({ onClose }) {
       remoto
         ? null
         : { erro: false, texto: 'Fundo removido neste navegador. Falta publicar o campo fundo_url no Builder.' }
+    );
+  };
+
+  const escolherCorDoPet = async (petCor) => {
+    if ((perfil.petCor || 'original') === petCor) return;
+    const { remoto } = await salvarPerfil(user, { petCor });
+    setAviso(
+      remoto
+        ? null
+        : { erro: false, texto: 'Cor escolhida neste navegador. Falta publicar o campo pet_cor no Builder.' }
     );
   };
 
@@ -757,6 +767,55 @@ export default function ConfiguracoesWindow({ onClose }) {
                 );
               })}
             </div>
+
+            {temPet(perfil.pet) && (
+              <>
+                <span style={{ ...labelStyle, marginTop: 6 }}>Cor do pet</span>
+                <span style={dicaStyle}>
+                  Vale para o bicho escolhido acima. As cores são as mesmas para os três.
+                </span>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+                    gap: 6,
+                  }}
+                >
+                  {CORES_PET.map(({ id, nome }) => {
+                    const ativo = (perfil.petCor || 'original') === id;
+                    const sprite = spriteDe(perfil.pet, id);
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => escolherCorDoPet(id)}
+                        title={nome}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 3,
+                          padding: '6px 4px',
+                          borderRadius: 9,
+                          border: ativo
+                            ? '1px solid color-mix(in srgb, var(--c1) 70%, transparent)'
+                            : '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+                          background: ativo
+                            ? 'color-mix(in srgb, var(--c1) 14%, transparent)'
+                            : 'color-mix(in srgb, var(--c8) 45%, transparent)',
+                          color: ativo ? 'var(--c1)' : 'var(--c3)',
+                          cursor: 'pointer',
+                          fontFamily: 'var(--font-main)',
+                        }}
+                      >
+                        <PetSprite sprite={sprite} acao="parado" quadro={0} escala={2} />
+                        <span style={{ fontSize: 9, lineHeight: 1.2 }}>{nome}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

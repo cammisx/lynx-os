@@ -40,6 +40,10 @@
       "type": "string",
       "description": "Pet do desktop escolhido: nenhum, gato, cachorro ou morcego"
     },
+    "pet_cor": {
+      "type": "string",
+      "description": "Cor do pelo do pet: original, preto, branco, cinza, marrom ou rosa"
+    },
     "fundo_modo": {
       "type": "string",
       "enum": ["animado", "parado", "sem"],

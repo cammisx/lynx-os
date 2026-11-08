@@ -9,6 +9,40 @@ from PIL import Image, ImageDraw
 
 TAM = 16
 
+# Cores que nao mudam: contorno e bochecha.
+FIXAS = {"o": (40, 32, 46), "k": (231, 122, 132)}
+
+# O pelo de cada pet na sua cor original (b = corpo, s = sombra, l = peito).
+PELOS = {
+    "gato": {"b": (219, 140, 76), "s": (176, 106, 50), "l": (243, 214, 178)},
+    "cachorro": {"b": (198, 140, 92), "s": (156, 108, 66), "l": (244, 227, 202)},
+    "morcego": {"b": (124, 107, 170), "s": (86, 73, 121), "l": (176, 163, 214)},
+}
+
+# Variacoes oferecidas na tela. "original" usa o pelo de cima.
+CORES = [
+    {"id": "original", "nome": "Original", "pelo": None},
+    {"id": "preto", "nome": "Preto", "pelo": {"b": (58, 52, 62), "s": (38, 33, 42), "l": (206, 199, 214)}},
+    {"id": "branco", "nome": "Branco", "pelo": {"b": (239, 232, 221), "s": (203, 193, 178), "l": (255, 253, 248)}},
+    {"id": "cinza", "nome": "Cinza", "pelo": {"b": (154, 160, 170), "s": (118, 124, 134), "l": (231, 234, 239)}},
+    {"id": "marrom", "nome": "Marrom", "pelo": {"b": (139, 106, 75), "s": (107, 80, 57), "l": (226, 205, 176)}},
+    {"id": "rosa", "nome": "Rosa", "pelo": {"b": (231, 155, 176), "s": (198, 119, 142), "l": (251, 224, 232)}},
+]
+
+
+def paleta_de(pet, cor):
+    """Monta a paleta de um pet numa cor: corpo, sombra, peito, contorno, bochecha e, no morcego, a asa."""
+    pelo = dict(PELOS[pet])
+    if cor.get("pelo"):
+        pelo.update(cor["pelo"])
+    pal = dict(pelo)
+    pal.update(FIXAS)
+    if pet == "morcego":
+        b = pelo["b"]
+        pal["w"] = (int(b[0] * 0.57), int(b[1] * 0.57), int(b[2] * 0.57))
+    return pal
+
+
 PALETAS = {
     "gato": {
         "o": (40, 32, 46),
@@ -57,8 +91,7 @@ def olhos(d, pal, y, abertos=True):
             d.rectangle((x, y + 1, x + 1, y + 1), fill=pal["o"])
 
 
-def gato(quadro):
-    pal = PALETAS["gato"]
+def gato(quadro, pal):
     img, d = criar()
     andando = quadro.startswith("andando")
     bob = 1 if quadro == "andando1" else 0
@@ -89,8 +122,7 @@ def gato(quadro):
     return img
 
 
-def cachorro(quadro):
-    pal = PALETAS["cachorro"]
+def cachorro(quadro, pal):
     img, d = criar()
     bob = 1 if quadro == "andando1" else 0
     pata_esq, pata_dir = (4, 10) if quadro != "andando2" else (3, 9)
@@ -116,8 +148,7 @@ def cachorro(quadro):
     return img
 
 
-def morcego(quadro):
-    pal = PALETAS["morcego"]
+def morcego(quadro, pal):
     img, d = criar()
     bob = 1 if quadro == "andando1" else 0
     asa = 1 if quadro == "andando2" else 0
@@ -185,23 +216,33 @@ def escrever_modulo(destino):
     partes.append("")
     partes.append("export const TAMANHO = 16;")
     partes.append("")
+    partes.append("/* Cores oferecidas para qualquer pet. */")
+    partes.append("export const CORES = [")
+    for cor in CORES:
+        partes.append(f"  {{ id: '{cor['id']}', nome: '{cor['nome']}' }},")
+    partes.append("];")
+    partes.append("")
     partes.append("export const SPRITES = {")
     for nome, desenhar in DESENHOS.items():
-        pal = PALETAS[nome]
+        original = paleta_de(nome, CORES[0])
         partes.append(f"  {nome}: {{")
-        partes.append("    paleta: {")
-        for chave, cor in pal.items():
-            partes.append(f"      {chave}: '{hexa(cor)}',")
-        partes.append("    },")
         partes.append("    quadros: {")
         for acao, quadros in QUADROS.items():
             partes.append(f"      {acao}: [")
             for quadro in quadros:
                 partes.append("        [")
-                for linha in para_texto(desenhar(quadro), pal):
+                for linha in para_texto(desenhar(quadro, original), original):
                     partes.append(f"          '{linha}',")
                 partes.append("        ],")
             partes.append("      ],")
+        partes.append("    },")
+        partes.append("    paletas: {")
+        for cor in CORES:
+            pal = paleta_de(nome, cor)
+            partes.append(f"      {cor['id']}: {{")
+            for chave, valor in pal.items():
+                partes.append(f"        {chave}: '{hexa(valor)}',")
+            partes.append("      },")
         partes.append("    },")
         partes.append("  },")
     partes.append("};")
@@ -213,22 +254,20 @@ def escrever_modulo(destino):
 
 def desenhar_previa(destino):
     """Cartela dos 12 quadros, ampliada, para conferir o desenho."""
-    escala, folga, rotulo = 8, 10, 24
-    largura = 4 * TAM * escala + 5 * folga
+    escala, folga, rotulo = 5, 10, 22
+    largura = len(CORES) * TAM * escala + (len(CORES) + 1) * folga
     altura = 3 * (TAM * escala + rotulo) + 4 * folga
     cartela = Image.new("RGB", (largura, altura), (34, 30, 42))
     d = ImageDraw.Draw(cartela)
     for linha, (nome, desenhar) in enumerate(DESENHOS.items()):
         y = folga + linha * (TAM * escala + rotulo + folga)
-        d.text((folga, y - 14), nome.upper(), fill=(240, 200, 120))
-        indice = 0
-        for acao, quadros in QUADROS.items():
-            for quadro in quadros:
-                sprite = desenhar(quadro).resize((TAM * escala, TAM * escala), Image.NEAREST)
-                x = folga + indice * (TAM * escala + folga)
-                cartela.paste(sprite, (x, y), sprite)
-                d.text((x, y + TAM * escala + 4), f"{acao} {indice % 2 + 1}", fill=(200, 190, 210))
-                indice += 1
+        d.text((folga, y - 13), nome.upper(), fill=(240, 200, 120))
+        for coluna, cor in enumerate(CORES):
+            pal = paleta_de(nome, cor)
+            sprite = desenhar("parado1", pal).resize((TAM * escala, TAM * escala), Image.NEAREST)
+            x = folga + coluna * (TAM * escala + folga)
+            cartela.paste(sprite, (x, y), sprite)
+            d.text((x, y + TAM * escala + 3), cor["nome"], fill=(208, 198, 220))
     cartela.save(destino)
     return destino
 

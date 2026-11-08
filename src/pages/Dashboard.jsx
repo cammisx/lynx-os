@@ -141,7 +141,7 @@ export default function Dashboard() {
         estatico={perfil.fundoEstatico}
         semLinhas={perfil.fundoModo === 'sem'}
       />
-      <DesktopPet pet={perfil.pet} />
+      <DesktopPet pet={perfil.pet} cor={perfil.petCor} />
       <ChatProvider>
         <DesktopWidgets />
         <Taskbar

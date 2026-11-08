@@ -8,15 +8,18 @@
 
 export const TAMANHO = 16;
 
+/* Cores oferecidas para qualquer pet. */
+export const CORES = [
+  { id: 'original', nome: 'Original' },
+  { id: 'preto', nome: 'Preto' },
+  { id: 'branco', nome: 'Branco' },
+  { id: 'cinza', nome: 'Cinza' },
+  { id: 'marrom', nome: 'Marrom' },
+  { id: 'rosa', nome: 'Rosa' },
+];
+
 export const SPRITES = {
   gato: {
-    paleta: {
-      o: '#28202e',
-      b: '#db8c4c',
-      s: '#b06a32',
-      l: '#f3d6b2',
-      k: '#e77a84',
-    },
     quadros: {
       parado: [
         [
@@ -95,15 +98,52 @@ export const SPRITES = {
         ],
       ],
     },
+    paletas: {
+      original: {
+        b: '#db8c4c',
+        s: '#b06a32',
+        l: '#f3d6b2',
+        o: '#28202e',
+        k: '#e77a84',
+      },
+      preto: {
+        b: '#3a343e',
+        s: '#26212a',
+        l: '#cec7d6',
+        o: '#28202e',
+        k: '#e77a84',
+      },
+      branco: {
+        b: '#efe8dd',
+        s: '#cbc1b2',
+        l: '#fffdf8',
+        o: '#28202e',
+        k: '#e77a84',
+      },
+      cinza: {
+        b: '#9aa0aa',
+        s: '#767c86',
+        l: '#e7eaef',
+        o: '#28202e',
+        k: '#e77a84',
+      },
+      marrom: {
+        b: '#8b6a4b',
+        s: '#6b5039',
+        l: '#e2cdb0',
+        o: '#28202e',
+        k: '#e77a84',
+      },
+      rosa: {
+        b: '#e79bb0',
+        s: '#c6778e',
+        l: '#fbe0e8',
+        o: '#28202e',
+        k: '#e77a84',
+      },
+    },
   },
   cachorro: {
-    paleta: {
-      o: '#302219',
-      b: '#c68c5c',
-      s: '#9c6c42',
-      l: '#f4e3ca',
-      k: '#e77a84',
-    },
     quadros: {
       parado: [
         [
@@ -182,16 +222,52 @@ export const SPRITES = {
         ],
       ],
     },
+    paletas: {
+      original: {
+        b: '#c68c5c',
+        s: '#9c6c42',
+        l: '#f4e3ca',
+        o: '#28202e',
+        k: '#e77a84',
+      },
+      preto: {
+        b: '#3a343e',
+        s: '#26212a',
+        l: '#cec7d6',
+        o: '#28202e',
+        k: '#e77a84',
+      },
+      branco: {
+        b: '#efe8dd',
+        s: '#cbc1b2',
+        l: '#fffdf8',
+        o: '#28202e',
+        k: '#e77a84',
+      },
+      cinza: {
+        b: '#9aa0aa',
+        s: '#767c86',
+        l: '#e7eaef',
+        o: '#28202e',
+        k: '#e77a84',
+      },
+      marrom: {
+        b: '#8b6a4b',
+        s: '#6b5039',
+        l: '#e2cdb0',
+        o: '#28202e',
+        k: '#e77a84',
+      },
+      rosa: {
+        b: '#e79bb0',
+        s: '#c6778e',
+        l: '#fbe0e8',
+        o: '#28202e',
+        k: '#e77a84',
+      },
+    },
   },
   morcego: {
-    paleta: {
-      o: '#1e182a',
-      b: '#7c6baa',
-      s: '#564979',
-      l: '#b0a3d6',
-      w: '#463c62',
-      k: '#e77a84',
-    },
     quadros: {
       parado: [
         [
@@ -269,6 +345,56 @@ export const SPRITES = {
           '.......ol.......',
         ],
       ],
+    },
+    paletas: {
+      original: {
+        b: '#7c6baa',
+        s: '#564979',
+        l: '#b0a3d6',
+        o: '#28202e',
+        k: '#e77a84',
+        w: '#463c60',
+      },
+      preto: {
+        b: '#3a343e',
+        s: '#26212a',
+        l: '#cec7d6',
+        o: '#28202e',
+        k: '#e77a84',
+        w: '#211d23',
+      },
+      branco: {
+        b: '#efe8dd',
+        s: '#cbc1b2',
+        l: '#fffdf8',
+        o: '#28202e',
+        k: '#e77a84',
+        w: '#88847d',
+      },
+      cinza: {
+        b: '#9aa0aa',
+        s: '#767c86',
+        l: '#e7eaef',
+        o: '#28202e',
+        k: '#e77a84',
+        w: '#575b60',
+      },
+      marrom: {
+        b: '#8b6a4b',
+        s: '#6b5039',
+        l: '#e2cdb0',
+        o: '#28202e',
+        k: '#e77a84',
+        w: '#4f3c2a',
+      },
+      rosa: {
+        b: '#e79bb0',
+        s: '#c6778e',
+        l: '#fbe0e8',
+        o: '#28202e',
+        k: '#e77a84',
+        w: '#835864',
+      },
     },
   },
 };
