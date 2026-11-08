@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
 import { PlusIcon, UsersIcon } from '@/components/icons';
 import ModalConvidar from '@/components/chatters/ModalConvidar';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/lib/AuthContext';
 import { ehAdmin } from '@/lib/chat';
 import { guardarNomePendente, nomePendente, normalizarEmail, tirarNomePendente } from '@/lib/convites';
@@ -55,6 +56,7 @@ const avatar = {
  * quando a tela for definida.
  */
 export default function ChattersWindow({ onClose }) {
+  const pequeno = useIsMobile();
   const { user } = useAuth();
   const admin = ehAdmin(user);
   const [usuarios, setUsuarios] = useState([]);
@@ -169,7 +171,14 @@ export default function ChattersWindow({ onClose }) {
   return (
     <Window title="Chatters" icon={UsersIcon} onClose={onClose} width={620} height={480}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: '100%', minHeight: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            flexWrap: pequeno ? 'wrap' : undefined,
+          }}
+        >
           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--c3)' }}>Todos os usuários</span>
           <span style={{ fontSize: 10, color: 'var(--c2)' }}>
             {carregando ? 'carregando…' : `${lista.length} de ${usuarios.length}`}

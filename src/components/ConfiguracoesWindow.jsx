@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { GearIcon, MonitorIcon, MoonIcon, SunIcon } from '@/components/icons';
 import { useAuth } from '@/lib/AuthContext';
 import { iniciaisDe, nomeDe, salvarPerfil, usePerfil } from '@/lib/perfilUsuario';
@@ -61,6 +62,7 @@ const botaoStyle = (principal = true, desativado = false) => ({
 const SUBLIMITE = 60;
 
 export default function ConfiguracoesWindow({ onClose }) {
+  const pequeno = useIsMobile();
   const { user } = useAuth();
   const perfil = usePerfil(user);
   const [aba, setAba] = useState(() => consumirAbaConfig() || 'perfil');
@@ -274,6 +276,7 @@ export default function ConfiguracoesWindow({ onClose }) {
             borderBottom: '1px solid color-mix(in srgb, var(--c2) 12%, transparent)',
             paddingBottom: 8,
             flexShrink: 0,
+            overflowX: pequeno ? 'auto' : undefined,
           }}
         >
           {ABAS.map((item) => {
@@ -284,8 +287,10 @@ export default function ConfiguracoesWindow({ onClose }) {
                 type="button"
                 onClick={() => setAba(item.id)}
                 style={{
-                  height: 26,
-                  padding: '0 12px',
+                  height: pequeno ? 34 : 26,
+                  padding: pequeno ? '0 14px' : '0 12px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                   borderRadius: 7,
                   border: ativa
                     ? '1px solid color-mix(in srgb, var(--c1) 55%, transparent)'

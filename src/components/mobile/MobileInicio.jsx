@@ -1,10 +1,11 @@
 import { JANELAS } from '@/lib/janelas';
+import MobileResumoDia from '@/components/mobile/MobileResumoDia';
 
 /**
  * Tela inicial do celular: saudação curta e a grade com todos os apps, como
  * a home de um Android ou iPhone. Cada ícone abre a janela correspondente.
  */
-export default function MobileInicio({ nome = '', perfil, onAbrir }) {
+export default function MobileInicio({ nome = '', perfil, onAbrir, user }) {
   const hora = new Date().getHours();
   const saudacao = hora < 6 ? 'Boa madrugada' : hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
   const primeiro = String(nome || '').trim().split(/\s+/)[0] || '';
@@ -31,6 +32,8 @@ export default function MobileInicio({ nome = '', perfil, onAbrir }) {
           {perfil?.subnick?.trim() || 'O que vamos abrir hoje?'}
         </span>
       </div>
+
+      <MobileResumoDia user={user} onAbrirTurnos={() => onAbrir('turnos')} />
 
       <div
         style={{

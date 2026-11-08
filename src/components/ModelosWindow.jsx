@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
+import { useIsMobile } from '@/hooks/use-mobile';
 import ModeloForm from '@/components/ModeloForm';
 import ModeloRow from '@/components/models/ModeloRow';
 import ArchivedSection from '@/components/models/ArchivedSection';
@@ -29,6 +30,7 @@ const carregarLista = async (promessa) => {
 };
 
 export default function ModelosWindow({ onClose }) {
+  const pequeno = useIsMobile();
   const [models, setModels] = useState([]);
   const [chatters, setChatters] = useState([]);
   const [users, setUsers] = useState([]);
@@ -157,7 +159,7 @@ export default function ModelosWindow({ onClose }) {
           />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <button
                 type="button"
                 className="md-primary"
@@ -165,9 +167,10 @@ export default function ModelosWindow({ onClose }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   gap: 6,
-                  borderRadius: 8,
-                  padding: '7px 14px',
+                  borderRadius: pequeno ? 12 : 8,
+                  padding: pequeno ? '10px 14px' : '7px 14px',
                   fontSize: 12,
                   fontWeight: 700,
                   fontFamily: 'var(--font-main)',

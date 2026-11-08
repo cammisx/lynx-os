@@ -81,7 +81,7 @@ export default function MobileShell({ user, perfil, janelas }) {
         }}
       >
         {tela === 'inicio' ? (
-          <MobileInicio nome={nomeDe(perfil, user)} perfil={perfil} onAbrir={abrirJanela} />
+          <MobileInicio user={user} nome={nomeDe(perfil, user)} perfil={perfil} onAbrir={abrirJanela} />
         ) : null}
       </main>
 
