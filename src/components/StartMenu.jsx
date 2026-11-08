@@ -51,8 +51,9 @@ const APPS = [
   },
 ];
 
-/* O playbook é de todo mundo: o chatter vê o da empresa e o das modelos dele. */
-const APPS_CHATTER = APPS.filter((app) => app.id === "playbook");
+/* Playbook e conteúdo são de todo mundo: o chatter vê o da empresa e o das
+   modelos dele, e só o admin edita. */
+const APPS_CHATTER = APPS.filter((app) => app.id === "playbook" || app.id === "conteudo");
 
 export default function StartMenu({ open, onClose, onOpenApp, onOpenConfig }) {
   const { user, logout } = useAuth();

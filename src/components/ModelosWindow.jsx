@@ -12,6 +12,7 @@ import { buildChatterNames } from '@/lib/chatterNames';
 import { useAuth } from '@/lib/AuthContext';
 import { sincronizarAdminsUmaVez } from '@/lib/admins';
 import { arquivarPlaybookDaModelo, restaurarPlaybookDaModelo } from '@/lib/playbooksSync';
+import { arquivarConteudoDaModelo, restaurarConteudoDaModelo } from '@/lib/conteudosSync';
 import { useMarcarSujo } from '@/components/desktop/JanelaContext';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
@@ -92,8 +93,9 @@ export default function ModelosWindow({ onClose }) {
       arquivada: true,
       arquivada_em: new Date().toISOString(),
     });
-    /* O playbook sai da visão geral junto com a modelo, sem ser apagado. */
+    /* Playbook e conteúdo saem da visão geral junto com a modelo, sem serem apagados. */
     await arquivarPlaybookDaModelo(pendingArchive.id);
+    await arquivarConteudoDaModelo(pendingArchive.id);
     setPendingArchive(null);
     await afterChange();
   };
@@ -101,6 +103,7 @@ export default function ModelosWindow({ onClose }) {
   const restoreModel = async (model) => {
     await base44.entities.Modelo.update(model.id, { arquivada: false, arquivada_em: null });
     await restaurarPlaybookDaModelo(model.id);
+    await restaurarConteudoDaModelo(model.id);
     await afterChange();
   };
 
@@ -112,8 +115,9 @@ export default function ModelosWindow({ onClose }) {
   const removeModel = async () => {
     if (!pendingDelete) return;
     await base44.entities.Shift.deleteMany({ modelo_id: pendingDelete.model.id });
-    /* Playbook nunca é excluído: fica arquivado com o texto guardado. */
+    /* Playbook e conteúdo nunca são excluídos: ficam arquivados com o que estava lá. */
     await arquivarPlaybookDaModelo(pendingDelete.model.id);
+    await arquivarConteudoDaModelo(pendingDelete.model.id);
     await base44.entities.Modelo.delete(pendingDelete.model.id);
     setPendingDelete(null);
     await afterChange();
