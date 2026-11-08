@@ -21,6 +21,9 @@ const LARGURA_SUB = 190;
  */
 export default function MenuPet({ x = 0, y = 0, itens = [], cabecalho = '', onFechar }) {
   const caixaRef = useRef(null);
+  /* O submenu é uma caixa separada: sem esta referência, o clique nele conta
+     como "clique fora" e o menu fechava antes do clique chegar no item. */
+  const subRef = useRef(null);
   const fecharRef = useRef(onFechar);
   fecharRef.current = onFechar;
   const [pos, setPos] = useState(null);
@@ -62,7 +65,10 @@ export default function MenuPet({ x = 0, y = 0, itens = [], cabecalho = '', onFe
 
   useEffect(() => {
     const fora = (evento) => {
-      if (caixaRef.current && !caixaRef.current.contains(evento.target)) fecharRef.current();
+      const dentro =
+        (caixaRef.current && caixaRef.current.contains(evento.target)) ||
+        (subRef.current && subRef.current.contains(evento.target));
+      if (!dentro) fecharRef.current();
     };
     const tecla = (evento) => {
       if (evento.key !== 'Escape') return;
@@ -230,6 +236,7 @@ export default function MenuPet({ x = 0, y = 0, itens = [], cabecalho = '', onFe
 
       {sub && filhos.length ? (
         <div
+          ref={subRef}
           role="menu"
           onMouseDown={(evento) => evento.stopPropagation()}
           style={{

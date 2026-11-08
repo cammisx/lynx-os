@@ -807,6 +807,9 @@ export default function ConfiguracoesWindow({ onClose }) {
               })}
             </div>
 
+            {/* No celular não existe pet: o bicho é do desktop. */}
+            {!pequeno && (
+              <>
             <span style={{ ...labelStyle, marginTop: 6 }}>Pet do desktop</span>
             <span style={dicaStyle}>
               Um bicho de estimação em pixel art passeia pela base da tela. Clique nele para fazer
@@ -899,6 +902,8 @@ export default function ConfiguracoesWindow({ onClose }) {
                     );
                   })}
                 </div>
+              </>
+            )}
               </>
             )}
           </div>
