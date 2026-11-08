@@ -2,11 +2,13 @@
  * Leitura do extrato e atribuição de cada venda ao chatter.
  *
  * Regras combinadas com a Chloë:
- * - Venda comum: o centavo do valor BRUTO é o identificador de dois dígitos que
- *   o chatter tem naquela modelo (R$ 14,07 é do chatter 07).
- * - Mimo / venda internacional: nunca tem o centavo, porque o chatter já lançou
- *   pelo widget. Então o extrato serve de conferência: se o registro existe, a
- *   venda é atribuída a quem lançou e não é duplicada.
+ * - Só a venda de Chat recebe dono pelo centavo do valor BRUTO: ele é o
+ *   identificador de dois dígitos que o chatter tem naquela modelo (R$ 14,07 é
+ *   do chatter 07). Assinatura, Postagem e todo o resto entram sempre sem dono.
+ * - Mimo (Mimo - Chat / Mimo - Assinatura) nunca tem o centavo. Ele é conferido
+ *   contra o que o chatter lançou no widget: aprovado, a venda é de quem lançou e
+ *   não duplica; pendente, o extrato avisa para aprovar antes; recusado, entra
+ *   sem dono.
  *
  * A entrada principal é a planilha .xlsx exportada pelo Privacy; o texto colado
  * continua aceito pelo mesmo conferidor.
@@ -15,7 +17,9 @@
 import parsePrivacy from '@/lib/privacyParser';
 import { nomeDaPessoa } from '@/lib/pessoas';
 
-const TIPO_MIMO = /mimo|internacional|gift|presente|gorjeta|tip\b/i;
+/** "Tipo de entrada" da planilha do Privacy. */
+const TIPO_MIMO = /^(mimo|gift|presente|gorjeta|tip)\b/i;
+const TIPO_CHAT = /^chat$/i;
 
 const semAcento = (value) =>
   String(value || '')
@@ -63,8 +67,11 @@ export const mapaIdentificadores = (modelo) => {
   return mapa;
 };
 
-export const ehMimo = (item) =>
-  TIPO_MIMO.test(String(item?.tipo || '')) || /internacional/i.test(String(item?.tipo_venda || ''));
+/** Mimo é decidido só pelo "Tipo de entrada". Ser internacional não faz da venda um mimo. */
+export const ehMimo = (item) => TIPO_MIMO.test(semAcento(item?.tipo));
+
+/** Só a venda de Chat usa o centavo como identificador do chatter. */
+export const ehChat = (item) => TIPO_CHAT.test(semAcento(item?.tipo));
 
 const diaDe = (iso) => String(iso || '').slice(0, 10);
 
@@ -96,12 +103,12 @@ export const SITUACOES = {
   centavo: {
     rotulo: 'Atribuída',
     cor: '#7bd88f',
-    texto: 'Centavo do bruto casa com o identificador do chatter.',
+    texto: 'Venda de Chat: o centavo do bruto casa com o identificador do chatter.',
   },
   mimo_registrado: {
     rotulo: 'Mimo conferido',
     cor: '#3B9EFF',
-    texto: 'Já foi lançada pelo chatter no widget; confere o registro e não duplica.',
+    texto: 'Mimo já lançado e aprovado pelo chatter; atribui a quem lançou e não duplica.',
   },
   ja_importada: {
     rotulo: 'Já importada',
@@ -111,13 +118,23 @@ export const SITUACOES = {
   mimo_sem_registro: {
     rotulo: 'Mimo sem registro',
     cor: '#e8b93b',
-    texto: 'Venda internacional que ninguém lançou no widget.',
+    texto: 'Mimo que ninguém lançou no widget. Entra no extrato sem chatter.',
+  },
+  mimo_pendente: {
+    rotulo: 'Mimo pendente',
+    cor: '#e8b93b',
+    texto: 'O chatter lançou esse mimo, mas ele ainda não foi aprovado. Aprove no aviso para atribuir.',
+  },
+  mimo_recusado: {
+    rotulo: 'Mimo recusado',
+    cor: '#ff6b6b',
+    texto: 'O lançamento desse mimo foi recusado no widget. A venda entra sem chatter.',
   },
   sem_dono: {
     rotulo: 'Sem dono',
     cor: '#e8b93b',
     texto:
-      'Nenhum chatter da modelo tem esse centavo como identificador. A venda entra mesmo assim, sem chatter.',
+      'Assinatura, Postagem e as demais vendas fora do Chat entram sempre sem chatter. Só o Chat recebe dono pelo centavo.',
   },
   nao_confirmada: {
     rotulo: 'Não confirmada',
@@ -211,6 +228,10 @@ export const itensDaPlanilha = (linhas = []) => {
 export const conferirExtrato = ({ itens: itensProntos, texto, modelo, existentes = [] }) => {
   const itens = itensProntos || parsePrivacy(texto || '').itens;
   const identificadores = mapaIdentificadores(modelo);
+  /* Duas listas: extrato anterior serve para não duplicar; lançamento do widget
+     serve para conferir mimo. */
+  const deExtrato = existentes.filter((venda) => (venda.origem || 'mimo') === 'extrato');
+  const doWidget = existentes.filter((venda) => (venda.origem || 'mimo') !== 'extrato');
   const vistos = new Set();
 
   const linhas = itens.map((item) => {
@@ -226,35 +247,51 @@ export const conferirExtrato = ({ itens: itensProntos, texto, modelo, existentes
       base.bruto
     ).toFixed(2)}`;
 
-    const existente = acharExistente(base, existentes);
+    const mimo = ehMimo(base);
+    const existenteExtrato = acharExistente(base, deExtrato);
+    const lancadoNoWidget = mimo ? acharExistente(base, doWidget) : null;
+    const statusLancamento = lancadoNoWidget ? lancadoNoWidget.status || 'aprovada' : '';
+    const existente = existenteExtrato || lancadoNoWidget;
     const confirmada = !base.situacao || /confirmad/i.test(base.situacao);
     let situacao = 'sem_dono';
 
     if (!confirmada) situacao = 'nao_confirmada';
     else if (vistos.has(chave)) situacao = 'duplicado';
-    else if (existente) situacao = existente.origem === 'extrato' ? 'ja_importada' : 'mimo_registrado';
-    else if (identificadores.has(identificador)) situacao = 'centavo';
-    else if (ehMimo(base)) situacao = 'mimo_sem_registro';
-    else if (item.faltando?.length) situacao = 'sem_dono';
+    else if (existenteExtrato) situacao = 'ja_importada';
+    else if (lancadoNoWidget && statusLancamento === 'aprovada') situacao = 'mimo_registrado';
+    else if (lancadoNoWidget && statusLancamento === 'pendente') situacao = 'mimo_pendente';
+    else if (lancadoNoWidget && statusLancamento === 'recusada') situacao = 'mimo_recusado';
+    /* Dono pelo centavo vale só para Chat. Assinatura, Postagem e o resto entram
+       sem dono mesmo que o centavo bata com o identificador de alguém. */
+    else if (ehChat(base) && identificadores.has(identificador)) situacao = 'centavo';
+    else if (mimo) situacao = 'mimo_sem_registro';
 
     vistos.add(chave);
 
     const chatterId =
-      situacao === 'mimo_registrado' || situacao === 'ja_importada'
-        ? existente?.usuario_id || ''
-        : situacao === 'centavo'
-          ? identificadores.get(identificador) || ''
-          : '';
+      situacao === 'ja_importada'
+        ? existenteExtrato?.usuario_id || ''
+        : situacao === 'mimo_registrado' || situacao === 'mimo_pendente'
+          ? lancadoNoWidget?.usuario_id || ''
+          : situacao === 'centavo'
+            ? identificadores.get(identificador) || ''
+            : '';
+    const dono = chatterId && chatterId !== SEM_CHATTER ? chatterId : '';
 
     return {
       ...base,
       situacao,
-      chatter_id: chatterId,
-      chatter_nome: existente && chatterId === existente.usuario_id ? existente.usuario_nome || '' : '',
+      chatter_id: dono,
+      chatter_nome: dono && existente && dono === existente.usuario_id ? existente.usuario_nome || '' : '',
       venda_existente_id: existente?.id || '',
-      /* Entra tudo: venda sem identificador de chatter também é salva, só que
-         sem dono, para o faturamento do extrato fechar. */
-      salvar: situacao === 'centavo' || situacao === 'mimo_sem_registro' || situacao === 'sem_dono',
+      /* Entra tudo, menos o que já está registrado: venda sem dono também é
+         salva, só que sem chatter, para o faturamento do extrato fechar. Mimo
+         pendente fica fora do lote até ser aprovado. */
+      salvar:
+        situacao === 'centavo' ||
+        situacao === 'mimo_sem_registro' ||
+        situacao === 'mimo_recusado' ||
+        situacao === 'sem_dono',
     };
   });
 
@@ -271,7 +308,11 @@ export const conferirExtrato = ({ itens: itensProntos, texto, modelo, existentes
       brutoSalvar: somaPor(linhas.filter((linha) => linha.salvar)),
       atribuidas: contaSituacao('centavo'),
       mimosConferidos: contaSituacao('mimo_registrado'),
-      semDono: contaSituacao('sem_dono') + contaSituacao('mimo_sem_registro'),
+      mimosPendentes: contaSituacao('mimo_pendente'),
+      semDono:
+        contaSituacao('sem_dono') +
+        contaSituacao('mimo_sem_registro') +
+        contaSituacao('mimo_recusado'),
       jaImportadas: contaSituacao('ja_importada') + contaSituacao('duplicado'),
       naoConfirmadas: contaSituacao('nao_confirmada'),
     },
@@ -279,34 +320,37 @@ export const conferirExtrato = ({ itens: itensProntos, texto, modelo, existentes
 };
 
 /** Registro pronto para gravar como VendaMimo do extrato. */
-export const paraVendaMimo = (linha, { modelo, chatterNome, lote, admin }) => ({
-  usuario_id:
-    linha.situacao === 'sem_dono' ? SEM_CHATTER : linha.chatter_id || admin?.id || '',
-  usuario_nome:
-    linha.situacao === 'sem_dono'
+export const paraVendaMimo = (linha, { modelo, chatterNome, lote, admin }) => {
+  const semDono = !linha.chatter_id;
+  return {
+    usuario_id: semDono ? SEM_CHATTER : linha.chatter_id,
+    usuario_nome: semDono
       ? 'Sem chatter'
-      : chatterNome || (admin ? nomeDaPessoa(admin) : ''),
-  modelo_id: modelo?.id || linha.modelo_id,
-  modelo_nome: modelo?.nome || linha.modelo_nome,
-  plataforma: 'privacy',
-  usuario_plataforma: linha.usuario_plataforma,
-  comprador_id: linha.comprador_id || '',
-  tipo: linha.tipo,
-  tipo_venda: linha.tipo_venda || '',
-  bruto: valorNumerico(linha.bruto),
-  liquido: valorNumerico(linha.liquido),
-  moeda: linha.moeda || 'BRL',
-  metodo: linha.metodo || '',
-  ocorrido_em: linha.ocorrido_em,
-  registro_original: linha.registro_original || '',
-  identificador: linha.identificador,
-  origem: 'extrato',
-  lote,
-  status: 'aprovada',
-  observacao:
-    linha.situacao === 'mimo_sem_registro'
-      ? 'Mimo sem registro prévio no widget'
-      : linha.situacao === 'sem_dono'
-        ? 'Sem identificador de chatter no extrato'
-        : '',
-});
+      : chatterNome || linha.chatter_nome || (admin ? nomeDaPessoa(admin) : ''),
+    modelo_id: modelo?.id || linha.modelo_id,
+    modelo_nome: modelo?.nome || linha.modelo_nome,
+    plataforma: 'privacy',
+    usuario_plataforma: linha.usuario_plataforma,
+    comprador_id: linha.comprador_id || '',
+    tipo: linha.tipo,
+    tipo_venda: linha.tipo_venda || '',
+    bruto: valorNumerico(linha.bruto),
+    liquido: valorNumerico(linha.liquido),
+    moeda: linha.moeda || 'BRL',
+    metodo: linha.metodo || '',
+    ocorrido_em: linha.ocorrido_em,
+    registro_original: linha.registro_original || '',
+    identificador: linha.identificador,
+    origem: 'extrato',
+    lote,
+    status: 'aprovada',
+    observacao:
+      linha.situacao === 'mimo_sem_registro'
+        ? 'Mimo sem registro prévio no widget'
+        : linha.situacao === 'mimo_recusado'
+          ? 'Mimo recusado no widget: entrou sem chatter'
+          : semDono
+            ? `Venda de ${linha.tipo || 'tipo não informado'} fora do Chat: sem chatter`
+            : '',
+  };
+};

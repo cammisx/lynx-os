@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import GlassSelect from '@/components/GlassSelect';
-import { UploadIcon } from '@/components/icons';
+import { CloseIcon, GiftIcon, UploadIcon } from '@/components/icons';
+import { MODAL_CAIXA } from '@/lib/modalStyles';
 import { conferirExtrato, itensDaPlanilha, paraVendaMimo, SITUACOES } from '@/lib/extrato';
 import { lerArquivoPlanilha } from '@/lib/planilha';
 import { moeda } from '@/lib/financeiro';
@@ -74,6 +76,23 @@ const situacaoChip = (situacao) => {
   );
 };
 
+function Campo({ label, valor, destaque }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 11 }}>
+      <span style={{ color: 'var(--c2)' }}>{label}</span>
+      <span
+        style={{
+          color: destaque ? 'var(--c1)' : 'var(--c3)',
+          textAlign: 'right',
+          fontWeight: destaque ? 700 : 400,
+        }}
+      >
+        {valor}
+      </span>
+    </div>
+  );
+}
+
 export default function ImportarExtrato({ modelos, chatters }) {
   const { user } = useAuth();
   const [modeloId, setModeloId] = useState('');
@@ -83,6 +102,10 @@ export default function ImportarExtrato({ modelos, chatters }) {
   const [conferencia, setConferencia] = useState(null);
   const [salvando, setSalvando] = useState(false);
   const [aviso, setAviso] = useState(null);
+  const [itensLidos, setItensLidos] = useState([]);
+  const [pendentesAbertos, setPendentesAbertos] = useState(false);
+  const [aprovando, setAprovando] = useState('');
+  const [erroPendente, setErroPendente] = useState('');
 
   const opcoesModelos = useMemo(
     () => modelos.filter((modelo) => !modelo.arquivada).map((modelo) => ({ value: modelo.id, label: modelo.nome })),
@@ -122,6 +145,8 @@ export default function ImportarExtrato({ modelos, chatters }) {
 
   const conferir = (itens) => {
     setAviso(null);
+    setErroPendente('');
+    setItensLidos(itens?.length ? itens : []);
     if (!modelo) {
       setAviso({ erro: true, texto: 'Escolha a modelo antes de enviar o extrato.' });
       return;
@@ -131,7 +156,10 @@ export default function ImportarExtrato({ modelos, chatters }) {
       setConferencia(null);
       return;
     }
-    setConferencia(conferirExtrato({ itens, modelo, existentes }));
+    const resultado = conferirExtrato({ itens, modelo, existentes });
+    setConferencia(resultado);
+    // Mimo lançado e ainda não aprovado: o admin resolve na hora, aqui mesmo.
+    setPendentesAbertos(resultado.linhas.some((linha) => linha.situacao === 'mimo_pendente'));
   };
 
   const escolherArquivo = async (event) => {
@@ -190,6 +218,8 @@ export default function ImportarExtrato({ modelos, chatters }) {
       });
       setArquivo(null);
       setConferencia(null);
+      setItensLidos([]);
+      setPendentesAbertos(false);
       const atualizadas = await base44.entities.VendaMimo.filter(
         { modelo_id: modeloId },
         { sort: '-ocorrido_em', limit: 500 }
@@ -199,6 +229,46 @@ export default function ImportarExtrato({ modelos, chatters }) {
       setAviso({ erro: true, texto: 'Não consegui salvar. Confere as permissões do Financeiro.' });
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const pendentes = useMemo(() => {
+    const ids = new Set(
+      (conferencia?.linhas || [])
+        .filter((linha) => linha.situacao === 'mimo_pendente' && linha.venda_existente_id)
+        .map((linha) => linha.venda_existente_id)
+    );
+    return existentes.filter((venda) => ids.has(venda.id));
+  }, [conferencia, existentes]);
+
+  const aprovarMimos = async (lista) => {
+    if (!lista.length || aprovando) return;
+    setAprovando(lista.length > 1 ? 'todos' : lista[0].id);
+    setErroPendente('');
+    try {
+      const revisao = {
+        status: 'aprovada',
+        revisado_por: user?.id || '',
+        revisado_em: new Date().toISOString(),
+      };
+      await Promise.all(lista.map((venda) => base44.entities.VendaMimo.update(venda.id, revisao)));
+      const ids = new Set(lista.map((venda) => venda.id));
+      const atualizados = existentes.map((item) => (ids.has(item.id) ? { ...item, ...revisao } : item));
+      setExistentes(atualizados);
+      const resultado = conferirExtrato({ itens: itensLidos, modelo, existentes: atualizados });
+      setConferencia(resultado);
+      const aindaPendente = resultado.linhas.some((linha) => linha.situacao === 'mimo_pendente');
+      setPendentesAbertos(aindaPendente);
+      setAviso({
+        erro: false,
+        texto: aindaPendente
+          ? 'Mimo aprovado. Ainda tem mimo pendente nesse extrato.'
+          : 'Mimo aprovado e conferido: a venda ficou com quem lançou e não duplica.',
+      });
+    } catch {
+      setErroPendente('Não consegui aprovar esse mimo. Confere as permissões do Financeiro.');
+    } finally {
+      setAprovando('');
     }
   };
 
@@ -266,6 +336,11 @@ export default function ImportarExtrato({ modelos, chatters }) {
         >
           {salvando ? 'Salvando...' : `Salvar ${conferencia?.resumo?.salvar || 0} venda(s)`}
         </button>
+        {pendentes.length > 0 && (
+          <button type="button" style={botao(false)} onClick={() => setPendentesAbertos(true)}>
+            {`Conferir ${pendentes.length} mimo(s) pendente(s)`}
+          </button>
+        )}
         {aviso && (
           <span style={{ fontSize: 11, color: aviso.erro ? '#ff6b6b' : '#7bd88f' }}>{aviso.texto}</span>
         )}
@@ -273,7 +348,13 @@ export default function ImportarExtrato({ modelos, chatters }) {
 
       {conferencia && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 8 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(104px, 1fr))',
+              gap: 8,
+            }}
+          >
             <div style={cartao}>
               <span style={rotulo}>Registros</span>
               <span style={valorDestaque}>{conferencia.resumo.total}</span>
@@ -289,6 +370,17 @@ export default function ImportarExtrato({ modelos, chatters }) {
             <div style={cartao}>
               <span style={rotulo}>Mimos conferidos</span>
               <span style={{ ...valorDestaque, color: '#3B9EFF' }}>{conferencia.resumo.mimosConferidos}</span>
+            </div>
+            <div style={cartao}>
+              <span style={rotulo}>Mimos pendentes</span>
+              <span
+                style={{
+                  ...valorDestaque,
+                  color: conferencia.resumo.mimosPendentes ? '#e8b93b' : 'var(--c2)',
+                }}
+              >
+                {conferencia.resumo.mimosPendentes}
+              </span>
             </div>
             <div style={cartao}>
               <span style={rotulo}>Sem dono</span>
@@ -345,11 +437,177 @@ export default function ImportarExtrato({ modelos, chatters }) {
 
       {!conferencia && (
         <div style={{ fontSize: 11, color: 'var(--c2)', lineHeight: 1.6 }}>
-          O centavo do bruto é o identificador do chatter naquela modelo. Mimos e vendas
-          internacionais não têm o centavo: eles são conferidos contra o que o chatter já lançou
-          pelo widget e não entram duas vezes.
+          Só a venda de <strong>Chat</strong> ganha dono pelo centavo do bruto, que é o identificador
+          do chatter naquela modelo. <strong>Assinatura</strong>, <strong>Postagem</strong> e as
+          demais entram sempre sem dono. <strong>Mimo</strong> é conferido contra o que o chatter
+          lançou pelo widget: se está aprovado, fica com quem lançou e não entra duas vezes; se está
+          pendente, o aviso aparece aqui para você aprovar na hora.
         </div>
       )}
+
+      {pendentesAbertos &&
+        pendentes.length > 0 &&
+        createPortal(
+          <div
+            role="presentation"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9400,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(0,0,0,0.32)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+            }}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setPendentesAbertos(false);
+            }}
+          >
+            <div role="dialog" aria-label="Mimo pendente de aprovação" style={MODAL_CAIXA}>
+              <div
+                style={{
+                  height: 42,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  padding: '0 8px 0 14px',
+                  borderBottom: '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+                }}
+              >
+                <span
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    fontFamily: 'var(--font-display)',
+                    fontSize: 13,
+                    letterSpacing: '0.04em',
+                    color: 'var(--c1)',
+                  }}
+                >
+                  <GiftIcon size={14} />
+                  Mimo pendente de aprovação
+                </span>
+                <button
+                  type="button"
+                  aria-label="Fechar"
+                  onClick={() => setPendentesAbertos(false)}
+                  className="clk-nav-btn"
+                  style={{
+                    width: 26,
+                    height: 26,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--c2)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <CloseIcon size={13} />
+                </button>
+              </div>
+
+              <div
+                className="glass-scroll"
+                style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}
+              >
+                <span style={{ fontSize: 11, color: 'var(--c2)', lineHeight: 1.6 }}>
+                  {pendentes.length > 1
+                    ? `O chatter lançou ${pendentes.length} mimos deste extrato, mas eles ainda estão aguardando aprovação.`
+                    : 'O chatter lançou este mimo, mas ele ainda está aguardando aprovação.'}{' '}
+                  Aprove aqui para a venda ficar com quem lançou e não entrar duas vezes.
+                </span>
+
+                {pendentes.map((venda) => (
+                  <div
+                    key={venda.id}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 3,
+                      padding: '9px 11px',
+                      borderRadius: 8,
+                      background: 'color-mix(in srgb, var(--c1) 7%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--c1) 16%, transparent)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                      <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--c3)' }}>
+                        {venda.tipo || 'Mimo'}
+                      </span>
+                      <span style={{ fontSize: 10.5, color: '#e8b93b', fontWeight: 700 }}>
+                        Aguardando aprovação
+                      </span>
+                    </div>
+                    <Campo label="Usuário na plataforma" valor={venda.usuario_plataforma || '—'} />
+                    <Campo label="Bruto" valor={moeda(venda.bruto)} destaque />
+                    <Campo label="Líquido" valor={moeda(venda.liquido)} />
+                    <Campo label="Data do lançamento" valor={quandoLabel(venda.ocorrido_em)} />
+                    <Campo
+                      label="Lançado por"
+                      valor={nomeDoChatter.get(venda.usuario_id) || venda.usuario_nome || '—'}
+                    />
+                    {venda.observacao && (
+                      <span style={{ fontSize: 11, color: 'var(--c2)', marginTop: 3 }}>
+                        “{venda.observacao}”
+                      </span>
+                    )}
+                    {venda.print_url && (
+                      <a
+                        href={venda.print_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontSize: 11, color: 'var(--c1)', marginTop: 3 }}
+                      >
+                        Abrir print do lançamento
+                      </a>
+                    )}
+                  </div>
+                ))}
+
+                {erroPendente && <span style={{ fontSize: 11, color: '#ff6b6b' }}>{erroPendente}</span>}
+              </div>
+
+              <div
+                style={{
+                  flexShrink: 0,
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: 8,
+                  padding: '10px 14px',
+                  borderTop: '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setPendentesAbertos(false)}
+                  style={{ ...botao(false), height: 30 }}
+                >
+                  Deixar pendente
+                </button>
+                <button
+                  type="button"
+                  onClick={() => aprovarMimos(pendentes)}
+                  disabled={Boolean(aprovando)}
+                  style={{ ...botao(true), height: 30, opacity: aprovando ? 0.6 : 1 }}
+                >
+                  {aprovando
+                    ? 'Aprovando...'
+                    : pendentes.length > 1
+                      ? `Aprovar ${pendentes.length} mimos`
+                      : 'Aprovar mimo'}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
