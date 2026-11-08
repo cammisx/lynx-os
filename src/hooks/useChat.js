@@ -24,7 +24,6 @@ import { PERFIS_EVENT, listarPerfis, mapaDePerfis } from '@/lib/perfis';
 import { notificarMencoes } from '@/lib/notificacoes';
 import { acharMencoes } from '@/lib/mencoes';
 import { avisarPorEmail } from '@/lib/notificacoesEmail';
-import { mostrarNotificacaoNavegador } from '@/lib/notificacaoNavegador';
 
 /** Mensagens consideradas para contagem e histórico curto. */
 const JANELA_MS = 14 * 86400000;
@@ -884,19 +883,6 @@ export default function useChat() {
           /* Chegou agora, em tempo real: é o caso em que o som deve tocar. */
           if (dados.autor_id && dados.autor_id !== euId && !dados.apagada) {
             if (lerFocoDoChat() !== dados.canal_id) tocarSomChat();
-
-            /* Notificação do sistema: só se a pessoa ligou nos ajustes. */
-            const canalDaMensagem = canaisVisiveisRef.current.find(
-              (item) => item.id === dados.canal_id
-            );
-            if (canalDaMensagem) {
-              mostrarNotificacaoNavegador({
-                titulo: `${dados.autor_nome || 'Alguém'} · ${canalDaMensagem.nome || 'Chat'}`,
-                corpo: String(dados.texto || '').slice(0, 140) || 'Nova mensagem',
-                tag: `lynx-${dados.canal_id}`,
-                aoClicar: () => abrirCanalRef.current?.(dados.canal_id),
-              });
-            }
           }
           setMensagens((anterior) =>
             anterior.some((mensagem) => mensagem.id === dados.id)

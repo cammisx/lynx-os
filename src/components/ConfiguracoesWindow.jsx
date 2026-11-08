@@ -20,17 +20,6 @@ import { SONS, SOM_PADRAO, formatarDuracaoSom, idSomCustom } from '@/lib/sons';
 import usePreferenciaSom from '@/hooks/usePreferenciaSom';
 import useSonsCustom from '@/hooks/useSonsCustom';
 import CortarSomModal from '@/components/config/CortarSomModal';
-import {
-  ambienteDoNavegador,
-  lerEstadoServiceWorker,
-  resumoDoAmbiente,
-  mostrarNotificacaoNavegador,
-  navegadorSuportado,
-  ouvirEstadoServiceWorker,
-  pedirPermissaoDoNavegador,
-  permissaoDoNavegador,
-  registrarServiceWorker,
-} from '@/lib/notificacaoNavegador';
 
 const ABAS = [
   { id: 'perfil', label: 'Perfil' },
@@ -103,10 +92,6 @@ export default function ConfiguracoesWindow({ onClose }) {
   const [arquivoSom, setArquivoSom] = useState(null);
   const [confirmandoSom, setConfirmandoSom] = useState('');
   const arquivoSomRef = useRef(null);
-  const [avisoNavegador, setAvisoNavegador] = useState('');
-  const [permissaoNavegador, setPermissaoNavegador] = useState(() => permissaoDoNavegador());
-  const [estadoWorker, setEstadoWorker] = useState(() => lerEstadoServiceWorker());
-  const [resultadoTeste, setResultadoTeste] = useState('');
   const [nome, setNome] = useState(perfil.nomeExibicao);
   const [subnick, setSubnick] = useState(perfil.subnick);
   const [foto, setFoto] = useState(perfil.fotoUrl);
@@ -321,90 +306,6 @@ export default function ConfiguracoesWindow({ onClose }) {
     /* Se era o som escolhido, volta para o do código em vez de ficar mudo. */
     if (somPref.pref.som === alvo) somPref.escolherSom(SOM_PADRAO);
     if (somPref.pref.som_chat === alvo) somPref.escolherSomChat('mensagem');
-  };
-
-  useEffect(() => ouvirEstadoServiceWorker(setEstadoWorker), []);
-
-  /* Se o worker não entrou no primeiro carregamento, tenta de novo quando a
-     pessoa volta para a aba (a sessão já está pronta nessa hora). */
-  useEffect(() => {
-    if (!somPref.pref.notificar_navegador) return undefined;
-    if (estadoWorker.situacao === 'ok') return undefined;
-    registrarServiceWorker();
-    const ouvir = () => {
-      if (document.visibilityState === 'visible') registrarServiceWorker();
-    };
-    document.addEventListener('visibilitychange', ouvir);
-    return () => document.removeEventListener('visibilitychange', ouvir);
-  }, [somPref.pref.notificar_navegador, estadoWorker.situacao]);
-
-  /* O aviso do navegador muda de história conforme o aparelho: no computador
-     aparece no canto da tela; no celular, o iPhone só aceita com o app na
-     Tela de Início. */
-  const ambiente = ambienteDoNavegador();
-
-  const textoNavegador = !navegadorSuportado()
-    ? {
-        detalhe: 'Este navegador não mostra notificação de sistema.',
-        rodape: 'Sem esse recurso, o sino do app continua avisando normalmente.',
-      }
-    : ambiente.ios && !ambiente.instalado
-      ? {
-          detalhe: 'No iPhone, só com o LynxOS na Tela de Início.',
-          rodape: 'Compartilhar → Adicionar à Tela de Início, abrir por lá e ligar aqui.',
-        }
-      : ambiente.dentroDeApp
-        ? {
-            detalhe: 'Este navegador é o de dentro de outro app e não deixa avisar.',
-            rodape: 'Abra o LynxOS no Safari ou no Chrome.',
-          }
-        : pequeno
-          ? {
-              detalhe: 'Aparece na barra do sistema, mesmo com o app atrás.',
-              rodape: 'Vale só neste celular: cada navegador guarda a própria permissão.',
-            }
-          : {
-              detalhe: 'Aparece no canto da tela, mesmo com o sistema minimizado.',
-              rodape: 'Cada navegador guarda a própria permissão, então vale só neste computador.',
-            };
-
-  /* Aviso do navegador: o mesmo caminho do painel do sino, com a permissão
-     pedida na hora em que a pessoa liga. */
-  const mudarNavegador = async (valor) => {
-    if (!valor) {
-      setAvisoNavegador('');
-      somPref.alternarNotificacaoNavegador(false);
-      return;
-    }
-    if (!navegadorSuportado()) {
-      setAvisoNavegador('Este navegador não tem notificação de sistema.');
-      return;
-    }
-    const ambiente = ambienteDoNavegador();
-    if (ambiente.dentroDeApp) {
-      setAvisoNavegador(
-        'Você abriu o LynxOS dentro de outro app. Abra no Safari ou no Chrome para poder avisar.'
-      );
-      return;
-    }
-    if (ambiente.ios && !ambiente.instalado) {
-      setAvisoNavegador(
-        'No iPhone a Apple só deixa avisar com o LynxOS na Tela de Início: toque em Compartilhar, "Adicionar à Tela de Início", abra por lá e ligue de novo.'
-      );
-      return;
-    }
-    const autorizado = await pedirPermissaoDoNavegador();
-    setPermissaoNavegador(permissaoDoNavegador());
-    if (!autorizado) {
-      setAvisoNavegador(
-        permissaoDoNavegador() === 'denied'
-          ? 'O navegador bloqueou. Libere a permissão nas configurações do site.'
-          : 'O navegador não perguntou. Às vezes é preciso tentar de novo com a página recarregada.'
-      );
-      return;
-    }
-    setAvisoNavegador('');
-    somPref.alternarNotificacaoNavegador(true);
   };
 
   const trocarFonte = async (id) => {
@@ -742,101 +643,6 @@ export default function ConfiguracoesWindow({ onClose }) {
               </span>
             </div>
 
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-                padding: 12,
-                borderRadius: 12,
-                border: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
-                background: 'color-mix(in srgb, var(--c8) 40%, transparent)',
-              }}
-            >
-              <span style={labelStyle}>Notificação no navegador</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: 11, color: 'var(--c3)' }}>Avisar fora do app</span>
-                  <span style={dicaStyle}>
-                    {textoNavegador.detalhe}
-                  </span>
-                </div>
-                <Interruptor
-                  ligado={somPref.pref.notificar_navegador}
-                  onMudar={mudarNavegador}
-                  rotulo="Mostrar notificação do navegador"
-                />
-              </div>
-              {(avisoNavegador ||
-                (somPref.pref.notificar_navegador && permissaoNavegador === 'denied')) && (
-                <span style={{ fontSize: 9.5, color: 'var(--erro)', lineHeight: 1.45 }}>
-                  {avisoNavegador ||
-                    'O navegador está bloqueando. Libere a permissão nas configurações do site.'}
-                </span>
-              )}
-              <span style={{ ...dicaStyle, opacity: 0.6 }}>{textoNavegador.rodape}</span>
-              {somPref.pref.notificar_navegador && permissaoNavegador === 'granted' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setResultadoTeste('enviando…');
-                      const resultado = await mostrarNotificacaoNavegador({
-                        titulo: 'LynxOS',
-                        corpo: 'É assim que o aviso vai aparecer.',
-                        tag: 'lynx-teste',
-                        forcar: true,
-                      });
-                      setResultadoTeste(
-                        resultado?.ok ? 'aviso enviado' : `não saiu: ${resultado?.motivo || 'motivo desconhecido'}`
-                      );
-                    }}
-                    style={{
-                      alignSelf: 'flex-start',
-                      height: 26,
-                      padding: '0 10px',
-                      borderRadius: 7,
-                      border: '1px solid color-mix(in srgb, var(--c2) 26%, transparent)',
-                      background: 'transparent',
-                      color: 'var(--c3)',
-                      fontFamily: 'var(--font-main)',
-                      fontSize: 10,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Testar aviso
-                  </button>
-                  {resultadoTeste && (
-                    <span
-                      style={{
-                        fontSize: 9.5,
-                        color: resultadoTeste === 'aviso enviado' ? 'var(--ok)' : 'var(--c2)',
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      {resultadoTeste}
-                    </span>
-                  )}
-                </div>
-              )}
-              {somPref.pref.notificar_navegador && estadoWorker.situacao === 'erro' && (
-                <span style={{ fontSize: 9.5, color: 'var(--erro)', lineHeight: 1.45 }}>
-                  O aviso do sistema não entrou: {estadoWorker.mensagem}. Sem ele, o celular não
-                  mostra notificação fora do app; o sino continua funcionando normalmente.
-                </span>
-              )}
-              {somPref.pref.notificar_navegador && estadoWorker.situacao === 'ok' && (
-                <span style={{ fontSize: 9.5, color: 'var(--ok)', lineHeight: 1.45 }}>
-                  Aviso do sistema pronto.
-                </span>
-              )}
-              {somPref.pref.notificar_navegador && (
-                <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.55, lineHeight: 1.4 }}>
-                  {resumoDoAmbiente()}
-                </span>
-              )}
-            </div>
           </div>
         )}
 

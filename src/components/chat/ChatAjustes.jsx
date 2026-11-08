@@ -1,12 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { CheckIcon, CloseIcon, VolumeIcon } from '@/components/icons';
 import { SONS } from '@/lib/sons';
 import usePreferenciaSom from '@/hooks/usePreferenciaSom';
-import {
-  navegadorSuportado,
-  pedirPermissaoDoNavegador,
-  permissaoDoNavegador,
-} from '@/lib/notificacaoNavegador';
 
 /** Interruptor pequeno, igual ao que já era usado aqui. */
 function Interruptor({ ligado, onMudar, rotulo }) {
@@ -76,8 +71,8 @@ const SECAO = {
 };
 
 /**
- * Ajustes do chat: som das mensagens, avisos por e-mail e notificação do
- * navegador. Tudo é escolha de cada pessoa e vale só para ela.
+ * Ajustes do chat: som das mensagens e avisos por e-mail. Tudo é escolha de
+ * cada pessoa e vale só para ela.
  */
 export default function ChatAjustes({ onFechar }) {
   const preferencia = usePreferenciaSom();
@@ -87,14 +82,10 @@ export default function ChatAjustes({ onFechar }) {
     volume_chat: 60,
     notificar_email: true,
     email_todas: false,
-    notificar_navegador: false,
   };
   const ligado = pref.chat_ativo !== false;
   const mencoesPorEmail = pref.notificar_email !== false;
   const todasPorEmail = pref.email_todas === true;
-  const navegadorLigado = pref.notificar_navegador === true;
-  const [aviso, setAviso] = useState('');
-  const [permissao, setPermissao] = useState(permissaoDoNavegador());
 
   useEffect(() => {
     const aoTeclar = (evento) => {
@@ -103,26 +94,6 @@ export default function ChatAjustes({ onFechar }) {
     window.addEventListener('keydown', aoTeclar);
     return () => window.removeEventListener('keydown', aoTeclar);
   }, [onFechar]);
-
-  const mudarNavegador = async (valor) => {
-    if (!valor) {
-      setAviso('');
-      preferencia?.alternarNotificacaoNavegador?.(false);
-      return;
-    }
-    if (!navegadorSuportado()) {
-      setAviso('Este navegador não tem notificação de sistema.');
-      return;
-    }
-    const autorizado = await pedirPermissaoDoNavegador();
-    setPermissao(permissaoDoNavegador());
-    if (!autorizado) {
-      setAviso('O navegador bloqueou. Libere a permissão nas configurações do site.');
-      return;
-    }
-    setAviso('');
-    preferencia?.alternarNotificacaoNavegador?.(true);
-  };
 
   return (
     <div
@@ -299,22 +270,6 @@ export default function ChatAjustes({ onFechar }) {
           margin: '2px 0',
         }}
       />
-
-      <span style={SECAO}>NOTIFICAÇÃO NO COMPUTADOR</span>
-
-      <Linha titulo="Avisar no navegador" detalhe="Aparece fora da aba, mesmo minimizado">
-        <Interruptor
-          ligado={navegadorLigado}
-          rotulo="Mostrar notificação do navegador"
-          onMudar={mudarNavegador}
-        />
-      </Linha>
-
-      {(aviso || (navegadorLigado && permissao === 'denied')) && (
-        <span style={{ fontSize: 9, color: 'var(--c6)', lineHeight: 1.4 }}>
-          {aviso || 'O navegador está bloqueando. Libere a permissão nas configurações do site.'}
-        </span>
-      )}
 
       <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.7, lineHeight: 1.4 }}>
         O som aqui é independente do som das notificações.

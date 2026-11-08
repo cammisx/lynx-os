@@ -10,7 +10,6 @@ import {
   tocarNotificacao,
   tocarSom,
 } from '@/lib/sons';
-import { lembrarNavegadorLigado } from '@/lib/notificacaoNavegador';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
@@ -122,7 +121,7 @@ const paraBanco = (dados, aparelho) => {
 /**
  * Preferência de som de notificação de cada pessoa (entidade PreferenciaSom).
  *
- * Som, volume, liga/desliga, som do chat e aviso do navegador são escolhidos
+ * Som, volume, liga/desliga e som do chat são escolhidos
  * por aparelho: o que você escolhe no celular não mexe no computador. Os
  * avisos por e-mail são da conta inteira, então valem nos dois.
  */
@@ -202,10 +201,6 @@ export default function usePreferenciaSom() {
     });
   }, [pref]);
 
-  useEffect(() => {
-    lembrarNavegadorLigado(pref.notificar_navegador);
-  }, [pref.notificar_navegador]);
-
   const persistir = useCallback(
     (dados) => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -283,7 +278,7 @@ export default function usePreferenciaSom() {
     [atualizar]
   );
 
-  /* Avisos por e-mail e notificação do navegador. */
+  /* Avisos por e-mail. */
   const alternarEmailMencoes = useCallback(
     (valor) => atualizar({ notificar_email: valor }),
     [atualizar]
@@ -292,14 +287,6 @@ export default function usePreferenciaSom() {
     (valor) => atualizar({ email_todas: valor }),
     [atualizar]
   );
-  const alternarNotificacaoNavegador = useCallback(
-    (valor) => {
-      lembrarNavegadorLigado(valor);
-      atualizar({ notificar_navegador: valor });
-    },
-    [atualizar]
-  );
-
   return {
     pref,
     carregado,
@@ -312,6 +299,5 @@ export default function usePreferenciaSom() {
     mudarVolumeChat,
     alternarEmailMencoes,
     alternarEmailTodas,
-    alternarNotificacaoNavegador,
   };
 }
