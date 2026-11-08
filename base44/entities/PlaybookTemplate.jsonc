@@ -8,8 +8,13 @@
       "default": "modelo",
       "description": "Qual questionario este template representa"
     },
+    "titulo": { "type": "string" },
     "resumo": {
       "type": "string"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Texto que aparece no topo do formulario publico"
     },
     "secoes": {
       "type": "array",
@@ -19,6 +24,10 @@
         "properties": {
           "id": { "type": "string" },
           "titulo": { "type": "string" },
+          "descricao": {
+            "type": "string",
+            "description": "Texto explicativo que aparece logo abaixo do titulo da secao"
+          },
           "texto": { "type": "string" },
           "itens": {
             "type": "array",
@@ -27,6 +36,27 @@
               "properties": {
                 "id": { "type": "string" },
                 "pergunta": { "type": "string" },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["curto", "longo", "data", "radio", "checkbox"],
+                  "default": "longo",
+                  "description": "curto/longo: texto | data: calendario | radio: escolha unica | checkbox: varias escolhas"
+                },
+                "opcoes": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Alternativas das perguntas de escolha"
+                },
+                "outro": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Mostra a alternativa Outro, com campo de texto"
+                },
+                "obrigatoria": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Sem resposta, o formulario nao envia"
+                },
                 "resposta": { "type": "string" },
                 "copiar": { "type": "boolean", "default": false }
               }

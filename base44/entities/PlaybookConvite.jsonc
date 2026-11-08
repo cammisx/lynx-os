@@ -8,6 +8,14 @@
     },
     "modelo_id": { "type": "string" },
     "modelo_nome": { "type": "string" },
+    "titulo": {
+      "type": "string",
+      "description": "Titulo que aparece no topo do formulario publico"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Texto de abertura do formulario publico"
+    },
     "secoes": {
       "type": "array",
       "description": "Copia das perguntas no momento em que o link foi gerado",
@@ -16,6 +24,7 @@
         "properties": {
           "id": { "type": "string" },
           "titulo": { "type": "string" },
+          "descricao": { "type": "string" },
           "itens": {
             "type": "array",
             "items": {
@@ -23,6 +32,14 @@
               "properties": {
                 "id": { "type": "string" },
                 "pergunta": { "type": "string" },
+                "tipo": {
+                  "type": "string",
+                  "enum": ["curto", "longo", "data", "radio", "checkbox"],
+                  "default": "longo"
+                },
+                "opcoes": { "type": "array", "items": { "type": "string" } },
+                "outro": { "type": "boolean", "default": false },
+                "obrigatoria": { "type": "boolean", "default": false },
                 "copiar": { "type": "boolean", "default": false }
               }
             }

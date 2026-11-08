@@ -8,139 +8,402 @@
  *    nunca excluído, e sai da visão geral;
  *  - se a modelo volta, o playbook volta com o texto que estava lá.
  *
- * Formato: cada playbook tem seções; cada seção tem perguntas. Pergunta sem
- * resposta existe no editor (serve de checklist do que falta levantar) mas não
- * aparece na leitura. Uma pergunta marcada com `copiar` ganha um botão que
- * copia a resposta — é como os acessos são usados no dia a dia.
+ * Cada pergunta tem um tipo, que é o que o formulário público usa para
+ * desenhar o campo: texto curto, texto longo, data, escolha única (radio) ou
+ * várias escolhas (checkbox). Pergunta de escolha pode ter "Outro" e pode ser
+ * obrigatória, como no formulário original da agência.
  *
- * Seção antiga, escrita como um bloco de texto corrido (`texto`), continua
- * sendo lida normalmente: nada do que já estava escrito se perde.
- *
- * Quem lê: todo mundo lê o playbook da empresa e os das modelos a que está
- * atribuído. O admin lê todos os ativos. Só o admin edita.
+ * A resposta é sempre texto, porque é isso que o chatter lê. Escolha múltipla
+ * vira uma lista separada por vírgula.
  */
 import { chattersDaModelo, ehAdmin } from '@/lib/chat';
 
 export const TIPO_EMPRESA = 'empresa';
 export const TIPO_MODELO = 'modelo';
 
+/* Tipos de pergunta do formulário. */
+export const TIPOS = {
+  CURTO: 'curto',
+  LONGO: 'longo',
+  DATA: 'data',
+  RADIO: 'radio',
+  CHECKBOX: 'checkbox',
+};
+
+export const ROTULO_DO_TIPO = {
+  [TIPOS.CURTO]: 'Texto curto',
+  [TIPOS.LONGO]: 'Texto longo',
+  [TIPOS.DATA]: 'Data',
+  [TIPOS.RADIO]: 'Escolha única',
+  [TIPOS.CHECKBOX]: 'Várias escolhas',
+};
+
+export const ehEscolha = (tipo) => tipo === TIPOS.RADIO || tipo === TIPOS.CHECKBOX;
+
 /**
- * O questionário que a agência envia a cada modelo nova. É o mesmo formulário
- * "LYNX - Perfil da Modelo", com todas as perguntas: preencher o playbook é
- * responder o formulário dentro do sistema.
+ * Versão do questionário padrão que mora no código.
+ *
+ * Quando este número sobe, o template salvo é reescrito com o questionário
+ * novo no próximo carregamento. É o jeito de atualizar o padrão para todo
+ * mundo sem pedir que ninguém reedite pergunta por pergunta.
+ */
+export const VERSAO_TEMPLATE = 2;
+
+/** O cabeçalho que a modelo vê no topo do formulário. */
+export const CABECALHO_MODELO = {
+  titulo: 'LYNX - Perfil da Modelo',
+  descricao:
+    'Preencha o formulário abaixo para enviar o perfil da modelo à Agência Lynx.\n\n' +
+    'Atenção: as informações inseridas não precisam corresponder integralmente à realidade pessoal ' +
+    'da modelo, mas devem refletir fielmente a persona que será apresentada aos assinantes.',
+};
+
+/**
+ * O questionário da modelo, transcrito do formulário "LYNX - Perfil da Modelo"
+ * (é este o formato que a agência já usa com as modelos).
  */
 const QUESTIONARIO_MODELO = [
   {
-    titulo: 'Contas e acessos',
-    /* e-mail, senha e Instagram: é o que o chatter mais copia no dia a dia */
-    copiar: true,
-    perguntas: ['E-mail', 'Senha', 'Instagram'],
-  },
-  {
     titulo: 'Identificação',
-    perguntas: [
-      'Seu nome pode ser informado?',
-      'Como prefere ser chamada? Quais apelidos autoriza?',
-      'Qual idade da sua persona?',
-      'Qual dia e mês de aniversário autoriza divulgar?',
-      'Qual é seu signo? Você gosta ou costuma falar sobre astrologia?',
-      'Qual profissão, curso ou área de estudo autoriza mencionar?',
-      'Como descreve sua orientação sexual, caso queira informar?',
-      'Qual sua altura?',
-      'Qual seu número de calçado?',
+    itens: [
+      { pergunta: 'E-mail', tipo: TIPOS.CURTO, obrigatoria: true },
+      { pergunta: 'Seu nome pode ser informado?', tipo: TIPOS.CURTO, obrigatoria: true },
+      {
+        pergunta: 'Como prefere ser chamada? Quais apelidos autoriza?',
+        tipo: TIPOS.CURTO,
+        obrigatoria: true,
+      },
+      { pergunta: 'Qual idade da sua persona', tipo: TIPOS.CURTO, obrigatoria: true },
+      {
+        pergunta: 'Qual dia e mês de aniversário autoriza divulgar?',
+        tipo: TIPOS.DATA,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Qual é seu signo? Você gosta ou costuma falar sobre astrologia?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Qual profissão, curso ou área de estudo autoriza mencionar?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Quais informações pessoais nunca devem ser compartilhadas?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
     ],
   },
   {
-    titulo: 'Personalidade e humor',
-    perguntas: [
-      'Como você se descreveria para alguém que acabou de conhecer?',
-      'Você se considera mais tímida, extrovertida ou depende da situação?',
-      'Se fosse para definir sua personagem, qual seria a escolha? (carinhosa, brincalhona, reservada, direta, romântica, irônica, dominadora, permite adequação de acordo com o assinante)',
-      'Quais manias, trejeitos, expressões ou bordões são mais usados por você?',
-      'Que tipo de humor você tem? Quais brincadeiras gosta de fazer?',
-      'O que costuma deixar você feliz ou empolgada?',
-      'O que costuma irritar você?',
+    titulo: 'Personalidade e comportamento',
+    itens: [
+      {
+        pergunta: 'Como você se descreveria para alguém que acabou de conhecer?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Você se considera mais tímida, extrovertida ou depende da situação?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Se fosse para definir sua personagem, qual seria a escolha?',
+        tipo: TIPOS.CHECKBOX,
+        opcoes: [
+          'Carinhosa',
+          'Brincalhona',
+          'Reservada',
+          'Direta',
+          'Romântica',
+          'Irônica',
+          'Dominadora',
+          'Permite adequação de acordo com o assinante',
+        ],
+        outro: true,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Que tipo de humor você tem? Quais brincadeiras gosta de fazer?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Que tipo de piada ou brincadeira você não autoriza utilizar?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      { pergunta: 'O que costuma deixar você feliz ou empolgada?', tipo: TIPOS.LONGO },
+      { pergunta: 'O que costuma irritar você?', tipo: TIPOS.LONGO },
+      {
+        pergunta: 'Se houver: Quais manias, trejeitos, expressões ou bordões são muito usados por você?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
     ],
   },
   {
-    titulo: 'Como ela escreve',
-    perguntas: [
-      'Você usa "você", "vc", "cê", "tu" ou outra forma? Escreva exemplos.',
-      'Quais abreviações costuma usar? (ex.: pq, tbm, nn, ss, mds)',
-      'Como costuma começar as mensagens?',
-      'Como usa vírgulas, acentos, pontos e interrogações? (nunca, pouco, intermediário, sempre)',
-      'Qual nível de escrita mais te satisfaz?',
-      'Costuma alongar palavras, como "oiii", "ameeei" e "nossaaa"?',
-      'Como escreve quando acha algo engraçado? Diferencie uma risada discreta de uma gargalhada.',
-      'Quais risadas você costuma usar?',
-      'Usa palavrões? Com que frequência?',
-      'Quais emojis mais usa?',
-      'Usa apelidos carinhosos como "amor", "vida", "bem" ou "bb"? Quais autoriza e em quais situações?',
-      'Usa figurinhas, memes ou emoticons, como ":)" e "<3"? De que tipo?',
-      'Escreve em outros idiomas? Qual é seu nível e como costuma conversar neles?',
-      'Escreva cinco mensagens que representem muito bem seu jeito de falar.',
+    titulo: 'Seu jeito de escrever',
+    itens: [
+      {
+        pergunta: 'Você usa "você", "vc", "cê", "tu" ou outra forma? Escreva exemplos.',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Quais abreviações costuma usar? Ex.: "pq", "tbm", "nn", "ss", "mds".',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Como costuma começar as mensagens?',
+        tipo: TIPOS.RADIO,
+        opcoes: ['Com letra maiúscula "Oieee"', 'Com letra minúscula "oieee"'],
+        outro: true,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Como usa vírgulas, acentos, pontos e interrogações?',
+        tipo: TIPOS.RADIO,
+        opcoes: ['Nunca', 'Pouco', 'Intermediário', 'Sempre'],
+        outro: true,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Qual nível de escrita mais te satisfaz',
+        tipo: TIPOS.RADIO,
+        opcoes: [
+          'Oii, como você está amoor?',
+          'Oieee, como voce tá moor?',
+          'oieee como voce ta mor?',
+          'Variado',
+          'Irrelevante',
+        ],
+        outro: true,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Costuma alongar palavras, como "oiii", "ameeei" e "nossaaa"?',
+        tipo: TIPOS.RADIO,
+        opcoes: ['Sim', 'Não'],
+        outro: true,
+        obrigatoria: true,
+      },
+      {
+        pergunta:
+          'Como escreve quando acha algo engraçado? Diferencie uma risada discreta de uma gargalhada.',
+        tipo: TIPOS.LONGO,
+      },
+      {
+        pergunta: 'Quais risadas você costuma usar',
+        tipo: TIPOS.CHECKBOX,
+        opcoes: [
+          'kkkkkkkk',
+          'kakakakaka',
+          'sksksksksks',
+          'rsrsrsrsrs',
+          'hehehehe',
+          'hihihihi',
+          'ahsuahsuahsu',
+        ],
+        outro: true,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Usa palavrões? Com que frequência?',
+        tipo: TIPOS.RADIO,
+        opcoes: [
+          'Nunca',
+          'Às vezes',
+          'Quase sempre',
+          'Sempre',
+          'Somente quando necessário (BDSM/Personalizados)',
+        ],
+        outro: true,
+        obrigatoria: true,
+      },
+      { pergunta: 'Quais emojis mais usa?', tipo: TIPOS.LONGO, obrigatoria: true },
+      {
+        pergunta: 'Usa apelidos carinhosos como "amor", "vida", "bem" ou "bb"? Quais autoriza e em quais situações?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Usa figurinhas, memes ou emoticons, como ":)" e "<3"? De que tipo?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Escreve em outros idiomas? Qual é seu nível e como costuma conversar neles?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Escreva cinco mensagens que representem muito bem seu jeito de falar',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
     ],
   },
   {
-    titulo: 'Gostos e vida',
-    perguntas: [
-      'Quais são suas cores favoritas? Existe alguma que não gosta?',
-      'Qual é sua comida favorita?',
-      'Quais comidas você não gosta ou não comeria?',
-      'Você gosta de frutas? Quais prefere e quais não gosta?',
-      'Qual é seu doce ou sobremesa favorita?',
-      'Qual é seu lanche, pizza ou pedido de delivery favorito?',
-      'Quais são suas bebidas favoritas sem álcool?',
-      'Consome bebidas alcoólicas? Se quiser informar, quais gosta e quais não gosta?',
-      'Gosta de café, chá ou chimarrão? Como prefere?',
-      'Tem alguma restrição alimentar, intolerância ou alergia? Pode ser mencionado ao público?',
-      'Segue algum estilo de alimentação, como vegetariano ou vegano?',
-      'Gosta de cozinhar? Qual prato sabe fazer melhor?',
-      'Prefere doce ou salgado? Comer fora ou pedir em casa?',
-      'Torce para algum time? Qual? Acompanha mesmo ou apenas simpatiza?',
-      'Pratica ou acompanha algum esporte?',
-      'Joga videogame, computador ou celular? Quais jogos e personagens prefere?',
-      'Quais são seus filmes, séries e animes favoritos?',
-      'Quais estilos musicais, artistas e músicas mais gosta?',
-      'Gosta de ler? Quais livros ou gêneros?',
-      'Prefere praia, campo ou cidade? Calor ou frio?',
-      'É mais caseira ou gosta de sair? Quais tipos de passeio prefere?',
-      'Tem pets? Quais informações sobre eles autoriza compartilhar?',
-      'Existe algum assunto que você não acompanha e não gostaria que a equipe fingisse dominar?',
-      'Faz academia ou alguma atividade física?',
-      'Tem tatuagens ou piercings? Quantas? Qual significado?',
-      'Você fuma? Qual marca, essência ou sabor prefere?',
+    titulo: 'Gostos, comidas e bebidas',
+    itens: [
+      { pergunta: 'Quais são suas cores favoritas? Existe alguma que não gosta?', tipo: TIPOS.CURTO },
+      { pergunta: 'Qual é sua comida favorita?', tipo: TIPOS.CURTO },
+      { pergunta: 'Quais comidas você não gosta ou não comeria?', tipo: TIPOS.CURTO },
+      { pergunta: 'Você gosta de frutas? Quais prefere e quais não gosta?', tipo: TIPOS.LONGO },
+      { pergunta: 'Qual é seu doce ou sobremesa favorita?', tipo: TIPOS.CURTO },
+      { pergunta: 'Qual é seu lanche, pizza ou pedido de delivery favorito?', tipo: TIPOS.CURTO },
+      { pergunta: 'Quais são suas bebidas favoritas sem álcool?', tipo: TIPOS.CURTO },
+      {
+        pergunta: 'Consome bebidas alcoólicas? Se quiser informar, quais gosta e quais não gosta?',
+        tipo: TIPOS.LONGO,
+      },
+      { pergunta: 'Gosta de café, chá ou chimarrão? Como prefere?', tipo: TIPOS.CURTO },
+      {
+        pergunta:
+          'Tem alguma restrição alimentar, intolerância ou alergia que queira que a equipe conheça? ' +
+          'Informe somente o necessário e diga se pode ser mencionado ao público.',
+        tipo: TIPOS.LONGO,
+      },
+      { pergunta: 'Segue algum estilo de alimentação, como vegetariano ou vegano?', tipo: TIPOS.CURTO },
+      { pergunta: 'Gosta de cozinhar? Qual prato sabe fazer melhor?', tipo: TIPOS.LONGO },
+      {
+        pergunta: 'Prefere doce ou salgado? Comer fora ou pedir em casa?',
+        tipo: TIPOS.CHECKBOX,
+        opcoes: ['Doce', 'Salgado', 'Pedir', 'Comer fora'],
+        outro: true,
+      },
+      {
+        pergunta: 'Torce para algum time? Qual? Acompanha mesmo ou apenas simpatiza?',
+        tipo: TIPOS.LONGO,
+      },
     ],
   },
   {
-    titulo: 'Limites e o que não mencionar',
-    perguntas: [
-      'Quais informações pessoais nunca devem ser compartilhadas?',
-      'Que tipo de piada ou brincadeira você não autoriza utilizar?',
-      'Quais pedidos devem ser recusados imediatamente? (ex.: namoro, encontro pessoal)',
-      'Como a equipe deve responder a pedidos de encontro, contato pessoal ou localização?',
-      'Existe algum limite ou informação que jamais pode ser presumido ou inventado em seu nome?',
+    titulo: 'Hobbies e rotina',
+    itens: [
+      { pergunta: 'Pratica ou acompanha algum esporte?', tipo: TIPOS.CURTO },
+      {
+        pergunta: 'Joga videogame, computador ou celular? Quais jogos e personagens prefere?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Quais são seus filmes, séries e animes favoritos?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Quais estilos musicais, artistas e músicas mais gosta?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      { pergunta: 'Gosta de ler? Quais livros ou gêneros?', tipo: TIPOS.LONGO, obrigatoria: true },
+      {
+        pergunta: 'Prefere praia, campo ou cidade? Calor ou frio?',
+        tipo: TIPOS.CHECKBOX,
+        opcoes: ['Praia', 'Campo', 'Cidade', 'Calor', 'Frio'],
+        outro: true,
+      },
+      { pergunta: 'É mais caseira ou gosta de sair? Quais tipos de passeio prefere?', tipo: TIPOS.LONGO },
+      {
+        pergunta: 'Tem pets? Quais informações sobre eles autoriza compartilhar?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta:
+          'Existe algum assunto que você não acompanha e não gostaria que a equipe fingisse que domina?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      { pergunta: 'Faz academia ou alguma atividade física?', tipo: TIPOS.CURTO, obrigatoria: true },
+      { pergunta: 'Qual sua altura?', tipo: TIPOS.CURTO },
+      { pergunta: 'Qual seu número de calçado?', tipo: TIPOS.CURTO },
+      {
+        pergunta: 'Tem tatuagens ou piercings? Quantas? Qual significado?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      { pergunta: 'Você fuma? qual marca, essência ou sabor prefere?', tipo: TIPOS.CURTO },
+    ],
+  },
+  {
+    titulo: 'Relacionamentos, orientação e limites',
+    descricao:
+      'Responda apenas o que se sentir confortável em compartilhar. As respostas orientam seus limites; ' +
+      'não autorizam a equipe a inventar experiências ou fazer promessas.',
+    itens: [
+      {
+        pergunta: 'Como descreve sua orientação sexual, caso queira informar?',
+        tipo: TIPOS.RADIO,
+        opcoes: ['Heterossexual', 'Bissexual', 'Lésbica', 'Pansexual', 'Prefiro não informar'],
+        outro: true,
+      },
+      {
+        pergunta: 'Quais pedidos devem ser recusados imediatamente? (ex.: namoro, encontro pessoal etc...)',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Como a equipe deve responder a pedidos de encontro, contato pessoal ou localização?',
+        tipo: TIPOS.RADIO,
+        opcoes: ['Tentar mudar de assunto', 'Cortar imediatamente'],
+        outro: true,
+      },
+      {
+        pergunta:
+          'Existe algum limite ou informações que jamais podem ser presumidos ou inventados em seu nome?',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
     ],
   },
   {
     titulo: 'Personalizados',
-    perguntas: [
-      'Personalizados que você FAZ',
-      'Personalizados que você NÃO FAZ (que não esteja listado acima)',
-      'Regra de fechamento (a equipe fecha o que não estiver listado, com prazo mínimo de 3 dias)',
+    descricao:
+      'A equipe irá fechar automaticamente estes personalizados e dará prazo mínimo de 3 dias para fazer.\n\n' +
+      'Obs.: tudo que não for listado a equipe fechará.',
+    itens: [
+      {
+        pergunta: 'Personalizados que você FAZ',
+        tipo: TIPOS.CHECKBOX,
+        opcoes: [
+          'Que envolvam anal',
+          'Que envolvam os pés',
+          'Que envolvam acompanhantes Homem',
+          'Que envolvam acompanhantes Mulher',
+          'Que envolvam brinquedos (dildos e outros)',
+          'Que envolvam alguns legumes (pepino, cenoura e outros)',
+          'Que envolvam sadomasoquismo',
+          'Que envolvam Scat',
+          'Que envolvam Golden Shower',
+          'Que envolvam Bondage (restrição de movimentos por meio de cordas, algemas, fitas ou tecidos)',
+        ],
+        outro: true,
+        obrigatoria: true,
+      },
+      {
+        pergunta: 'Personalizados que você NÃO FAZ (que não esteja acima listado)',
+        tipo: TIPOS.LONGO,
+        obrigatoria: true,
+      },
     ],
   },
 ];
 
 const QUESTIONARIO_EMPRESA = [
   { titulo: 'Quem somos', perguntas: ['Quem somos e o que fazemos?'] },
-  {
-    titulo: 'Tom de voz',
-    perguntas: ['Como falamos com o público e com as modelos?'],
-  },
+  { titulo: 'Tom de voz', perguntas: ['Como falamos com o público e com as modelos?'] },
   {
     titulo: 'Limites e conduta',
-    perguntas: ['O que não é aceito em hipótese alguma?'],
+    perguntas: [
+      'O que não é aceito em hipótese alguma?',
+      'Em que situações a equipe deve parar e chamar a gerência?',
+    ],
   },
   { titulo: 'Sigilo', perguntas: ['O que é confidencial e não sai da equipe?'] },
   {
@@ -149,19 +412,37 @@ const QUESTIONARIO_EMPRESA = [
   },
 ];
 
-const perguntasDoTipo = (tipo) =>
-  tipo === TIPO_EMPRESA ? QUESTIONARIO_EMPRESA : QUESTIONARIO_MODELO;
+const secoesDaEmpresa = () =>
+  QUESTIONARIO_EMPRESA.map((secao) =>
+    comId(
+      {
+        titulo: secao.titulo,
+        itens: (secao.perguntas || []).map((pergunta) => ({ pergunta, tipo: TIPOS.LONGO })),
+      },
+      0
+    )
+  );
+
+/** Deixa uma pergunta no formato atual, aceitando o que veio de versões antigas. */
+export const normalizarItem = (item, id) => ({
+  id: item.id || id,
+  pergunta: item.pergunta || '',
+  tipo: item.tipo || TIPOS.LONGO,
+  opcoes: Array.isArray(item.opcoes) ? item.opcoes.map((opcao) => String(opcao ?? '')) : [],
+  outro: Boolean(item.outro),
+  obrigatoria: Boolean(item.obrigatoria),
+  resposta: item.resposta || '',
+  copiar: Boolean(item.copiar),
+});
 
 const comId = (secao, indiceSecao) => ({
   id: secao.id || `s${indiceSecao + 1}`,
   titulo: secao.titulo || '',
+  descricao: secao.descricao || '',
   texto: secao.texto || '',
-  itens: (Array.isArray(secao.itens) ? secao.itens : []).map((item, indiceItem) => ({
-    id: item.id || `s${indiceSecao + 1}q${indiceItem + 1}`,
-    pergunta: item.pergunta || '',
-    resposta: item.resposta || '',
-    copiar: Boolean(item.copiar),
-  })),
+  itens: (Array.isArray(secao.itens) ? secao.itens : []).map((item, indiceItem) =>
+    normalizarItem(item, `s${indiceSecao + 1}q${indiceItem + 1}`)
+  ),
 });
 
 /** Deixa qualquer coisa vinda do banco no formato atual, sem jogar nada fora. */
@@ -169,21 +450,10 @@ export const normalizarSecoes = (secoes) =>
   (Array.isArray(secoes) ? secoes : []).map(comId);
 
 /** Playbook novo: o questionário já montado, com as perguntas em branco. */
-export const secoesIniciais = (tipo) =>
-  perguntasDoTipo(tipo).map((secao, indiceSecao) =>
-    comId(
-      {
-        titulo: secao.titulo,
-        itens: (secao.perguntas || []).map((pergunta, indiceItem) => ({
-          id: `s${indiceSecao + 1}q${indiceItem + 1}`,
-          pergunta,
-          resposta: '',
-          copiar: Boolean(secao.copiar),
-        })),
-      },
-      indiceSecao
-    )
-  );
+export const secoesIniciais = (tipo) => {
+  if (tipo === TIPO_EMPRESA) return secoesDaEmpresa();
+  return QUESTIONARIO_MODELO.map((secao, indiceSecao) => comId(secao, indiceSecao));
+};
 
 /** Perguntas que já têm resposta: é só isso que o chatter precisa ver. */
 export const itensVisiveis = (secao) =>
@@ -249,23 +519,35 @@ export const baseDoApp = () =>
 export const linkDoFormulario = (token, base = baseDoApp()) =>
   `${base}/functions/playbookFormulario?token=${encodeURIComponent(token || '')}`;
 
-/** O template salvo pelo admin; se ele ainda não existe, o do código. */
+/**
+ * O questionário que vale agora.
+ * Template de versão antiga (ou ainda não criado) não é usado: nesse caso
+ * vale o questionário do código, que é a versão atual. Assim o padrão novo
+ * passa a valer no mesmo instante em que o app é publicado.
+ */
 export const secoesDoTemplate = (template, tipo) => {
+  const versao = Number(template?.versao) || 0;
+  if (versao < VERSAO_TEMPLATE) return secoesIniciais(tipo);
   const secoes = normalizarSecoes(template?.secoes);
   const temPergunta = secoes.some((secao) => secao.itens.length);
   return temPergunta ? secoes : secoesIniciais(tipo);
 };
 
-/** Só o que o formulário precisa perguntar: título da seção e as perguntas. */
+/** Só o que o formulário precisa: o tipo de cada pergunta e suas opções. */
 export const secoesParaFormulario = (playbook) =>
   (playbook?.secoes || []).map((secao) => ({
     id: secao.id,
     titulo: secao.titulo || '',
+    descricao: secao.descricao || '',
     itens: (secao.itens || [])
       .filter((item) => String(item?.pergunta || '').trim())
       .map((item) => ({
         id: item.id,
         pergunta: item.pergunta,
+        tipo: item.tipo || TIPOS.LONGO,
+        opcoes: Array.isArray(item.opcoes) ? item.opcoes : [],
+        outro: Boolean(item.outro),
+        obrigatoria: Boolean(item.obrigatoria),
         copiar: Boolean(item.copiar),
       })),
   }));

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Window from '@/components/Window';
+import GlassSelect from '@/components/GlassSelect';
 import {
   CheckIcon,
   CloseIcon,
@@ -11,11 +12,15 @@ import {
 } from '@/components/icons';
 import usePlaybooks from '@/hooks/usePlaybooks';
 import {
+  ROTULO_DO_TIPO,
+  TIPOS,
   TIPO_EMPRESA,
   conviteValido,
   dataCurta,
+  ehEscolha,
   itensVisiveis,
   linkDoFormulario,
+  normalizarItem,
   pendenciasDaSecao,
   podeEditarPlaybook,
   respondidasDoPlaybook,
@@ -24,11 +29,8 @@ import {
 } from '@/lib/playbooks';
 import { useAuth } from '@/lib/AuthContext';
 
-const escuro = (valor) =>
-  `color-mix(in srgb, var(--c2) ${valor}%, transparent)`;
-
-const dourado = (valor) =>
-  `color-mix(in srgb, var(--c1) ${valor}%, transparent)`;
+const escuro = (valor) => `color-mix(in srgb, var(--c2) ${valor}%, transparent)`;
+const dourado = (valor) => `color-mix(in srgb, var(--c1) ${valor}%, transparent)`;
 
 const botaoBase = {
   display: 'flex',
@@ -59,8 +61,6 @@ const campoStyle = {
   resize: 'none',
 };
 
-const ID_TEMPLATE = '__template__';
-
 const estiloPergunta = {
   fontSize: 10,
   lineHeight: 1.4,
@@ -76,6 +76,13 @@ const estiloResposta = {
   whiteSpace: 'pre-wrap',
   wordBreak: 'break-word',
 };
+
+const ID_TEMPLATE = '__template__';
+
+const OPCOES_DE_TIPO = Object.values(TIPOS).map((tipo) => ({
+  value: tipo,
+  label: ROTULO_DO_TIPO[tipo],
+}));
 
 /** Copia com a área de transferência moderna e, se ela não existir, no antigo. */
 const copiarTexto = async (texto) => {
@@ -103,6 +110,31 @@ const copiarTexto = async (texto) => {
     return false;
   }
 };
+
+/** Um interruptor pequeno, para "copiar", "obrigatória" e "outro". */
+function Interruptor({ ativo, onToggle, children, titulo }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={ativo}
+      title={titulo}
+      style={{
+        ...botaoBase,
+        padding: '3px 7px',
+        gap: 4,
+        fontSize: 9,
+        flexShrink: 0,
+        color: ativo ? 'var(--c1)' : 'var(--c2)',
+        border: `1px solid ${ativo ? dourado(45) : escuro(18)}`,
+        background: ativo ? dourado(14) : escuro(6),
+        opacity: ativo ? 1 : 0.85,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
 
 /** Uma pergunta com a resposta. Só ganha botão de copiar se a pergunta pedir. */
 function ItemLeitura({ item }) {
@@ -137,9 +169,7 @@ function ItemLeitura({ item }) {
               gap: 4,
               color: copiado ? 'var(--ok)' : 'var(--c1)',
               border: `1px solid ${copiado ? 'color-mix(in srgb, var(--ok) 45%, transparent)' : dourado(28)}`,
-              background: copiado
-                ? 'color-mix(in srgb, var(--ok) 14%, transparent)'
-                : dourado(8),
+              background: copiado ? 'color-mix(in srgb, var(--ok) 14%, transparent)' : dourado(8),
             }}
           >
             {copiado ? <CheckIcon size={10} /> : <CopyIcon size={10} />}
@@ -157,6 +187,7 @@ function Leitura({ playbook }) {
     .map((secao) => ({
       ...secao,
       itens: itensVisiveis(secao),
+      descricao: String(secao?.descricao || ''),
       texto: String(secao?.texto || ''),
     }))
     .filter((secao) => secao.itens.length || secao.texto.trim());
@@ -199,35 +230,33 @@ function Leitura({ playbook }) {
   );
 }
 
-/** Edição: só o admin chega aqui. */
-function Edicao({ playbook, onSalvar, onCancelar, salvando, comResumo = true, rotuloSalvar = 'Salvar playbook' }) {
+/**
+ * Editor.
+ * modo 'template': monta o questionário (pergunta, tipo, opções, obrigatória).
+ * modo 'playbook': preenche as respostas da modelo.
+ */
+function Edicao({
+  playbook,
+  onSalvar,
+  onCancelar,
+  salvando,
+  comResumo = true,
+  rotuloSalvar = 'Salvar playbook',
+  modo = 'playbook',
+}) {
+  const doTemplate = modo === 'template';
   const [secoes, setSecoes] = useState(() =>
     (playbook.secoes || []).map((secao, indice) => ({
       id: secao.id || `s${indice + 1}`,
       titulo: secao.titulo || '',
+      descricao: secao.descricao || '',
       texto: secao.texto || '',
-      itens: (secao.itens || []).map((item, ordem) => ({
-        id: item.id || `s${indice + 1}q${ordem + 1}`,
-        pergunta: item.pergunta || '',
-        resposta: item.resposta || '',
-        copiar: Boolean(item.copiar),
-      })),
+      itens: (secao.itens || []).map((item, ordem) =>
+        normalizarItem(item, `s${indice + 1}q${ordem + 1}`)
+      ),
     }))
   );
   const [resumo, setResumo] = useState(playbook.resumo || '');
-
-  const campo = {
-    width: '100%',
-    padding: '6px 8px',
-    borderRadius: 7,
-    border: `1px solid ${escuro(20)}`,
-    background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
-    color: 'var(--c3)',
-    fontFamily: 'var(--font-main)',
-    fontSize: 11,
-    outline: 'none',
-    resize: 'none',
-  };
 
   const mudarSecao = (id, campoNome, valor) =>
     setSecoes((anterior) =>
@@ -237,7 +266,7 @@ function Edicao({ playbook, onSalvar, onCancelar, salvando, comResumo = true, ro
   const adicionarSecao = () =>
     setSecoes((anterior) => [
       ...anterior,
-      { id: `n${Date.now()}`, titulo: '', texto: '', itens: [] },
+      { id: `n${Date.now()}`, titulo: '', descricao: '', texto: '', itens: [] },
     ]);
 
   const removerSecao = (id) => setSecoes((anterior) => anterior.filter((secao) => secao.id !== id));
@@ -274,7 +303,7 @@ function Edicao({ playbook, onSalvar, onCancelar, salvando, comResumo = true, ro
               ...secao,
               itens: [
                 ...secao.itens,
-                { id: `n${Date.now()}`, pergunta: '', resposta: '', copiar: false },
+                normalizarItem({ tipo: TIPOS.LONGO }, `n${Date.now()}`),
               ],
             }
           : secao
@@ -302,6 +331,52 @@ function Edicao({ playbook, onSalvar, onCancelar, salvando, comResumo = true, ro
       })
     );
 
+  const mudarOpcao = (secaoId, itemId, indice, valor) =>
+    setSecoes((anterior) =>
+      anterior.map((secao) =>
+        secao.id === secaoId
+          ? {
+              ...secao,
+              itens: secao.itens.map((item) => {
+                if (item.id !== itemId) return item;
+                const opcoes = [...(item.opcoes || [])];
+                opcoes[indice] = valor;
+                return { ...item, opcoes };
+              }),
+            }
+          : secao
+      )
+    );
+
+  const adicionarOpcao = (secaoId, itemId) =>
+    setSecoes((anterior) =>
+      anterior.map((secao) =>
+        secao.id === secaoId
+          ? {
+              ...secao,
+              itens: secao.itens.map((item) =>
+                item.id === itemId ? { ...item, opcoes: [...(item.opcoes || []), ''] } : item
+              ),
+            }
+          : secao
+      )
+    );
+
+  const removerOpcao = (secaoId, itemId, indice) =>
+    setSecoes((anterior) =>
+      anterior.map((secao) =>
+        secao.id === secaoId
+          ? {
+              ...secao,
+              itens: secao.itens.map((item) => {
+                if (item.id !== itemId) return item;
+                return { ...item, opcoes: (item.opcoes || []).filter((_, i) => i !== indice) };
+              }),
+            }
+          : secao
+      )
+    );
+
   const seta = (desativado) => ({
     ...botaoBase,
     padding: '3px 6px',
@@ -313,15 +388,15 @@ function Edicao({ playbook, onSalvar, onCancelar, salvando, comResumo = true, ro
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {comResumo ? (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.85 }}>Resumo</span>
-        <input
-          value={resumo}
-          onChange={(evento) => setResumo(evento.target.value)}
-          placeholder="Para que serve este playbook"
-          style={campo}
-        />
-      </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.85 }}>Resumo</span>
+          <input
+            value={resumo}
+            onChange={(evento) => setResumo(evento.target.value)}
+            placeholder="Para que serve este playbook"
+            style={campoStyle}
+          />
+        </div>
       ) : null}
 
       {secoes.map((secao, indice) => {
@@ -344,130 +419,158 @@ function Edicao({ playbook, onSalvar, onCancelar, salvando, comResumo = true, ro
                 value={secao.titulo}
                 onChange={(evento) => mudarSecao(secao.id, 'titulo', evento.target.value)}
                 placeholder="Título da seção"
-                style={{ ...campo, flex: 1, color: 'var(--c1)', fontWeight: 600 }}
+                style={{ ...campoStyle, flex: 1, color: 'var(--c1)', fontWeight: 600 }}
               />
-              {secao.itens.length ? (
+              {secao.itens.length && !doTemplate ? (
                 <span
-                  title={
-                    pendentes
-                      ? `${pendentes} pergunta(s) sem resposta`
-                      : 'Todas as perguntas respondidas'
-                  }
-                  style={{
-                    fontSize: 9,
-                    color: pendentes ? 'var(--c2)' : 'var(--ok)',
-                    whiteSpace: 'nowrap',
-                  }}
+                  title={pendentes ? `${pendentes} pergunta(s) sem resposta` : 'Todas respondidas'}
+                  style={{ fontSize: 9, color: pendentes ? 'var(--c2)' : 'var(--ok)', whiteSpace: 'nowrap' }}
                 >
                   {pendentes ? `${pendentes} sem resposta` : 'completa'}
                 </span>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => moverSecao(indice, -1)}
-                aria-label="Subir seção"
-                disabled={indice === 0}
-                style={seta(indice === 0)}
-              >
+              ) : (
+                <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.8, whiteSpace: 'nowrap' }}>
+                  {secao.itens.length} pergunta{secao.itens.length === 1 ? '' : 's'}
+                </span>
+              )}
+              <button type="button" onClick={() => moverSecao(indice, -1)} aria-label="Subir seção" disabled={indice === 0} style={seta(indice === 0)}>
                 ↑
               </button>
-              <button
-                type="button"
-                onClick={() => moverSecao(indice, 1)}
-                aria-label="Descer seção"
-                disabled={indice === secoes.length - 1}
-                style={seta(indice === secoes.length - 1)}
-              >
+              <button type="button" onClick={() => moverSecao(indice, 1)} aria-label="Descer seção" disabled={indice === secoes.length - 1} style={seta(indice === secoes.length - 1)}>
                 ↓
               </button>
-              <button
-                type="button"
-                onClick={() => removerSecao(secao.id)}
-                aria-label="Remover seção"
-                style={{ ...botaoBase, padding: '4px 6px', color: 'var(--c6)' }}
-              >
+              <button type="button" onClick={() => removerSecao(secao.id)} aria-label="Remover seção" style={{ ...botaoBase, padding: '4px 6px', color: 'var(--c6)' }}>
                 <TrashIcon size={11} />
               </button>
             </div>
 
-            {secao.itens.map((item, ordem) => (
-              <div
-                key={item.id}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 5,
-                  padding: 8,
-                  borderRadius: 8,
-                  border: `1px solid ${escuro(10)}`,
-                  background: 'color-mix(in srgb, var(--c8) 35%, transparent)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <input
-                    value={item.pergunta}
-                    onChange={(evento) => mudarItem(secao.id, item.id, 'pergunta', evento.target.value)}
-                    placeholder="Pergunta"
-                    style={{ ...campo, flex: 1, fontSize: 10.5, color: 'var(--c1)' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => mudarItem(secao.id, item.id, 'copiar', !item.copiar)}
-                    aria-pressed={item.copiar}
-                    title={
-                      item.copiar
-                        ? 'Botão de copiar ligado nesta resposta'
-                        : 'Ligar botão de copiar nesta resposta'
-                    }
-                    style={{
-                      ...botaoBase,
-                      padding: '3px 6px',
-                      gap: 3,
-                      fontSize: 9,
-                      color: item.copiar ? 'var(--c1)' : 'var(--c2)',
-                      border: `1px solid ${item.copiar ? dourado(45) : escuro(18)}`,
-                      background: item.copiar ? dourado(14) : escuro(6),
-                    }}
-                  >
-                    <CopyIcon size={10} />
-                    {item.copiar ? 'copiar' : ''}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moverItem(secao.id, ordem, -1)}
-                    aria-label="Subir pergunta"
-                    disabled={ordem === 0}
-                    style={seta(ordem === 0)}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => moverItem(secao.id, ordem, 1)}
-                    aria-label="Descer pergunta"
-                    disabled={ordem === secao.itens.length - 1}
-                    style={seta(ordem === secao.itens.length - 1)}
-                  >
-                    ↓
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removerItem(secao.id, item.id)}
-                    aria-label="Remover pergunta"
-                    style={{ ...botaoBase, padding: '3px 6px', color: 'var(--c6)' }}
-                  >
-                    <TrashIcon size={10} />
-                  </button>
+            {doTemplate ? (
+              <textarea
+                value={secao.descricao}
+                onChange={(evento) => mudarSecao(secao.id, 'descricao', evento.target.value)}
+                placeholder="Texto explicativo da seção (opcional)"
+                rows={2}
+                style={{ ...campoStyle, fontSize: 10.5, lineHeight: 1.45 }}
+              />
+            ) : null}
+
+            {secao.itens.map((item, ordem) => {
+              const escolha = ehEscolha(item.tipo);
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 5,
+                    padding: 8,
+                    borderRadius: 8,
+                    border: `1px solid ${escuro(10)}`,
+                    background: 'color-mix(in srgb, var(--c8) 35%, transparent)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <input
+                      value={item.pergunta}
+                      onChange={(evento) => mudarItem(secao.id, item.id, 'pergunta', evento.target.value)}
+                      placeholder="Pergunta"
+                      style={{ ...campoStyle, flex: 1, minWidth: 0, fontSize: 10.5, color: 'var(--c1)' }}
+                    />
+                    {doTemplate ? (
+                      <div style={{ width: 128, flexShrink: 0 }}>
+                        <GlassSelect
+                          value={item.tipo}
+                          onChange={(valor) => mudarItem(secao.id, item.id, 'tipo', valor)}
+                          options={OPCOES_DE_TIPO}
+                          placeholder="Tipo"
+                          align="right"
+                        />
+                      </div>
+                    ) : null}
+                    <Interruptor
+                      ativo={item.copiar}
+                      onToggle={() => mudarItem(secao.id, item.id, 'copiar', !item.copiar)}
+                      titulo={item.copiar ? 'Botão de copiar ligado' : 'Ligar botão de copiar'}
+                    >
+                      <CopyIcon size={10} />
+                      {item.copiar ? 'copiar' : ''}
+                    </Interruptor>
+                    {doTemplate ? (
+                      <Interruptor
+                        ativo={item.obrigatoria}
+                        onToggle={() => mudarItem(secao.id, item.id, 'obrigatoria', !item.obrigatoria)}
+                        titulo={item.obrigatoria ? 'Resposta obrigatória' : 'Resposta opcional'}
+                      >
+                        {item.obrigatoria ? 'obrigatória' : 'opcional'}
+                      </Interruptor>
+                    ) : null}
+                    <button type="button" onClick={() => moverItem(secao.id, ordem, -1)} aria-label="Subir pergunta" disabled={ordem === 0} style={seta(ordem === 0)}>
+                      ↑
+                    </button>
+                    <button type="button" onClick={() => moverItem(secao.id, ordem, 1)} aria-label="Descer pergunta" disabled={ordem === secao.itens.length - 1} style={seta(ordem === secao.itens.length - 1)}>
+                      ↓
+                    </button>
+                    <button type="button" onClick={() => removerItem(secao.id, item.id)} aria-label="Remover pergunta" style={{ ...botaoBase, padding: '3px 6px', color: 'var(--c6)' }}>
+                      <TrashIcon size={10} />
+                    </button>
+                  </div>
+
+                  {doTemplate && escolha ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingLeft: 4 }}>
+                      {(item.opcoes || []).map((opcao, indiceOpcao) => (
+                        <div key={indiceOpcao} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <span style={{ fontSize: 9.5, color: 'var(--c2)', width: 12, textAlign: 'right' }}>
+                            {indiceOpcao + 1}
+                          </span>
+                          <input
+                            value={opcao}
+                            onChange={(evento) =>
+                              mudarOpcao(secao.id, item.id, indiceOpcao, evento.target.value)
+                            }
+                            placeholder={`Opção ${indiceOpcao + 1}`}
+                            style={{ ...campoStyle, flex: 1, minWidth: 0, fontSize: 10 }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removerOpcao(secao.id, item.id, indiceOpcao)}
+                            aria-label={`Remover opção ${indiceOpcao + 1}`}
+                            style={{ ...botaoBase, padding: '2px 5px', color: 'var(--c6)' }}
+                          >
+                            <CloseIcon size={9} />
+                          </button>
+                        </div>
+                      ))}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => adicionarOpcao(secao.id, item.id)}
+                          style={{ ...botaoBase, padding: '3px 8px', fontSize: 9 }}
+                        >
+                          <PlusIcon size={9} /> Opção
+                        </button>
+                        <Interruptor
+                          ativo={item.outro}
+                          onToggle={() => mudarItem(secao.id, item.id, 'outro', !item.outro)}
+                          titulo="Mostra a alternativa Outro, com campo de texto"
+                        >
+                          Outro:
+                        </Interruptor>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {!doTemplate ? (
+                    <textarea
+                      value={item.resposta}
+                      onChange={(evento) => mudarItem(secao.id, item.id, 'resposta', evento.target.value)}
+                      placeholder="Resposta (em branco, a pergunta não aparece na leitura)"
+                      rows={2}
+                      style={{ ...campoStyle, lineHeight: 1.45 }}
+                    />
+                  ) : null}
                 </div>
-                <textarea
-                  value={item.resposta}
-                  onChange={(evento) => mudarItem(secao.id, item.id, 'resposta', evento.target.value)}
-                  placeholder="Resposta (em branco, a pergunta não aparece na leitura)"
-                  rows={2}
-                  style={{ ...campo, lineHeight: 1.45 }}
-                />
-              </div>
-            ))}
+              );
+            })}
 
             <button
               type="button"
@@ -487,7 +590,7 @@ function Edicao({ playbook, onSalvar, onCancelar, salvando, comResumo = true, ro
                   value={secao.texto}
                   onChange={(evento) => mudarSecao(secao.id, 'texto', evento.target.value)}
                   rows={3}
-                  style={{ ...campo, lineHeight: 1.45, fontSize: 10.5 }}
+                  style={{ ...campoStyle, lineHeight: 1.45, fontSize: 10.5 }}
                 />
               </div>
             ) : null}
@@ -619,6 +722,7 @@ function TemplateView({ templateDe, salvarTemplate, onSair }) {
   const [tipo, setTipo] = useState('modelo');
   const [salvando, setSalvando] = useState(false);
   const atual = templateDe(tipo);
+  const ehModelo = tipo === 'modelo';
 
   const abas = [
     { id: 'modelo', rotulo: 'Modelo' },
@@ -655,17 +759,60 @@ function TemplateView({ templateDe, salvarTemplate, onSair }) {
 
       <Edicao
         key={`${tipo}-${atual?.id || 'novo'}`}
-        playbook={{ secoes: atual?.secoes || [], resumo: '' }}
+        playbook={{
+          secoes: atual?.secoes || [],
+          resumo: atual?.resumo || '',
+          titulo: atual?.titulo || '',
+          descricao: atual?.descricao || '',
+        }}
+        modo="template"
         comResumo={false}
         rotuloSalvar="Salvar template"
         salvando={salvando}
         onCancelar={onSair}
         onSalvar={async ({ secoes }) => {
           setSalvando(true);
-          await salvarTemplate(tipo, { secoes });
+          await salvarTemplate(tipo, {
+            secoes,
+            titulo: ehModelo ? atual?.titulo || '' : '',
+            descricao: ehModelo ? atual?.descricao || '' : '',
+          });
           setSalvando(false);
         }}
       />
+
+      {ehModelo ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 4 }}>
+          <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.85 }}>
+            Cabeçalho do formulário (o que a modelo lê no topo)
+          </span>
+          <input
+            defaultValue={atual?.titulo || ''}
+            onBlur={(evento) =>
+              salvarTemplate(tipo, {
+                secoes: atual?.secoes || [],
+                titulo: evento.target.value,
+                descricao: atual?.descricao || '',
+              })
+            }
+            placeholder="Título do formulário"
+            style={{ ...campoStyle, color: 'var(--c1)', fontWeight: 600 }}
+          />
+          <textarea
+            defaultValue={atual?.descricao || ''}
+            onBlur={(evento) =>
+              salvarTemplate(tipo, {
+                secoes: atual?.secoes || [],
+                titulo: atual?.titulo || '',
+                descricao: evento.target.value,
+              })
+            }
+            placeholder="Texto de abertura"
+            rows={3}
+            style={{ ...campoStyle, fontSize: 10.5, lineHeight: 1.45 }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -705,7 +852,7 @@ export default function PlaybookWindow({ onClose }) {
   );
 
   return (
-    <Window title="Playbook" icon={UsersIcon} onClose={onClose} width={760} height={540}>
+    <Window title="Playbook" icon={UsersIcon} onClose={onClose} width={820} height={580}>
       <div style={{ display: 'flex', height: '100%', minHeight: 0, gap: 0 }}>
         {/* Lista de playbooks: empresa primeiro, depois as modelos. */}
         <div
@@ -723,12 +870,6 @@ export default function PlaybookWindow({ onClose }) {
         >
           {carregando && (
             <span style={{ fontSize: 10.5, color: 'var(--c2)', opacity: 0.7 }}>Carregando…</span>
-          )}
-
-          {!carregando && !playbooks.length && (
-            <span style={{ fontSize: 10.5, color: 'var(--c2)', opacity: 0.7, lineHeight: 1.5 }}>
-              Nenhum playbook liberado para você ainda.
-            </span>
           )}
 
           {podeEditar && (
@@ -760,6 +901,12 @@ export default function PlaybookWindow({ onClose }) {
               </span>
               <span style={{ fontSize: 8.5, opacity: 0.7, letterSpacing: '0.05em' }}>SÓ ADMIN</span>
             </button>
+          )}
+
+          {!carregando && !playbooks.length && (
+            <span style={{ fontSize: 10.5, color: 'var(--c2)', opacity: 0.7, lineHeight: 1.5 }}>
+              Nenhum playbook liberado para você ainda.
+            </span>
           )}
 
           {playbooks.map((playbook) => {

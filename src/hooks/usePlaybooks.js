@@ -3,9 +3,11 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { ehAdmin } from '@/lib/chat';
 import {
+  CABECALHO_MODELO,
   DIAS_DE_VALIDADE,
   TIPO_EMPRESA,
   TIPO_MODELO,
+  VERSAO_TEMPLATE,
   conviteValido,
   gerarToken,
   nomeDoPlaybook,
@@ -84,6 +86,7 @@ export default function usePlaybooks() {
             faltando.map((tipo) =>
               base44.entities.PlaybookTemplate.create({
                 tipo,
+                versao: VERSAO_TEMPLATE,
                 resumo:
                   tipo === TIPO_EMPRESA
                     ? 'Perguntas que o playbook da agência começa tendo'
@@ -98,6 +101,31 @@ export default function usePlaybooks() {
           const validos = criados.filter((item) => item?.id);
           if (validos.length) templatesAtuais = [...templatesAtuais, ...validos];
         }
+        /* Template de uma versão antiga do questionário é reescrito. */
+        const desatualizados = templatesAtuais.filter(
+          (item) => item?.tipo && (Number(item?.versao) || 0) < VERSAO_TEMPLATE
+        );
+        if (desatualizados.length) {
+          const atualizados = await Promise.all(
+            desatualizados.map((item) =>
+              base44.entities.PlaybookTemplate.update(item.id, {
+                versao: VERSAO_TEMPLATE,
+                secoes: secoesIniciais(item.tipo),
+              })
+                .then((salvo) => ({ ...item, ...(salvo || {}), versao: VERSAO_TEMPLATE, secoes: secoesIniciais(item.tipo) }))
+                .catch((falha) => {
+                  console.warn('[Playbook] não consegui atualizar o template', item?.tipo, falha);
+                  return null;
+                })
+            )
+          );
+          const ok = atualizados.filter(Boolean);
+          if (ok.length) {
+            const porId = new Map(ok.map((item) => [item.id, item]));
+            templatesAtuais = templatesAtuais.map((item) => porId.get(item.id) || item);
+          }
+        }
+
         setTemplates(templatesAtuais);
       }
 
@@ -158,6 +186,7 @@ export default function usePlaybooks() {
                   token: gerarToken(),
                   modelo_id: novo.modelo_id,
                   modelo_nome: novo.titulo || novo.nome || '',
+                  ...cabecalhoDoFormulario(),
                   secoes,
                   status: 'pendente',
                   expira_em: daquiAPouco(DIAS_DE_VALIDADE),
@@ -254,11 +283,13 @@ export default function usePlaybooks() {
 
   /** Grava o questionário padrão. Só admin. */
   const salvarTemplate = useCallback(
-    async (tipo, { secoes, resumo }) => {
+    async (tipo, { secoes, resumo, titulo, descricao }) => {
       if (!admin) return false;
       const dados = {
         tipo,
         resumo: String(resumo || ''),
+        titulo: String(titulo || ''),
+        descricao: String(descricao || ''),
         secoes: normalizarSecoes(secoes),
         atualizado_por: userId,
         atualizado_por_nome: user?.full_name || '',
@@ -284,6 +315,15 @@ export default function usePlaybooks() {
     },
     [admin, templates, user?.full_name, userId]
   );
+
+  /** Cabeçalho que o formulário público mostra, vindo do template. */
+  const cabecalhoDoFormulario = useCallback(() => {
+    const template = templates.find((item) => item?.tipo === TIPO_MODELO);
+    return {
+      titulo: template?.titulo || CABECALHO_MODELO.titulo,
+      descricao: template?.descricao || CABECALHO_MODELO.descricao,
+    };
+  }, [templates]);
 
   const conviteDaModelo = useCallback(
     (modeloId) => {
@@ -329,6 +369,7 @@ export default function usePlaybooks() {
         token: gerarToken(),
         modelo_id: modeloId,
         modelo_nome: nomeDoPlaybook(playbook, modelos),
+        ...cabecalhoDoFormulario(),
         secoes,
         status: 'pendente',
         expira_em: daquiAPouco(DIAS_DE_VALIDADE),
@@ -347,7 +388,7 @@ export default function usePlaybooks() {
         return null;
       }
     },
-    [admin, convites, modelos]
+    [admin, cabecalhoDoFormulario, convites, modelos]
   );
 
   const visiveis = playbooksVisiveis(playbooks, modelos, user);
