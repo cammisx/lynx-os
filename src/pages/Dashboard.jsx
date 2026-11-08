@@ -110,6 +110,7 @@ export default function Dashboard() {
           acao: () => janelas.abrir('financeiro'),
         },
         { id: 'abrir-playbook', rotulo: 'Abrir Playbook', acao: () => janelas.abrir('playbook') },
+        { id: 'abrir-conteudo', rotulo: 'Abrir Conteúdo', acao: () => janelas.abrir('conteudo') },
       ]
     : [
         { id: 'abrir-playbook', rotulo: 'Abrir Playbook', acao: () => janelas.abrir('playbook') },
