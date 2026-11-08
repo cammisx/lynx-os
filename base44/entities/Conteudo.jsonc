@@ -46,6 +46,33 @@
         }
       }
     },
+    "pastas": {
+      "type": "array",
+      "description": "Pastas do conteudo da modelo; dentro de cada uma ficam os itens",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "nome": { "type": "string" },
+          "itens": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "nome": { "type": "string", "description": "Opcional" },
+                "imagem_url": { "type": "string", "description": "Imagem do item (obrigatoria)" },
+                "tipo": { "type": "string", "enum": ["video", "foto", "audio"] },
+                "duracao_seg": { "type": "number", "description": "Duracao em segundos; usado em video e audio" },
+                "data": { "type": "string", "description": "Data do item, no formato AAAA-MM-DD" },
+                "descricao": { "type": "string" },
+                "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags sempre em MAIUSCULA" }
+              }
+            }
+          }
+        }
+      }
+    },
     "arquivado": {
       "type": "boolean",
       "default": false,
