@@ -9,6 +9,7 @@ import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { Navigate } from 'react-router-dom';
 import Dashboard from '@/pages/Dashboard';
+import { MenuContextoProvider } from '@/components/desktop/MenuContexto';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -58,10 +59,12 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <ScrollToTop />
-          <AuthenticatedApp />
-        </Router>
+        <MenuContextoProvider>
+          <Router>
+            <ScrollToTop />
+            <AuthenticatedApp />
+          </Router>
+        </MenuContextoProvider>
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>

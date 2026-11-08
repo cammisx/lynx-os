@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import '@/theme.css';
 import DesktopBackground from '@/components/DesktopBackground';
 import DesktopWidgets from '@/components/desktop/DesktopWidgets';
@@ -12,10 +12,12 @@ import PlaybookWindow from '@/components/PlaybookWindow';
 import { JanelaContext } from '@/components/desktop/JanelaContext';
 import ConfirmarFechar from '@/components/desktop/ConfirmarFechar';
 import { janelaPorId } from '@/lib/janelas';
+import { SEPARADOR, useMenuContexto } from '@/components/desktop/MenuContexto';
+import { AVISO_ABA_CONFIG, pedirAbaConfig } from '@/lib/configAba';
 import useJanelas from '@/hooks/useJanelas';
 import { useAuth } from '@/lib/AuthContext';
-import { salvarBarraTarefas, usePerfil } from '@/lib/perfilUsuario';
-import { TEMA_PADRAO, aplicarTema } from '@/lib/temas';
+import { salvarBarraTarefas, salvarPerfil, usePerfil } from '@/lib/perfilUsuario';
+import { MODO_CLARO, MODO_ESCURO, TEMA_PADRAO, aplicarTema } from '@/lib/temas';
 import { ChatProvider } from '@/components/chat/ChatProvider';
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import useFecharTurnosEsquecidos from '@/hooks/useFecharTurnosEsquecidos';
@@ -34,6 +36,10 @@ const COMPONENTES = {
 };
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  // Carrega o perfil (tema, nome, foto, fundo) antes de tudo aparecer na tela.
+  const perfil = usePerfil(user);
+
   /* Ordem dos ícones da barra: entra pelo perfil e volta para ele quando muda. */
   const salvarBarra = useCallback(
     ({ ordem, fixadas }) => {
@@ -54,9 +60,6 @@ export default function Dashboard() {
     if (janelas.sujas[id]) setFechando(id);
     else janelas.fechar(id);
   };
-  const { user } = useAuth();
-  // Carrega o perfil (tema, nome, foto, fundo) antes de tudo aparecer na tela.
-  const perfil = usePerfil(user);
 
   // Admin recém-chegado entra em todas as modelos assim que o app abre.
   useEffect(() => {
@@ -76,8 +79,52 @@ export default function Dashboard() {
     return () => document.body.classList.remove('is-desktop-shell');
   }, []);
 
+  /* Clique direito na área de trabalho: atalhos e ajustes rápidos. */
+  const { registrar } = useMenuContexto();
+  const itensDesktop = useRef([]);
+  const janelasAbertas = janelas.itens.filter((item) => item.aberta);
+  const irParaConfig = (aba) => {
+    pedirAbaConfig(aba);
+    janelas.abrir('config');
+    window.dispatchEvent(new CustomEvent(AVISO_ABA_CONFIG, { detail: aba }));
+  };
+
+  itensDesktop.current = [
+    { id: 'preferencias', rotulo: 'Preferências', acao: () => irParaConfig('preferencias') },
+    {
+      id: 'modo',
+      rotulo: perfil.modo === MODO_CLARO ? 'Mudar para o modo escuro' : 'Mudar para o modo claro',
+      acao: () => salvarPerfil(user, { modo: perfil.modo === MODO_CLARO ? MODO_ESCURO : MODO_CLARO }),
+    },
+    SEPARADOR,
+    { id: 'abrir-chatters', rotulo: 'Abrir Chatters', acao: () => janelas.abrir('chatters') },
+    { id: 'abrir-turnos', rotulo: 'Abrir Turnos', acao: () => janelas.abrir('turnos') },
+    { id: 'abrir-financeiro', rotulo: 'Abrir Financeiro', acao: () => janelas.abrir('financeiro') },
+    SEPARADOR,
+    { id: 'abrir-playbook', rotulo: 'Abrir Playbook', acao: () => janelas.abrir('playbook') },
+    {
+      id: 'fechar-todas',
+      rotulo: `Fechar todas as janelas${janelasAbertas.length ? ` (${janelasAbertas.length})` : ''}`,
+      perigo: true,
+      desabilitado: !janelasAbertas.length,
+      acao: () => janelasAbertas.forEach((item) => janelas.fechar(item.id)),
+    },
+  ];
+
+  useEffect(
+    () =>
+      registrar((alvo) => {
+        if (!alvo.closest?.('[data-desktop]')) return null;
+        /* Barra de tarefas e chat têm vida própria. */
+        if (alvo.closest('.taskbar, .chat-painel')) return null;
+        return itensDesktop.current;
+      }),
+    [registrar]
+  );
+
   return (
     <div
+      data-desktop="true"
       style={{
         position: 'relative',
         width: '100%',

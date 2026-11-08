@@ -16,7 +16,7 @@ import { useChatPanel } from '@/components/chat/ChatProvider';
 import { useAuth } from '@/lib/AuthContext';
 import { nomeDaPessoa } from '@/lib/pessoas';
 import { janelaPorId } from '@/lib/janelas';
-import MenuJanela from '@/components/desktop/MenuJanela';
+import MenuFlutuante from '@/components/desktop/MenuFlutuante';
 
 export default function Taskbar({
   onOpenApp,
@@ -171,7 +171,7 @@ export default function Taskbar({
 
           const abrirMenu = (evento) => {
             evento.preventDefault();
-            setMenuJanela({ id: item.id, x: evento.clientX, y: evento.clientY });
+            setMenuJanela({ id: item.id, ancora: evento.currentTarget });
           };
 
           return (
@@ -208,6 +208,7 @@ export default function Taskbar({
               aria-label={meta.titulo}
               aria-pressed={ativa}
               data-rotulo={meta.titulo}
+              data-menu-own="true"
             >
               <Icone size={22} />
               <span
@@ -319,27 +320,36 @@ export default function Taskbar({
             const item = itens.find((atual) => atual.id === menuJanela.id);
             const meta = janelaPorId(menuJanela.id);
             if (!item || !meta) return null;
+            /* Abrir só faz sentido com a janela minimizada ou fechada. */
             const opcoes = [
               {
                 id: 'fixar',
-                rotulo: item.fixada ? 'Desafixar da barra de tarefas' : 'Fixar na barra de tarefas',
+                rotulo: item.fixada
+                  ? 'Desafixar da barra de tarefas'
+                  : 'Fixar na barra de tarefas',
+                acao: () => onFixarJanela && onFixarJanela(item.id),
               },
               !item.aberta || item.minimizada
-                ? { id: 'abrir', rotulo: item.minimizada ? 'Restaurar' : 'Abrir' }
+                ? {
+                    id: 'abrir',
+                    rotulo: item.minimizada ? 'Restaurar' : 'Abrir',
+                    acao: () => onAbrirJanela && onAbrirJanela(item.id),
+                  }
                 : null,
-              item.aberta ? { id: 'fechar', rotulo: 'Fechar', perigo: true } : null,
+              item.aberta
+                ? {
+                    id: 'fechar',
+                    rotulo: 'Fechar',
+                    perigo: true,
+                    acao: () => onFecharJanela && onFecharJanela(item.id),
+                  }
+                : null,
             ].filter(Boolean);
             return (
-              <MenuJanela
-                x={menuJanela.x}
-                y={menuJanela.y}
-                opcoes={opcoes}
+              <MenuFlutuante
+                ancora={menuJanela.ancora}
+                itens={opcoes}
                 onFechar={() => setMenuJanela(null)}
-                onEscolher={(escolha) => {
-                  if (escolha === 'fixar' && onFixarJanela) onFixarJanela(menuJanela.id);
-                  if (escolha === 'abrir' && onAbrirJanela) onAbrirJanela(menuJanela.id);
-                  if (escolha === 'fechar' && onFecharJanela) onFecharJanela(menuJanela.id);
-                }}
               />
             );
           })()

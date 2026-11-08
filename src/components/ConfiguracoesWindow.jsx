@@ -9,6 +9,7 @@ import { TAMANHOS } from '@/lib/fonte';
 import { MODOS_FUNDO } from '@/lib/perfilLogica';
 import { prepararFundo } from '@/lib/fundo';
 import { useMarcarSujo } from '@/components/desktop/JanelaContext';
+import { AVISO_ABA_CONFIG, consumirAbaConfig } from '@/lib/configAba';
 
 const ABAS = [
   { id: 'perfil', label: 'Perfil' },
@@ -59,10 +60,19 @@ const SUBLIMITE = 60;
 export default function ConfiguracoesWindow({ onClose }) {
   const { user } = useAuth();
   const perfil = usePerfil(user);
-  const [aba, setAba] = useState('perfil');
+  const [aba, setAba] = useState(() => consumirAbaConfig() || 'perfil');
   const [nome, setNome] = useState(perfil.nomeExibicao);
   const [subnick, setSubnick] = useState(perfil.subnick);
   const [foto, setFoto] = useState(perfil.fotoUrl);
+  /* Clique direito na área de trabalho pode pedir uma aba específica. */
+  useEffect(() => {
+    const ouvir = (evento) => {
+      if (evento.detail) setAba(evento.detail);
+    };
+    window.addEventListener(AVISO_ABA_CONFIG, ouvir);
+    return () => window.removeEventListener(AVISO_ABA_CONFIG, ouvir);
+  }, []);
+
   /* Texto digitado que ainda não foi para o banco se perde ao fechar. */
   useMarcarSujo(
     nome !== (perfil.nomeExibicao || '') ||
