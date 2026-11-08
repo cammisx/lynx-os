@@ -9,6 +9,7 @@ import TurnosWindow from '@/components/TurnosWindow';
 import FinanceiroWindow from '@/components/FinanceiroWindow';
 import ConfiguracoesWindow from '@/components/ConfiguracoesWindow';
 import PlaybookWindow from '@/components/PlaybookWindow';
+import ConteudoWindow from '@/components/ConteudoWindow';
 import { JanelaContext } from '@/components/desktop/JanelaContext';
 import ConfirmarFechar from '@/components/desktop/ConfirmarFechar';
 import { janelaPorId } from '@/lib/janelas';
@@ -33,6 +34,7 @@ const COMPONENTES = {
   financeiro: FinanceiroWindow,
   config: ConfiguracoesWindow,
   playbook: PlaybookWindow,
+  conteudo: ConteudoWindow,
 };
 
 export default function Dashboard() {

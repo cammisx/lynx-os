@@ -3,7 +3,14 @@
  * O mesmo título e ícone aparecem na barra de tarefas quando a janela está
  * aberta, então os dois lugares bebem daqui.
  */
-import { UsersIcon, CalendarIcon, MoneyIcon, BookIcon, GearIcon } from '@/components/icons';
+import {
+  UsersIcon,
+  CalendarIcon,
+  MoneyIcon,
+  BookIcon,
+  ImageIcon,
+  GearIcon,
+} from '@/components/icons';
 
 export const JANELAS = {
   chatters: { titulo: 'Chatters', Icone: UsersIcon },
@@ -11,6 +18,7 @@ export const JANELAS = {
   turnos: { titulo: 'Turnos', Icone: CalendarIcon },
   financeiro: { titulo: 'Financeiro', Icone: MoneyIcon },
   playbook: { titulo: 'Playbook', Icone: BookIcon },
+  conteudo: { titulo: 'Conteúdo', Icone: ImageIcon },
   config: { titulo: 'Configurações', Icone: GearIcon },
 };
 

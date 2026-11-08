@@ -7,6 +7,7 @@ import {
   CalendarIcon,
   MoneyIcon,
   BookIcon,
+  ImageIcon,
 } from "@/components/icons";
 
 const ANIM_MS = 180;
@@ -41,6 +42,12 @@ const APPS = [
     Icon: BookIcon,
     title: "Playbook",
     desc: "Diretrizes da agência e das modelos",
+  },
+  {
+    id: "conteudo",
+    Icon: ImageIcon,
+    title: "Conteúdo",
+    desc: "Conteúdos das modelos",
   },
 ];
 
