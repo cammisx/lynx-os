@@ -232,7 +232,7 @@ export default function Taskbar({
           }}
           style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          <ChatIcon size={28} />
+          <ChatIcon size={22} />
           {chat.totalNaoLidas > 0 && (
             <span className="taskbar-chat-badge">
               {chat.totalNaoLidas > 9 ? '9+' : chat.totalNaoLidas}
@@ -249,8 +249,8 @@ export default function Taskbar({
           style={{ position: 'relative' }}
         >
           <svg
-            width="34"
-            height="34"
+            width="27"
+            height="27"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
