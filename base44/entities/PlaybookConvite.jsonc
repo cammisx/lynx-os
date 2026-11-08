@@ -1,0 +1,47 @@
+{
+  "name": "PlaybookConvite",
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string",
+      "description": "Chave do link publico do formulario desta modelo"
+    },
+    "modelo_id": { "type": "string" },
+    "modelo_nome": { "type": "string" },
+    "secoes": {
+      "type": "array",
+      "description": "Copia das perguntas no momento em que o link foi gerado",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "titulo": { "type": "string" },
+          "itens": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "pergunta": { "type": "string" },
+                "copiar": { "type": "boolean", "default": false }
+              }
+            }
+          }
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pendente", "respondido", "expirado"],
+      "default": "pendente"
+    },
+    "expira_em": { "type": "string" },
+    "respondido_em": { "type": "string" },
+    "playbook_id": { "type": "string" },
+    "origem": {
+      "type": "string",
+      "description": "Como o link foi gerado: cadastro da modelo ou botao manual"
+    }
+  },
+  "required": ["token"]
+}

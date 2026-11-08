@@ -12,9 +12,15 @@ import {
 import usePlaybooks from '@/hooks/usePlaybooks';
 import {
   TIPO_EMPRESA,
+  conviteValido,
+  dataCurta,
   itensVisiveis,
+  linkDoFormulario,
   pendenciasDaSecao,
   podeEditarPlaybook,
+  respondidasDoPlaybook,
+  secoesParaFormulario,
+  totalDePerguntas,
 } from '@/lib/playbooks';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -39,6 +45,21 @@ const botaoBase = {
   letterSpacing: '0.04em',
   cursor: 'pointer',
 };
+
+const campoStyle = {
+  width: '100%',
+  padding: '6px 8px',
+  borderRadius: 7,
+  border: `1px solid ${escuro(20)}`,
+  background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
+  color: 'var(--c3)',
+  fontFamily: 'var(--font-main)',
+  fontSize: 11,
+  outline: 'none',
+  resize: 'none',
+};
+
+const ID_TEMPLATE = '__template__';
 
 const estiloPergunta = {
   fontSize: 10,
@@ -179,7 +200,7 @@ function Leitura({ playbook }) {
 }
 
 /** Edição: só o admin chega aqui. */
-function Edicao({ playbook, onSalvar, onCancelar, salvando }) {
+function Edicao({ playbook, onSalvar, onCancelar, salvando, comResumo = true, rotuloSalvar = 'Salvar playbook' }) {
   const [secoes, setSecoes] = useState(() =>
     (playbook.secoes || []).map((secao, indice) => ({
       id: secao.id || `s${indice + 1}`,
@@ -291,6 +312,7 @@ function Edicao({ playbook, onSalvar, onCancelar, salvando }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {comResumo ? (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.85 }}>Resumo</span>
         <input
@@ -300,6 +322,7 @@ function Edicao({ playbook, onSalvar, onCancelar, salvando }) {
           style={campo}
         />
       </div>
+      ) : null}
 
       {secoes.map((secao, indice) => {
         const pendentes = pendenciasDaSecao(secao);
@@ -494,28 +517,187 @@ function Edicao({ playbook, onSalvar, onCancelar, salvando }) {
           onClick={() => onSalvar({ secoes, resumo })}
           style={{ ...botaoBase, opacity: salvando ? 0.6 : 1 }}
         >
-          {salvando ? 'Salvando…' : 'Salvar playbook'}
+          {salvando ? 'Salvando…' : rotuloSalvar}
         </button>
       </div>
     </div>
   );
 }
 
+/** Link público do formulário: gera, mostra e copia. Só admin vê. */
+function LinkDoFormulario({ playbook, convite, onGerar, gerando }) {
+  const [copiado, setCopiado] = useState(false);
+  const relogio = useRef(null);
+
+  useEffect(() => () => clearTimeout(relogio.current), []);
+
+  const ativo = conviteValido(convite);
+  const link = ativo ? linkDoFormulario(convite.token) : '';
+  const total = totalDePerguntas(secoesParaFormulario(playbook));
+  const respondidas = respondidasDoPlaybook(playbook);
+
+  const copiar = async () => {
+    const ok = await copiarTexto(link);
+    if (!ok) return;
+    setCopiado(true);
+    clearTimeout(relogio.current);
+    relogio.current = setTimeout(() => setCopiado(false), 1600);
+  };
+
+  const situacao = !convite
+    ? 'nenhum link gerado'
+    : convite.status === 'respondido'
+      ? `respondido em ${dataCurta(convite.respondido_em)}`
+      : ativo
+        ? `vale até ${dataCurta(convite.expira_em)}`
+        : 'link vencido';
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+        padding: '8px 10px',
+        marginBottom: 10,
+        borderRadius: 9,
+        border: `1px solid ${dourado(16)}`,
+        background: dourado(6),
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 9.5, color: 'var(--c1)', letterSpacing: '0.06em' }}>
+          LINK DO FORMULÁRIO
+        </span>
+        <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.85 }}>{situacao}</span>
+        <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.85, marginLeft: 'auto' }}>
+          {respondidas} de {total} respondidas
+        </span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <input
+          readOnly
+          value={link}
+          placeholder="Gere o link e mande para a modelo responder"
+          onFocus={(evento) => evento.target.select()}
+          style={{ ...campoStyle, flex: 1, minWidth: 0, fontSize: 10 }}
+        />
+        {ativo ? (
+          <button
+            type="button"
+            onClick={copiar}
+            style={{
+              ...botaoBase,
+              flexShrink: 0,
+              padding: '4px 8px',
+              fontSize: 9.5,
+              gap: 4,
+              color: copiado ? 'var(--ok)' : 'var(--c1)',
+              border: `1px solid ${copiado ? 'color-mix(in srgb, var(--ok) 45%, transparent)' : dourado(28)}`,
+              background: copiado ? 'color-mix(in srgb, var(--ok) 14%, transparent)' : dourado(8),
+            }}
+          >
+            {copiado ? <CheckIcon size={10} /> : <CopyIcon size={10} />}
+            {copiado ? 'Copiado' : 'Copiar'}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={onGerar}
+          disabled={gerando}
+          style={{ ...botaoBase, flexShrink: 0, padding: '4px 8px', fontSize: 9.5, opacity: gerando ? 0.6 : 1 }}
+        >
+          {gerando ? 'Gerando…' : ativo ? 'Novo link' : 'Gerar link'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** O questionário padrão, editável só pelo admin. */
+function TemplateView({ templateDe, salvarTemplate, onSair }) {
+  const [tipo, setTipo] = useState('modelo');
+  const [salvando, setSalvando] = useState(false);
+  const atual = templateDe(tipo);
+
+  const abas = [
+    { id: 'modelo', rotulo: 'Modelo' },
+    { id: 'empresa', rotulo: 'Agência' },
+  ];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {abas.map((aba) => (
+          <button
+            key={aba.id}
+            type="button"
+            onClick={() => setTipo(aba.id)}
+            aria-pressed={tipo === aba.id}
+            style={{
+              ...botaoBase,
+              padding: '4px 10px',
+              fontSize: 9.5,
+              color: tipo === aba.id ? 'var(--c1)' : 'var(--c2)',
+              background: tipo === aba.id ? dourado(14) : escuro(6),
+              border: `1px solid ${tipo === aba.id ? dourado(45) : escuro(18)}`,
+            }}
+          >
+            {aba.rotulo}
+          </button>
+        ))}
+      </div>
+
+      <span style={{ fontSize: 9.5, color: 'var(--c2)', opacity: 0.85, lineHeight: 1.55 }}>
+        É este questionário que toda modelo nova recebe, e é dele que sai o link enviado a ela.
+        Mexer aqui não altera os playbooks que já existem.
+      </span>
+
+      <Edicao
+        key={`${tipo}-${atual?.id || 'novo'}`}
+        playbook={{ secoes: atual?.secoes || [], resumo: '' }}
+        comResumo={false}
+        rotuloSalvar="Salvar template"
+        salvando={salvando}
+        onCancelar={onSair}
+        onSalvar={async ({ secoes }) => {
+          setSalvando(true);
+          await salvarTemplate(tipo, { secoes });
+          setSalvando(false);
+        }}
+      />
+    </div>
+  );
+}
+
 export default function PlaybookWindow({ onClose }) {
   const { user } = useAuth();
-  const { playbooks, carregando, erro, salvar, recarregar, nomeDe } = usePlaybooks();
+  const {
+    playbooks,
+    carregando,
+    erro,
+    salvar,
+    recarregar,
+    nomeDe,
+    templateDe,
+    salvarTemplate,
+    criarConvite,
+    conviteDaModelo,
+  } = usePlaybooks();
   const podeEditar = podeEditarPlaybook(user);
   const [ativoId, setAtivoId] = useState(null);
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [gerandoLink, setGerandoLink] = useState(false);
 
   useEffect(() => {
+    if (ativoId === ID_TEMPLATE && podeEditar) return;
     if (!playbooks.length) {
       setAtivoId(null);
       return;
     }
     if (!playbooks.some((item) => item.id === ativoId)) setAtivoId(playbooks[0].id);
-  }, [playbooks, ativoId]);
+  }, [playbooks, ativoId, podeEditar]);
 
   const ativo = useMemo(
     () => playbooks.find((item) => item.id === ativoId) || null,
@@ -547,6 +729,37 @@ export default function PlaybookWindow({ onClose }) {
             <span style={{ fontSize: 10.5, color: 'var(--c2)', opacity: 0.7, lineHeight: 1.5 }}>
               Nenhum playbook liberado para você ainda.
             </span>
+          )}
+
+          {podeEditar && (
+            <button
+              type="button"
+              onClick={() => {
+                setAtivoId(ID_TEMPLATE);
+                setEditando(false);
+              }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: 1,
+                width: '100%',
+                padding: '7px 9px',
+                marginBottom: 4,
+                borderRadius: 8,
+                textAlign: 'left',
+                border: `1px dashed ${ativoId === ID_TEMPLATE ? dourado(55) : dourado(28)}`,
+                background: ativoId === ID_TEMPLATE ? dourado(14) : 'transparent',
+                color: ativoId === ID_TEMPLATE ? 'var(--c1)' : 'var(--c3)',
+                fontFamily: 'var(--font-main)',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ fontSize: 10.5, fontWeight: ativoId === ID_TEMPLATE ? 700 : 500 }}>
+                Template
+              </span>
+              <span style={{ fontSize: 8.5, opacity: 0.7, letterSpacing: '0.05em' }}>SÓ ADMIN</span>
+            </button>
           )}
 
           {playbooks.map((playbook) => {
@@ -592,7 +805,42 @@ export default function PlaybookWindow({ onClose }) {
             <span style={{ fontSize: 10.5, color: 'var(--c6)', marginBottom: 8 }}>{erro}</span>
           )}
 
-          {ativo ? (
+          {ativoId === ID_TEMPLATE && podeEditar ? (
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span
+                    style={{
+                      display: 'block',
+                      fontFamily: 'var(--font-display)',
+                      fontSize: 13,
+                      letterSpacing: '0.05em',
+                      color: 'var(--c1)',
+                    }}
+                  >
+                    TEMPLATE DO QUESTIONÁRIO
+                  </span>
+                  <span style={{ display: 'block', fontSize: 9, color: 'var(--c2)', opacity: 0.8 }}>
+                    O que a modelo nova recebe ao entrar
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAtivoId(playbooks[0]?.id || null)}
+                  style={{ ...botaoBase, padding: '5px 8px', color: 'var(--c2)', border: `1px solid ${escuro(18)}`, background: escuro(6) }}
+                >
+                  <CloseIcon size={11} />
+                </button>
+              </div>
+              <div className="glass-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 6 }}>
+                <TemplateView
+                  templateDe={templateDe}
+                  salvarTemplate={salvarTemplate}
+                  onSair={() => setAtivoId(playbooks[0]?.id || null)}
+                />
+              </div>
+            </div>
+          ) : ativo ? (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -640,6 +888,19 @@ export default function PlaybookWindow({ onClose }) {
                   </button>
                 )}
               </div>
+
+              {podeEditar && ativo.tipo !== TIPO_EMPRESA ? (
+                <LinkDoFormulario
+                  playbook={ativo}
+                  convite={conviteDaModelo(ativo.modelo_id)}
+                  gerando={gerandoLink}
+                  onGerar={async () => {
+                    setGerandoLink(true);
+                    await criarConvite(ativo);
+                    setGerandoLink(false);
+                  }}
+                />
+              ) : null}
 
               <div className="glass-scroll" style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: 6 }}>
                 {editando ? (

@@ -1,0 +1,42 @@
+{
+  "name": "PlaybookTemplate",
+  "type": "object",
+  "properties": {
+    "tipo": {
+      "type": "string",
+      "enum": ["empresa", "modelo"],
+      "default": "modelo",
+      "description": "Qual questionario este template representa"
+    },
+    "resumo": {
+      "type": "string"
+    },
+    "secoes": {
+      "type": "array",
+      "description": "As secoes e perguntas que toda modelo nova recebe",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "titulo": { "type": "string" },
+          "texto": { "type": "string" },
+          "itens": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "pergunta": { "type": "string" },
+                "resposta": { "type": "string" },
+                "copiar": { "type": "boolean", "default": false }
+              }
+            }
+          }
+        }
+      }
+    },
+    "atualizado_por": { "type": "string" },
+    "atualizado_por_nome": { "type": "string" }
+  },
+  "required": ["tipo"]
+}

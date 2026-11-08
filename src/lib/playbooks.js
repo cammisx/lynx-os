@@ -226,3 +226,66 @@ export const nomeDoPlaybook = (playbook, modelos = []) => {
   if (playbook?.tipo === TIPO_EMPRESA) return 'Empresa';
   return modeloDoPlaybook(playbook, modelos)?.nome || playbook?.titulo || 'Modelo';
 };
+
+/* ------------------------------------------------------------------ *
+ * Template do questionário e link respondido pela própria modelo
+ * ------------------------------------------------------------------ */
+
+/** O link do formulário vale por 7 dias. */
+export const DIAS_DE_VALIDADE = 7;
+
+export const gerarToken = () => {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes)
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+};
+
+/** O público não passa pelo app: ele bate direto na função do formulário. */
+export const baseDoApp = () =>
+  typeof window === 'undefined' ? '' : window.location.origin;
+
+export const linkDoFormulario = (token, base = baseDoApp()) =>
+  `${base}/functions/playbookFormulario?token=${encodeURIComponent(token || '')}`;
+
+/** O template salvo pelo admin; se ele ainda não existe, o do código. */
+export const secoesDoTemplate = (template, tipo) => {
+  const secoes = normalizarSecoes(template?.secoes);
+  const temPergunta = secoes.some((secao) => secao.itens.length);
+  return temPergunta ? secoes : secoesIniciais(tipo);
+};
+
+/** Só o que o formulário precisa perguntar: título da seção e as perguntas. */
+export const secoesParaFormulario = (playbook) =>
+  (playbook?.secoes || []).map((secao) => ({
+    id: secao.id,
+    titulo: secao.titulo || '',
+    itens: (secao.itens || [])
+      .filter((item) => String(item?.pergunta || '').trim())
+      .map((item) => ({
+        id: item.id,
+        pergunta: item.pergunta,
+        copiar: Boolean(item.copiar),
+      })),
+  }));
+
+export const conviteValido = (convite) => {
+  if (!convite || convite.status !== 'pendente') return false;
+  if (!convite.expira_em) return true;
+  return new Date(convite.expira_em).getTime() > Date.now();
+};
+
+export const totalDePerguntas = (secoes) =>
+  (secoes || []).reduce((soma, secao) => soma + (secao?.itens?.length || 0), 0);
+
+export const respondidasDoPlaybook = (playbook) =>
+  (playbook?.secoes || []).reduce((soma, secao) => soma + itensVisiveis(secao).length, 0);
+
+/** dd/mm curto, do jeito que o resto do sistema mostra data. */
+export const dataCurta = (valor) => {
+  if (!valor) return '';
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return '';
+  return data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+};
