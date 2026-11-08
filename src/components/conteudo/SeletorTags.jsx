@@ -57,6 +57,7 @@ export default function SeletorTags({
   sugestoes = [],
   label = 'Tags',
   disabled = false,
+  onCriarTag,
 }) {
   const [texto, setTexto] = useState('');
   const [aberto, setAberto] = useState(false);
@@ -135,6 +136,7 @@ export default function SeletorTags({
 
   const adicionar = (tag) => {
     onChange(comTag(escolhidas, tag));
+    onCriarTag?.(tag);
     setTexto('');
     setAberto(true);
   };

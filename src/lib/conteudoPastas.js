@@ -99,6 +99,17 @@ export const comTag = (lista = [], tag) => {
 export const semTag = (lista = [], tag) =>
   juntarTags(lista).filter((item) => item !== tagNormalizada(tag));
 
+/** Tags usadas nas pastas abertas na tela (inclui o que acabou de ser digitado). */
+export const tagsDePastas = (pastas = []) => {
+  const todas = [];
+  (pastas || []).forEach((pasta) => {
+    (pasta.itens || []).forEach((item) => {
+      (item.tags || []).forEach((tag) => todas.push(tag));
+    });
+  });
+  return juntarTags(todas);
+};
+
 /** Todas as tags já usadas nos conteúdos que a pessoa pode ver. */
 export const tagsDeConteudos = (conteudos = []) => {
   const todas = [];

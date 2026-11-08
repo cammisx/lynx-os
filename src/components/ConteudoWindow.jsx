@@ -3,14 +3,16 @@ import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
 import { ImageIcon } from '@/components/icons';
 import useConteudos from '@/hooks/useConteudos';
+import useTagsConteudo from '@/hooks/useTagsConteudo';
 import { useAuth } from '@/lib/AuthContext';
 import { nomeDoConteudo } from '@/lib/conteudos';
 import {
   contarItens,
+  juntarTags,
   novaPastaConteudo,
   pastaPorId,
   pastasDe,
-  tagsDeConteudos,
+  tagsDePastas,
 } from '@/lib/conteudoPastas';
 import ModalTabelaPrecos from '@/components/conteudo/ModalTabelaPrecos';
 import ModalItem from '@/components/conteudo/ModalItem';
@@ -55,6 +57,7 @@ const botaoDiscreto = {
 export default function ConteudoWindow({ onClose }) {
   const { user } = useAuth();
   const { conteudos, carregando, erro, admin, recarregar } = useConteudos();
+  const { tags: tagsRegistradas, carregado: tagsCarregadas, registrar } = useTagsConteudo();
   const [ativoId, setAtivoId] = useState(null);
   const [tabelaAberta, setTabelaAberta] = useState(false);
   const [pastaAbertaId, setPastaAbertaId] = useState(null);
@@ -66,7 +69,19 @@ export default function ConteudoWindow({ onClose }) {
 
   const ativo = conteudos.find((item) => item.id === ativoId) || conteudos[0] || null;
   const pastaAberta = pastaPorId(pastas, pastaAbertaId);
-  const sugestoes = tagsDeConteudos(conteudos);
+  /* Sugestões do campo de tags: o cadastro do banco (vale para toda a agência)
+     mais o que já está nas pastas desta modelo, incluindo o que acabou de ser
+     digitado e ainda não foi salvo. */
+  const sugestoes = juntarTags([...tagsRegistradas, ...tagsDePastas(pastas)]);
+  const autor = user?.full_name || user?.email || '';
+
+  /* Rede de segurança: tag que já estava num item salvo antes de existir o
+     cadastro entra nele na primeira vez que a modelo é aberta. */
+  useEffect(() => {
+    if (!admin || !tagsCarregadas || !pastas.length) return;
+    const usadas = tagsDePastas(pastas);
+    if (usadas.length) registrar(usadas, autor);
+  }, [admin, tagsCarregadas, pastas, registrar, autor]);
 
   useEffect(() => {
     setPastas(pastasDe(ativo));
@@ -141,6 +156,7 @@ export default function ConteudoWindow({ onClose }) {
     });
     setItemEmEdicao(null);
     await persistir(novas, 'Não consegui salvar o item agora.');
+    await registrar(item.tags, autor);
   };
 
   const removerItem = async (pastaId, itemId) => {
@@ -507,6 +523,7 @@ export default function ConteudoWindow({ onClose }) {
         <ModalItem
           item={itemEmEdicao.item}
           sugestoesTags={sugestoes}
+          onCriarTag={(tag) => registrar([tag], autor)}
           somenteLeitura={!admin}
           onFechar={() => setItemEmEdicao(null)}
           onSalvar={salvarItem}

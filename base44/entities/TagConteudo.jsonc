@@ -1,0 +1,12 @@
+{
+  "name": "TagConteudo",
+  "type": "object",
+  "properties": {
+    "tag": {
+      "type": "string",
+      "description": "Tag do conteudo, sempre em MAIUSCULA e sem espaco sobrando"
+    },
+    "criado_por_nome": { "type": "string" }
+  },
+  "required": ["tag"]
+}

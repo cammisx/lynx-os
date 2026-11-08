@@ -54,6 +54,7 @@ export default function ModalItem({
   item = null,
   sugestoesTags = [],
   somenteLeitura = false,
+  onCriarTag,
   onFechar,
   onSalvar,
 }) {
@@ -344,6 +345,7 @@ export default function ModalItem({
             valor={dados.tags}
             onChange={(tags) => mudar('tags', tags)}
             sugestoes={sugestoesTags}
+            onCriarTag={onCriarTag}
             disabled={somenteLeitura}
             label="Tags (opcional)"
           />
