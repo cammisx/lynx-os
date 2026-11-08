@@ -4,6 +4,7 @@
  * aberta, então os dois lugares bebem daqui.
  */
 import {
+  StarIcon,
   UsersIcon,
   CalendarIcon,
   MoneyIcon,
@@ -14,7 +15,7 @@ import {
 
 export const JANELAS = {
   chatters: { titulo: 'Chatters', Icone: UsersIcon },
-  modelos: { titulo: 'Modelos', Icone: UsersIcon },
+  modelos: { titulo: 'Modelos', Icone: StarIcon },
   turnos: { titulo: 'Turnos', Icone: CalendarIcon },
   financeiro: { titulo: 'Financeiro', Icone: MoneyIcon },
   playbook: { titulo: 'Playbook', Icone: BookIcon },
