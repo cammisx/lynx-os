@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { iniciaisDe, nomeDe, salvarPerfil, usePerfil } from '@/lib/perfilUsuario';
 import { MODO_CLARO, MODO_ESCURO, MODO_SISTEMA, TEMAS, paletaDoTema, resolverModo } from '@/lib/temas';
 import { TAMANHOS } from '@/lib/fonte';
+import { prepararFundo } from '@/lib/fundo';
 
 const ABAS = [
   { id: 'perfil', label: 'Perfil' },
@@ -62,6 +63,8 @@ export default function ConfiguracoesWindow({ onClose }) {
   const [foto, setFoto] = useState(perfil.fotoUrl);
   const [salvando, setSalvando] = useState(false);
   const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const [enviandoFundo, setEnviandoFundo] = useState(false);
+  const arquivoFundoRef = useRef(null);
   const [aviso, setAviso] = useState(null);
   const arquivoRef = useRef(null);
 
@@ -122,6 +125,54 @@ export default function ConfiguracoesWindow({ onClose }) {
       remoto
         ? null
         : { erro: false, texto: 'Tema aplicado neste navegador. Falta publicar o campo tema no Builder.' }
+    );
+  };
+
+  const subirFundo = async (event) => {
+    const arquivo = event.target.files?.[0];
+    if (!arquivo) return;
+    if (!arquivo.type?.startsWith('image/')) {
+      setAviso({ erro: true, texto: 'Escolhe um arquivo de imagem.' });
+      return;
+    }
+    setEnviandoFundo(true);
+    setAviso(null);
+    try {
+      /* Reduz antes de subir: papel de parede não precisa de 4000px. */
+      const leve = await prepararFundo(arquivo);
+      const resposta = await base44.integrations.Core.UploadFile({ file: leve });
+      const url = resposta?.file_url;
+      if (!url) throw new Error('upload sem url');
+      const { remoto } = await salvarPerfil(user, { fundoUrl: url });
+      setAviso(
+        remoto
+          ? null
+          : { erro: false, texto: 'Fundo aplicado neste navegador. Falta publicar o campo fundo_url no Builder.' }
+      );
+    } catch (erro) {
+      setAviso({ erro: true, texto: 'Não consegui subir a imagem de fundo.' });
+    } finally {
+      setEnviandoFundo(false);
+      if (arquivoFundoRef.current) arquivoFundoRef.current.value = '';
+    }
+  };
+
+  const removerFundo = async () => {
+    const { remoto } = await salvarPerfil(user, { fundoUrl: '' });
+    setAviso(
+      remoto
+        ? null
+        : { erro: false, texto: 'Fundo removido neste navegador. Falta publicar o campo fundo_url no Builder.' }
+    );
+  };
+
+  const alternarSeda = async (estatico) => {
+    if (Boolean(perfil.fundoEstatico) === estatico) return;
+    const { remoto } = await salvarPerfil(user, { fundoEstatico: estatico });
+    setAviso(
+      remoto
+        ? null
+        : { erro: false, texto: 'Preferência aplicada neste navegador. Falta publicar o campo no Builder.' }
     );
   };
 
@@ -521,6 +572,111 @@ export default function ConfiguracoesWindow({ onClose }) {
                         {tema.descricao}
                       </span>
                     </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <span style={{ ...labelStyle, marginTop: 6 }}>Fundo do desktop</span>
+            <span style={dicaStyle}>
+              Sua imagem entra no lugar do fundo liso. Ela é reduzida antes de subir, então não pesa
+              no carregamento.
+            </span>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div
+                style={{
+                  width: 92,
+                  height: 52,
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                  border: '1px solid color-mix(in srgb, var(--c2) 20%, transparent)',
+                  background: 'color-mix(in srgb, var(--c8) 70%, transparent)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--c2)',
+                  fontSize: 9,
+                  textAlign: 'center',
+                  lineHeight: 1.3,
+                }}
+              >
+                {perfil.fundoUrl ? (
+                  <img
+                    src={perfil.fundoUrl}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <span>Sem imagem</span>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <button
+                  type="button"
+                  onClick={() => arquivoFundoRef.current?.click()}
+                  disabled={enviandoFundo}
+                  style={botaoStyle(true, enviandoFundo)}
+                >
+                  {enviandoFundo ? 'Subindo...' : perfil.fundoUrl ? 'Trocar imagem' : 'Escolher imagem'}
+                </button>
+                {perfil.fundoUrl ? (
+                  <button
+                    type="button"
+                    onClick={removerFundo}
+                    style={{ ...botaoStyle(false), height: 26, padding: '0 10px' }}
+                  >
+                    Remover
+                  </button>
+                ) : null}
+              </div>
+              <input
+                ref={arquivoFundoRef}
+                type="file"
+                accept="image/*"
+                onChange={subirFundo}
+                style={{ display: 'none' }}
+              />
+            </div>
+
+            <span style={{ ...labelStyle, marginTop: 6 }}>Animação do fundo</span>
+            <span style={dicaStyle}>
+              A seda em movimento é bonita, mas gasta CPU. Parada, o fundo fica congelado no mesmo
+              desenho: bom pra PC modesto.
+            </span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+              {[
+                { id: false, nome: 'Animado', dica: 'Linhas em movimento' },
+                { id: true, nome: 'Parado', dica: 'Sem animação' },
+              ].map(({ id, nome, dica }) => {
+                const ativo = Boolean(perfil.fundoEstatico) === id;
+                return (
+                  <button
+                    key={String(id)}
+                    type="button"
+                    onClick={() => alternarSeda(id)}
+                    title={dica}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                      alignItems: 'flex-start',
+                      padding: '9px 10px',
+                      borderRadius: 10,
+                      border: ativo
+                        ? '1px solid color-mix(in srgb, var(--c1) 70%, transparent)'
+                        : '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+                      background: ativo
+                        ? 'color-mix(in srgb, var(--c1) 14%, transparent)'
+                        : 'color-mix(in srgb, var(--c8) 45%, transparent)',
+                      color: ativo ? 'var(--c1)' : 'var(--c3)',
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-main)',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <span style={{ fontSize: 11, fontWeight: 700, lineHeight: 1.2 }}>{nome}</span>
+                    <span style={{ fontSize: 9.5, color: 'var(--c2)', lineHeight: 1.2 }}>{dica}</span>
                   </button>
                 );
               })}

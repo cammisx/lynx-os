@@ -25,6 +25,14 @@
     "tema": {
       "type": "string"
     },
+    "fundo_url": {
+      "type": "string",
+      "description": "Imagem propria usada como fundo do desktop"
+    },
+    "fundo_estatico": {
+      "type": "boolean",
+      "description": "Seda do fundo parada (modo leve)"
+    },
     "modo": {
       "type": "string",
       "enum": [

@@ -98,6 +98,8 @@ export const carregarPerfil = (user) => {
         tema: atual.tema,
         modo: atual.modo,
         fonte_escala: atual.fonte,
+        fundoUrl: atual.fundoUrl || '',
+        fundoEstatico: Boolean(atual.fundoEstatico),
       });
     }
   });
@@ -153,6 +155,8 @@ export const salvarPerfil = async (user, parcial = {}) => {
       tema: atual.tema || '',
       tema_modo: atual.modo || '',
       fonte_escala: atual.fonte || '',
+      fundo_url: atual.fundoUrl || '',
+      fundo_estatico: Boolean(atual.fundoEstatico),
     });
     noUser = Boolean(salvo && 'nome_exibicao' in salvo);
   } catch (erro) {
@@ -167,6 +171,8 @@ export const salvarPerfil = async (user, parcial = {}) => {
     tema: atual.tema,
     modo: atual.modo,
     fonte_escala: atual.fonte,
+    fundoUrl: atual.fundoUrl,
+    fundoEstatico: Boolean(atual.fundoEstatico),
   });
   const remoto = noUser || Boolean(publico);
 

@@ -22,8 +22,8 @@ import { sincronizarAdminsUmaVez } from '@/lib/admins';
 export default function Dashboard() {
   const [openApp, setOpenApp] = useState(null);
   const { user } = useAuth();
-  // Carrega o perfil (tema, nome, foto) antes de tudo aparecer na tela.
-  usePerfil(user);
+  // Carrega o perfil (tema, nome, foto, fundo) antes de tudo aparecer na tela.
+  const perfil = usePerfil(user);
 
   // Admin recém-chegado entra em todas as modelos assim que o app abre.
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function Dashboard() {
         background: 'var(--c8)',
       }}
     >
-      <DesktopBackground />
+      <DesktopBackground imagem={perfil.fundoUrl} estatico={perfil.fundoEstatico} />
       <ChatProvider>
         <DesktopWidgets />
         <Taskbar onOpenApp={setOpenApp} />

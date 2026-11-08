@@ -27,6 +27,14 @@
     "tema_modo": {
       "type": "string",
       "description": "Modo de cor: claro, escuro ou sistema"
+    },
+    "fundo_url": {
+      "type": "string",
+      "description": "Imagem propria usada como fundo do desktop"
+    },
+    "fundo_estatico": {
+      "type": "boolean",
+      "description": "Para a animacao da seda do fundo (modo leve)"
     }
   },
   "required": [

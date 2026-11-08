@@ -12,6 +12,8 @@ export const PERFIL_PADRAO = {
   tema: TEMA_PADRAO,
   modo: MODO_PADRAO,
   fonte: FONTE_PADRAO,
+  fundoUrl: '',
+  fundoEstatico: false,
 };
 
 /** Campos custom do User, quando publicados no Builder. */
@@ -22,13 +24,23 @@ export const perfilDoUsuario = (user) => ({
   tema: user?.tema || '',
   modo: user?.tema_modo || '',
   fonte: user?.fonte_escala || '',
+  fundoUrl: user?.fundo_url || '',
+  fundoEstatico: typeof user?.fundo_estatico === 'boolean' ? user.fundo_estatico : undefined,
 });
 
 export const mesclarPerfil = (local = {}, user = {}) => {
   const remoto = perfilDoUsuario(user);
   const doBanco = Object.fromEntries(Object.entries(remoto).filter(([, valor]) => valor));
   const perfil = { ...PERFIL_PADRAO, ...(local || {}), ...doBanco };
-  return { ...perfil, modo: modoValido(perfil.modo) };
+  /* O filtro acima descarta falsy, então um `false` vindo do banco sumiria.
+     Aqui o booleano é resolvido na mão: ligado em qualquer lugar vale, e
+     desligar por aqui também cola (o local traz o false). */
+  const estaticoRemoto = remoto.fundoEstatico;
+  const fundoEstatico =
+    typeof estaticoRemoto === 'boolean'
+      ? estaticoRemoto || Boolean((local || {}).fundoEstatico)
+      : Boolean(perfil.fundoEstatico);
+  return { ...perfil, modo: modoValido(perfil.modo), fundoEstatico };
 };
 
 /** Nome que vale na tela: o do perfil manda, depois o da conta. */

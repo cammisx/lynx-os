@@ -4,6 +4,7 @@ const SEGMENTS = 400;
 const GHOST_COUNT = 45;
 const GHOST_STEP = 6; // frames entre fantasmas
 const MAX_HISTORY = GHOST_COUNT * GHOST_STEP + 1;
+const PASSO_TEMPO = 0.0045; // quanto o ruído anda por frame
 
 // Cores da "seda" — vêm do tema ativo (c14, c5, c6, c1) e são cicladas.
 const CORES_PADRAO = ['#9B3FA8', '#C8387A', '#E8604A', '#F0943A'];
@@ -91,7 +92,14 @@ function makeNoise2D() {
   };
 }
 
-export default function DesktopBackground() {
+/**
+ * Fundo do desktop: a imagem do usuário (se houver), um véu do tema por cima
+ * para o texto continuar legível, e a seda de linhas desenhada em canvas.
+ *
+ * `estatico` congela a seda: em vez de animar, desenha um quadro só — mesmo
+ * desenho, sem gastar CPU. Serve para PCs mais modestos.
+ */
+export default function DesktopBackground({ imagem = '', estatico = false }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -104,12 +112,11 @@ export default function DesktopBackground() {
     let width = 0;
     let height = 0;
     let dpr = 1;
-    let time = 0;
+    let time = 2.4; // começa com a seda já formada, sem "nascendo" na tela
     let colorPhase = 0;
     let frame = 0;
     const history = [];
     let background = '#1A0510';
-    let bgOverride = null;
     let alphaMain = 0.9;
     let alphaGhost = 0.25;
 
@@ -119,7 +126,6 @@ export default function DesktopBackground() {
       /* No claro a seda continua viva, só que mais discreta sobre o fundo pálido. */
       alphaMain = mode === 'light' ? 0.55 : 0.9;
       alphaGhost = mode === 'light' ? 0.16 : 0.25;
-      bgOverride = null;
       const estilo = window.getComputedStyle(root);
       const lerCor = (nome, reserva) => {
         const valor = estilo.getPropertyValue(nome).trim();
@@ -145,16 +151,16 @@ export default function DesktopBackground() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    readTheme();
-    resize();
-
-    const observer = new MutationObserver(readTheme);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme', 'data-mode'],
-    });
-
-    window.addEventListener('resize', resize);
+    const pintarBase = () => {
+      ctx.globalAlpha = 1;
+      if (imagem) {
+        // com imagem, o canvas é só a camada de linhas
+        ctx.clearRect(0, 0, width, height);
+      } else {
+        ctx.fillStyle = background;
+        ctx.fillRect(0, 0, width, height);
+      }
+    };
 
     const buildGradient = () => {
       const gradient = ctx.createLinearGradient(0, 0, width, 0);
@@ -181,25 +187,39 @@ export default function DesktopBackground() {
       ctx.stroke();
     };
 
-    let rafId = 0;
-
-    const draw = () => {
-      time += 0.0045;
-      colorPhase += 0.0008;
-      frame += 1;
-
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = bgOverride || background;
-      ctx.fillRect(0, 0, width, height);
-
+    /* Uma curva inteira num instante do ruído. Usada nos fantasmas do quadro
+       parado, onde não existe histórico de frames para reaproveitar. */
+    const curvaEm = (instante) => {
       const ys = new Float32Array(SEGMENTS + 1);
       for (let i = 0; i <= SEGMENTS; i += 1) {
         const t = i / SEGMENTS;
-        const n = noise(t * width * 0.0012, time);
+        const n = noise(t * width * 0.0012, instante);
         const y = height * 0.5 + n * 0.48 * height;
         ys[i] = Math.max(-height, Math.min(height * 2, y));
       }
+      return ys;
+    };
 
+    let rafId = 0;
+
+    const desenharParado = () => {
+      pintarBase();
+      const gradient = buildGradient();
+      for (let g = GHOST_COUNT; g >= 1; g -= 1) {
+        strokeY(curvaEm(time - g * GHOST_STEP * PASSO_TEMPO), gradient, alphaGhost, 4);
+      }
+      strokeY(curvaEm(time), gradient, alphaMain, 1);
+      ctx.globalAlpha = 1;
+    };
+
+    const draw = () => {
+      time += PASSO_TEMPO;
+      colorPhase += 0.0008;
+      frame += 1;
+
+      pintarBase();
+
+      const ys = curvaEm(time);
       history.push(ys);
       if (history.length > MAX_HISTORY) history.shift();
 
@@ -218,29 +238,91 @@ export default function DesktopBackground() {
       rafId = requestAnimationFrame(draw);
     };
 
-    rafId = requestAnimationFrame(draw);
+    const parar = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+    };
+
+    const comecar = () => {
+      parar();
+      history.length = 0;
+      if (estatico) {
+        desenharParado();
+        return;
+      }
+      rafId = requestAnimationFrame(draw);
+    };
+
+    readTheme();
+    resize();
+    comecar();
+
+    const observer = new MutationObserver(() => {
+      readTheme();
+      if (estatico) desenharParado();
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'data-mode'],
+    });
+
+    const aoRedimensionar = () => {
+      resize();
+      comecar();
+    };
+    window.addEventListener('resize', aoRedimensionar);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      parar();
       observer.disconnect();
-      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', aoRedimensionar);
       history.length = 0;
     };
-  }, []);
+  }, [imagem, estatico]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      aria-hidden="true"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        width: '100%',
-        height: '100%',
-        zIndex: 0,
-        display: 'block',
-        pointerEvents: 'none',
-      }}
-    />
+    <>
+      {imagem ? (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 0,
+            backgroundImage: `url("${imagem}")`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            pointerEvents: 'none',
+          }}
+        />
+      ) : null}
+      {imagem ? (
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 0,
+            /* véu do tema: a foto aparece, o texto continua legível */
+            background: 'color-mix(in srgb, var(--c8) 52%, transparent)',
+            pointerEvents: 'none',
+          }}
+        />
+      ) : null}
+      <canvas
+        ref={canvasRef}
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 0,
+          display: 'block',
+          pointerEvents: 'none',
+        }}
+      />
+    </>
   );
 }
