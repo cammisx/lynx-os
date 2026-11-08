@@ -3,6 +3,7 @@ import { useChatPanel } from '@/components/chat/ChatProvider';
 import MobileStatusBar from '@/components/mobile/MobileStatusBar';
 import MobileDock from '@/components/mobile/MobileDock';
 import MobileInicio from '@/components/mobile/MobileInicio';
+import MobilePet from '@/components/mobile/MobilePet';
 import MobileChat from '@/components/mobile/MobileChat';
 import ClockPanel from '@/components/ClockPanel';
 import { nomeDe } from '@/lib/perfilLogica';
@@ -88,6 +89,11 @@ export default function MobileShell({ user, perfil, janelas }) {
             onAbrir={abrirJanela}
             onRelogio={() => setRelogio(true)}
           />
+        ) : null}
+
+        {/* O bicho só passeia na tela do Mais: em janela cheia ele atrapalharia. */}
+        {tela === 'inicio' ? (
+          <MobilePet user={user} perfil={perfil} admin={user?.role === 'admin'} />
         ) : null}
       </main>
 

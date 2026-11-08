@@ -841,13 +841,16 @@ export default function ConfiguracoesWindow({ onClose }) {
               })}
             </div>
 
-            {/* No celular não existe pet: o bicho é do desktop. */}
-            {!pequeno && (
+            {/* Cada aparelho escolhe o seu bicho: o pet_celular não mexe no pet do desktop. */}
+            {(
               <>
-            <span style={{ ...labelStyle, marginTop: 6 }}>Pet do desktop</span>
+            <span style={{ ...labelStyle, marginTop: 6 }}>
+              {pequeno ? 'Pet do celular' : 'Pet do desktop'}
+            </span>
             <span style={dicaStyle}>
-              Um bicho de estimação em pixel art passeia pela base da tela. Clique nele para fazer
-              carinho. Quem não quiser, deixa em "Sem pet".
+              {pequeno
+                ? 'O bicho passeia pela tela do Mais. Um toque faz carinho e o toque duplo abre as opções dele. Quem não quiser, deixa em "Sem pet".'
+                : 'Um bicho de estimação em pixel art passeia pela base da tela. Clique nele para fazer carinho. Quem não quiser, deixa em "Sem pet".'}
             </span>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 8 }}>
               {PETS_DISPONIVEIS.map(({ id, nome, dica }) => {
