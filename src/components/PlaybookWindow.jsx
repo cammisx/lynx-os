@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Window from '@/components/Window';
+import { useIsMobile } from '@/hooks/use-mobile';
 import GlassSelect from '@/components/GlassSelect';
 import {
   CheckIcon,
@@ -860,6 +861,10 @@ function TemplateView({ templateDe, salvarTemplate, onSair }) {
 }
 
 export default function PlaybookWindow({ onClose }) {
+  /* No celular a lista e o conteúdo não cabem lado a lado: mostra um por vez,
+     com o botão de voltar para a lista. */
+  const pequeno = useIsMobile();
+  const [verConteudo, setVerConteudo] = useState(false);
   const { user } = useAuth();
   const {
     playbooks,
@@ -920,14 +925,14 @@ export default function PlaybookWindow({ onClose }) {
         <div
           className="glass-scroll"
           style={{
-            width: 196,
+            width: pequeno ? '100%' : 196,
             flexShrink: 0,
-            display: 'flex',
+            display: pequeno && verConteudo ? 'none' : 'flex',
             flexDirection: 'column',
             gap: 6,
-            padding: '2px 10px 10px 2px',
+            padding: pequeno ? '2px 2px 10px' : '2px 10px 10px 2px',
             overflowY: 'auto',
-            borderRight: `1px solid ${escuro(14)}`,
+            borderRight: pequeno ? 'none' : `1px solid ${escuro(14)}`,
           }}
         >
           {carregando && (
@@ -940,6 +945,7 @@ export default function PlaybookWindow({ onClose }) {
               onClick={() => {
                 setAtivoId(ID_TEMPLATE);
                 setEditando(false);
+                setVerConteudo(true);
               }}
               style={{
                 display: 'flex',
@@ -980,6 +986,7 @@ export default function PlaybookWindow({ onClose }) {
                 onClick={() => {
                   setAtivoId(playbook.id);
                   setEditando(false);
+                  setVerConteudo(true);
                 }}
                 style={{
                   display: 'flex',
@@ -1009,7 +1016,39 @@ export default function PlaybookWindow({ onClose }) {
         </div>
 
         {/* Conteúdo */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '2px 2px 2px 14px' }}>
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            display: pequeno && !verConteudo ? 'none' : 'flex',
+            flexDirection: 'column',
+            padding: pequeno ? '2px' : '2px 2px 2px 14px',
+          }}
+        >
+          {pequeno ? (
+            <button
+              type="button"
+              onClick={() => setVerConteudo(false)}
+              style={{
+                alignSelf: 'flex-start',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                height: 32,
+                padding: '0 10px 0 6px',
+                marginBottom: 8,
+                borderRadius: 9,
+                border: '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+                background: 'transparent',
+                color: 'var(--c3)',
+                fontFamily: 'var(--font-main)',
+                fontSize: 11,
+              }}
+            >
+              ‹ Playbooks
+            </button>
+          ) : null}
+
           {erro && (
             <span style={{ fontSize: 10.5, color: 'var(--c6)', marginBottom: 8 }}>{erro}</span>
           )}
