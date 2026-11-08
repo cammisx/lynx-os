@@ -8,6 +8,7 @@ import {
   MoneyIcon,
   BookIcon,
   ImageIcon,
+  StarIcon,
 } from "@/components/icons";
 
 const ANIM_MS = 180;
@@ -21,7 +22,7 @@ const APPS = [
   },
   {
     id: "modelos",
-    Icon: UsersIcon,
+    Icon: StarIcon,
     title: "Modelos",
     desc: "Gerenciar modelos e chatters",
   },

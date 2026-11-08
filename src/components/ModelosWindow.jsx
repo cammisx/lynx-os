@@ -6,7 +6,7 @@ import ModeloForm from '@/components/ModeloForm';
 import ModeloRow from '@/components/models/ModeloRow';
 import ArchivedSection from '@/components/models/ArchivedSection';
 import ArchiveDialog from '@/components/models/ArchiveDialog';
-import { UsersIcon, PlusIcon } from '@/components/icons';
+import { StarIcon, PlusIcon } from '@/components/icons';
 import { emitModelsChanged } from '@/lib/desktopEvents';
 import { buildChatterNames } from '@/lib/chatterNames';
 import { useAuth } from '@/lib/AuthContext';
@@ -147,7 +147,7 @@ export default function ModelosWindow({ onClose }) {
 
   return (
     <>
-      <Window title="Modelos" icon={UsersIcon} onClose={onClose} width={620} height={470}>
+      <Window title="Modelos" icon={StarIcon} onClose={onClose} width={620} height={470}>
         {form ? (
           <ModeloForm
             chatters={chatterOptions}

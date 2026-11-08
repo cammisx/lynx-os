@@ -26,6 +26,16 @@ export function UsersIcon({ size = 16, className }) {
   );
 }
 
+/** Estrela da página de modelos, para não repetir o ícone de grupo dos chatters. */
+export function StarIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M11 3.2l1.7 4.6 4.6 1.7-4.6 1.7L11 15.8 9.3 11.2 4.7 9.5l4.6-1.7z" />
+      <path d="M17.6 14.4l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" />
+    </Svg>
+  );
+}
+
 export function CalendarIcon({ size = 16, className }) {
   return (
     <Svg size={size} className={className}>
