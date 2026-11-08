@@ -5,6 +5,7 @@ import { MoneyIcon } from '@/components/icons';
 import ImportarExtrato from '@/components/financeiro/ImportarExtrato';
 import RelatorioFinanceiro from '@/components/financeiro/RelatorioFinanceiro';
 import VendasLista from '@/components/financeiro/VendasLista';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const asList = (resultado) => (Array.isArray(resultado) ? resultado : resultado?.items || []);
 
@@ -15,6 +16,7 @@ const ABAS = [
 ];
 
 export default function FinanceiroWindow({ onClose }) {
+  const pequeno = useIsMobile();
   const [aba, setAba] = useState('importar');
   const [modelos, setModelos] = useState([]);
   const [chatters, setChatters] = useState([]);
@@ -41,7 +43,16 @@ export default function FinanceiroWindow({ onClose }) {
   return (
     <Window title="Financeiro" icon={MoneyIcon} onClose={onClose} width={860} height={600}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%', minHeight: 0 }}>
-        <div style={{ display: 'flex', gap: 6, borderBottom: '1px solid color-mix(in srgb, var(--c2) 12%, transparent)', paddingBottom: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 6,
+            borderBottom: '1px solid color-mix(in srgb, var(--c2) 12%, transparent)',
+            paddingBottom: 8,
+            overflowX: pequeno ? 'auto' : undefined,
+            flexShrink: 0,
+          }}
+        >
           {ABAS.map((item) => {
             const ativa = aba === item.id;
             return (
@@ -50,8 +61,10 @@ export default function FinanceiroWindow({ onClose }) {
                 type="button"
                 onClick={() => setAba(item.id)}
                 style={{
-                  height: 26,
-                  padding: '0 12px',
+                  height: pequeno ? 34 : 26,
+                  padding: pequeno ? '0 14px' : '0 12px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                   borderRadius: 7,
                   border: ativa
                     ? '1px solid color-mix(in srgb, var(--c1) 55%, transparent)'

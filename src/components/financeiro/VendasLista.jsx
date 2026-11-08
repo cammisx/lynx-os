@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import GlassSelect from '@/components/GlassSelect';
 import { CloseIcon, TrashIcon } from '@/components/icons';
 import { calcularVenda, fimDoMes, inicioDoMes, mesLabel, moeda, somarMeses } from '@/lib/financeiro';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const asList = (resultado) => (Array.isArray(resultado) ? resultado : resultado?.items || []);
 
@@ -113,6 +114,9 @@ function ConfirmarExclusao({ quantidade, bruto, liquido, porFiltro, apagando, on
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Confirmar exclusão de vendas"
         style={{
           width: 480,
           maxWidth: '94vw',
@@ -281,6 +285,9 @@ const fatiar = (lista, tamanho) => {
 };
 
 export default function VendasLista({ modelos, chatters, onMudou }) {
+  /* No celular a tabela de oito colunas não cabe: cada venda vira um cartão
+     com as mesmas informações, na ordem em que se lê. */
+  const pequeno = useIsMobile();
   const [referencia, setReferencia] = useState(() => new Date());
   const [modeloId, setModeloId] = useState('');
   const [chatterId, setChatterId] = useState('');
@@ -705,6 +712,73 @@ export default function VendasLista({ modelos, chatters, onMudou }) {
           background: 'color-mix(in srgb, var(--c8) 45%, transparent)',
         }}
       >
+        {pequeno ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 10 }}>
+            {visiveis.map((venda) => {
+              const modelo = modeloPorId.get(venda.modelo_id);
+              const chatter = chatterPorUsuario.get(venda.usuario_id);
+              const contas = calcularVenda(venda, modelo, chatter);
+              const status = statusDaVenda(venda.status);
+              const marcada = selecionadas.has(venda.id);
+              return (
+                <div
+                  key={venda.id}
+                  style={{
+                    display: 'flex',
+                    gap: 10,
+                    padding: '10px 12px',
+                    borderRadius: 12,
+                    border: marcada
+                      ? '1px solid color-mix(in srgb, var(--c1) 45%, transparent)'
+                      : '1px solid color-mix(in srgb, var(--c2) 12%, transparent)',
+                    background: marcada
+                      ? 'color-mix(in srgb, var(--c1) 10%, transparent)'
+                      : 'color-mix(in srgb, var(--c8) 55%, transparent)',
+                  }}
+                >
+                  <CaixaSelecao
+                    marcada={marcada}
+                    onClick={() => alternarUma(venda.id)}
+                    rotuloAcessivel={`Selecionar venda de ${venda.usuario_plataforma || 'comprador'}`}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: 'var(--c3)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          flex: 1,
+                        }}
+                      >
+                        {venda.usuario_plataforma || venda.usuario_nome || '—'}
+                      </span>
+                      <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--c3)' }}>
+                        {moeda(contas.bruto)}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 10.5, color: 'var(--c2)' }}>
+                      {dataHora(venda.ocorrido_em)} · {venda.tipo || '—'} · líquido {moeda(contas.liquido)}
+                    </span>
+                    <span style={{ fontSize: 10.5, color: 'var(--c2)' }}>
+                      {modelo?.nome || venda.modelo_nome || '—'} ·{' '}
+                      {chatter?.nome_exibicao || nomesChatter.get(venda.usuario_id) || venda.usuario_nome || '—'}
+                    </span>
+                    <span style={{ fontSize: 9.5, fontWeight: 700, color: status.cor }}>{status.texto}</span>
+                  </div>
+                </div>
+              );
+            })}
+            {!visiveis.length && !carregando && (
+              <span style={{ padding: 14, textAlign: 'center', color: 'var(--c2)', fontSize: 11 }}>
+                Nenhuma venda nesse filtro.
+              </span>
+            )}
+          </div>
+        ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10.5 }}>
           <thead>
             <tr style={{ position: 'sticky', top: 0, zIndex: 2, background: 'color-mix(in srgb, var(--c8) 92%, #000)' }}>
@@ -781,9 +855,18 @@ export default function VendasLista({ modelos, chatters, onMudou }) {
             )}
           </tbody>
         </table>
+        )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          flexShrink: 0,
+          flexWrap: pequeno ? 'wrap' : undefined,
+        }}
+      >
         <span style={{ fontSize: 10.5, color: 'var(--c2)' }}>
           {filtradas.length
             ? `${inicioDaPagina + 1}–${Math.min(inicioDaPagina + porPagina, filtradas.length)} de ${filtradas.length}`
