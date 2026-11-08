@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
-import { UsersIcon } from '@/components/icons';
+import { PlusIcon, UsersIcon } from '@/components/icons';
+import ModalConvidar from '@/components/chatters/ModalConvidar';
+import { useAuth } from '@/lib/AuthContext';
+import { ehAdmin } from '@/lib/chat';
+import { guardarNomePendente, nomePendente, normalizarEmail, tirarNomePendente } from '@/lib/convites';
 import { cargoDaPessoa, fotoDaPessoa, iniciaisDe, nomeDaPessoa } from '@/lib/perfilLogica';
 import { listarPerfis, mapaDePerfis } from '@/lib/perfis';
 
@@ -51,35 +55,95 @@ const avatar = {
  * quando a tela for definida.
  */
 export default function ChattersWindow({ onClose }) {
+  const { user } = useAuth();
+  const admin = ehAdmin(user);
   const [usuarios, setUsuarios] = useState([]);
   const [perfis, setPerfis] = useState(new Map());
   const [busca, setBusca] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [convidando, setConvidando] = useState(false);
+  const [aviso, setAviso] = useState('');
+
+  /* Nome digitado num convite anterior, esperando a pessoa aparecer no app. */
+  const aplicarNomesPendentes = async (listaUsuarios) => {
+    if (!admin) return listaUsuarios;
+    const semNome = listaUsuarios.filter(
+      (item) => !item.nome_exibicao && nomePendente(item.email)
+    );
+    if (!semNome.length) return listaUsuarios;
+    return Promise.all(
+      listaUsuarios.map(async (item) => {
+        const pendente = !item.nome_exibicao ? nomePendente(item.email) : '';
+        if (!pendente) return item;
+        try {
+          const salvo = await base44.entities.User.update(item.id, { nome_exibicao: pendente });
+          tirarNomePendente(item.email);
+          return { ...item, ...(salvo || {}), nome_exibicao: pendente };
+        } catch (falha) {
+          console.warn('[Chatters] não consegui aplicar o nome do convite', falha);
+          return item;
+        }
+      })
+    );
+  };
+
+  const carregar = useCallback(async () => {
+    try {
+      const [listaUsuarios, listaPerfis] = await Promise.all([
+        base44.entities.User.list(),
+        listarPerfis(),
+      ]);
+      const comNomes = await aplicarNomesPendentes(asList(listaUsuarios));
+      setUsuarios(comNomes);
+      setPerfis(mapaDePerfis(listaPerfis));
+      setErro('');
+    } catch (falha) {
+      console.warn('[Chatters] carregar', falha);
+      setErro('Não consegui carregar a lista de usuários agora.');
+    } finally {
+      setCarregando(false);
+    }
+  }, [admin]);
 
   useEffect(() => {
-    let ativo = true;
-    const carregar = async () => {
-      try {
-        const [listaUsuarios, listaPerfis] = await Promise.all([
-          base44.entities.User.list(),
-          listarPerfis(),
-        ]);
-        if (!ativo) return;
-        setUsuarios(asList(listaUsuarios));
-        setPerfis(mapaDePerfis(listaPerfis));
-      } catch (falha) {
-        console.warn('[Chatters] carregar', falha);
-        if (ativo) setErro('Não consegui carregar a lista de usuários agora.');
-      } finally {
-        if (ativo) setCarregando(false);
-      }
-    };
     carregar();
-    return () => {
-      ativo = false;
-    };
-  }, []);
+  }, [carregar]);
+
+  /**
+   * Convite: o Base44 manda o e-mail (base44.users.inviteUser) e o nome é
+   * aplicado no usuário na hora, se ele já existir na lista. Se ainda não
+   * existir, fica guardado e entra sozinho no próximo carregamento.
+   */
+  const convidar = async ({ nome, email }) => {
+    const alvo = normalizarEmail(email);
+    try {
+      await base44.users.inviteUser(alvo, 'user');
+    } catch (falha) {
+      console.warn('[Chatters] convite recusado', falha);
+      const mensagem =
+        falha?.response?.data?.message || falha?.message || 'Não consegui enviar o convite agora.';
+      return { erro: `${mensagem} (confira se o e-mail está certo e se você é admin)` };
+    }
+
+    setAviso(`Convite enviado para ${nome} (${alvo}).`);
+    try {
+      const achados = asList(await base44.entities.User.filter({ email: alvo }));
+      const alvoUser = achados[0];
+      if (alvoUser?.id) {
+        await base44.entities.User.update(alvoUser.id, { nome_exibicao: nome });
+        tirarNomePendente(alvo);
+      } else {
+        guardarNomePendente(alvo, nome);
+      }
+    } catch (falha) {
+      console.warn('[Chatters] nome do convite ficou pendente', falha);
+      guardarNomePendente(alvo, nome);
+    }
+
+    await carregar();
+    return { ok: true };
+  };
 
   const lista = useMemo(() => {
     const termo = semAcento(busca).trim();
@@ -115,9 +179,38 @@ export default function ChattersWindow({ onClose }) {
             value={busca}
             onChange={(evento) => setBusca(evento.target.value)}
             placeholder="Buscar por nome ou e-mail"
-            style={{ ...campoBusca, maxWidth: 220 }}
+            style={{ ...campoBusca, maxWidth: 200 }}
           />
+          {admin && (
+            <button
+              type="button"
+              onClick={() => {
+                setAviso('');
+                setConvidando(true);
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '6px 11px',
+                borderRadius: 8,
+                border: '1px solid color-mix(in srgb, var(--c1) 45%, transparent)',
+                background: 'color-mix(in srgb, var(--c1) 14%, transparent)',
+                color: 'var(--c1)',
+                fontFamily: 'var(--font-main)',
+                fontSize: 10.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              <PlusIcon size={12} />
+              Convidar chatter
+            </button>
+          )}
         </div>
+
+        {aviso ? <span style={{ fontSize: 10.5, color: 'var(--c1)' }}>{aviso}</span> : null}
 
         {erro ? <span style={{ fontSize: 10.5, color: 'var(--erro)' }}>{erro}</span> : null}
 
@@ -217,6 +310,10 @@ export default function ChattersWindow({ onClose }) {
           ))}
         </div>
       </div>
+
+      {convidando ? (
+        <ModalConvidar onFechar={() => setConvidando(false)} onEnviar={convidar} />
+      ) : null}
     </Window>
   );
 }
