@@ -114,11 +114,16 @@ export const pedirPermissaoDoNavegador = async () => {
  * Mostra a notificação do sistema, se a pessoa ligou e autorizou.
  * `aoClicar` recebe o clique para abrir a conversa.
  */
-export const mostrarNotificacaoNavegador = async ({ titulo, corpo, tag, aoClicar }) => {
+export const mostrarNotificacaoNavegador = async ({ titulo, corpo, tag, aoClicar, forcar = false }) => {
   if (!navegadorLigado()) return null;
   if (!navegadorSuportado() || window.Notification.permission !== 'granted') return null;
-  // Aba na frente: o aviso do sistema só atrapalharia.
-  if (typeof document !== 'undefined' && document.visibilityState === 'visible' && document.hasFocus()) {
+  // Aba na frente: o aviso do sistema só atrapalharia (o teste é exceção).
+  if (
+    !forcar &&
+    typeof document !== 'undefined' &&
+    document.visibilityState === 'visible' &&
+    document.hasFocus()
+  ) {
     return null;
   }
 

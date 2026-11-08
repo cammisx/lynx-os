@@ -21,6 +21,7 @@ import usePreferenciaSom from '@/hooks/usePreferenciaSom';
 import useSonsCustom from '@/hooks/useSonsCustom';
 import CortarSomModal from '@/components/config/CortarSomModal';
 import {
+  mostrarNotificacaoNavegador,
   navegadorSuportado,
   pedirPermissaoDoNavegador,
   permissaoDoNavegador,
@@ -730,6 +731,34 @@ export default function ConfiguracoesWindow({ onClose }) {
                 </span>
               )}
               <span style={{ ...dicaStyle, opacity: 0.6 }}>{textoNavegador.rodape}</span>
+              {somPref.pref.notificar_navegador && permissaoNavegador === 'granted' && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    mostrarNotificacaoNavegador({
+                      titulo: 'LynxOS',
+                      corpo: 'É assim que o aviso vai aparecer.',
+                      tag: 'lynx-teste',
+                      forcar: true,
+                    })
+                  }
+                  style={{
+                    alignSelf: 'flex-start',
+                    height: 26,
+                    padding: '0 10px',
+                    borderRadius: 7,
+                    border: '1px solid color-mix(in srgb, var(--c2) 26%, transparent)',
+                    background: 'transparent',
+                    color: 'var(--c3)',
+                    fontFamily: 'var(--font-main)',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Testar aviso
+                </button>
+              )}
             </div>
           </div>
         )}
