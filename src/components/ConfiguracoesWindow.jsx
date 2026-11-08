@@ -284,6 +284,35 @@ export default function ConfiguracoesWindow({ onClose }) {
     [galeria.todos]
   );
 
+  /* Enviar o próprio áudio fica colado em cada bloco de som: no sino e no
+     chat. O input mora fora das abas para o botão funcionar em qualquer uma. */
+  const botaoEnviarAudio = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <button
+        type="button"
+        onClick={() => arquivoSomRef.current?.click()}
+        style={{
+          height: 28,
+          padding: '0 11px',
+          flexShrink: 0,
+          borderRadius: 8,
+          border: '1px solid color-mix(in srgb, var(--c1) 48%, transparent)',
+          background: 'color-mix(in srgb, var(--c1) 16%, transparent)',
+          color: 'var(--c1)',
+          fontFamily: 'var(--font-main)',
+          fontSize: 10.5,
+          fontWeight: 700,
+          cursor: 'pointer',
+        }}
+      >
+        Enviar áudio
+      </button>
+      <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.7, lineHeight: 1.35 }}>
+        mp3, m4a ou wav. Até 4s; mais longo, corta na hora.
+      </span>
+    </div>
+  );
+
   const escolherArquivoSom = (evento) => {
     const arquivo = evento.target.files?.[0];
     if (arquivoSomRef.current) arquivoSomRef.current.value = '';
@@ -384,6 +413,14 @@ export default function ConfiguracoesWindow({ onClose }) {
           </span>
         )}
 
+        <input
+          ref={arquivoSomRef}
+          type="file"
+          accept="audio/*"
+          onChange={escolherArquivoSom}
+          style={{ display: 'none' }}
+        />
+
         {aba === 'notificacoes' && (
           <div
             className="glass-scroll"
@@ -413,6 +450,7 @@ export default function ConfiguracoesWindow({ onClose }) {
               volume={somPref.pref.volume}
               onVolume={somPref.mudarVolume}
               rodape={`Vale só para o ${pequeno ? 'celular' : 'computador'}. O outro aparelho tem o som dele.`}
+              extra={botaoEnviarAudio}
             />
 
             <div
@@ -452,13 +490,6 @@ export default function ConfiguracoesWindow({ onClose }) {
                 >
                   Enviar áudio
                 </button>
-                <input
-                  ref={arquivoSomRef}
-                  type="file"
-                  accept="audio/*"
-                  onChange={escolherArquivoSom}
-                  style={{ display: 'none' }}
-                />
               </div>
 
               {galeria.meus.length === 0 ? (
@@ -619,6 +650,7 @@ export default function ConfiguracoesWindow({ onClose }) {
               volume={somPref.pref.volume_chat}
               onVolume={somPref.mudarVolumeChat}
               rodape="Independente do som das notificações, e independente do outro aparelho."
+              extra={botaoEnviarAudio}
             />
 
             <div
