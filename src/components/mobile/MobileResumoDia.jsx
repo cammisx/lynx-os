@@ -24,11 +24,10 @@ const fimDoDia = () => {
 
 /**
  * Resumo do dia na home do celular: qual turno está acontecendo agora (ou o
- * próximo de hoje) e quantas pendências estão abertas para essa pessoa.
+ * próximo de hoje). Notificação aberta no sino não é pendência: é histórico.
  */
 export default function MobileResumoDia({ user, onAbrirTurnos }) {
   const [turno, setTurno] = useState(undefined);
-  const [pendencias, setPendencias] = useState(0);
 
   useEffect(() => {
     const usuarioId = user?.id;
@@ -88,10 +87,6 @@ export default function MobileResumoDia({ user, onAbrirTurnos }) {
       })
       .catch(() => ativo && setTurno(null));
 
-    base44.entities.Notificacao.filter({ usuario_id: usuarioId, status: 'pendente' })
-      .then((resultado) => ativo && setPendencias(asList(resultado).length))
-      .catch(() => ativo && setPendencias(0));
-
     return () => {
       ativo = false;
     };
@@ -142,9 +137,6 @@ export default function MobileResumoDia({ user, onAbrirTurnos }) {
         </span>
       </span>
 
-      <span style={{ fontSize: 11.5, color: pendencias ? 'var(--aviso)' : 'var(--c2)' }}>
-        {pendencias ? `${pendencias} pendência${pendencias > 1 ? 's' : ''} esperando você` : 'Nada pendente'}
-      </span>
     </button>
   );
 }
