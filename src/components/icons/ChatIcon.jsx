@@ -1,10 +1,10 @@
 /**
- * Ícone do chat: balão de conversa em traço, com a pontinha embaixo à direita.
+ * Ícone do chat: balão redondo com a pontinha embaixo à esquerda.
  *
- * Segue a linguagem dos outros ícones (traço em currentColor), então herda a
- * cor do lugar onde aparece: cinza na barra de tarefas, dourado no hover.
- * Em 13px, no modal de perfil, o traço continua legível — o balão de vidro
- * antigo virava mancha nesse tamanho.
+ * Desenho copiado da referência da Chloë: círculo de raio 11.25 num viewBox de
+ * 24 (o traço encosta nas bordas, como na imagem), pontinha saindo da curva
+ * entre 123° e 147° até o canto inferior esquerdo, traço de 1.5.
+ * Em currentColor, então herda a cor do lugar (cinza na barra, dourado no hover).
  */
 export default function ChatIcon({ size = 20, ...rest }) {
   return (
@@ -14,13 +14,13 @@ export default function ChatIcon({ size = 20, ...rest }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.3}
+      strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
       {...rest}
     >
-      <path d="M3.5 11a6 6 0 0 0 6 6h7l4 4V10a6 6 0 0 0-6-6h-7a6 6 0 0 0-6 6z" />
+      <path d="M5.82 21.4A11.25 11.25 0 1 0 2.53 18.07L0.75 23.15Z" />
     </svg>
   );
 }
