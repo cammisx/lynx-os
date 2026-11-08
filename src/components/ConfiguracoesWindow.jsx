@@ -315,6 +315,31 @@ export default function ConfiguracoesWindow({ onClose }) {
     if (somPref.pref.som_chat === alvo) somPref.escolherSomChat('mensagem');
   };
 
+  /* O aviso do navegador muda de história conforme o aparelho: no computador
+     aparece no canto da tela; no celular, o iPhone só aceita com o app na
+     Tela de Início. */
+  const ehIOS =
+    typeof navigator !== 'undefined' &&
+    (/iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+
+  const textoNavegador = !navegadorSuportado()
+    ? {
+        detalhe: 'Este navegador não mostra notificação de sistema.',
+        rodape: 'Sem esse recurso, o sino do app continua avisando normalmente.',
+      }
+    : pequeno
+      ? {
+          detalhe: ehIOS
+            ? 'No iPhone, só funciona com o Lynx adicionado à Tela de Início.'
+            : 'Aparece na barra do sistema, mesmo com o app atrás.',
+          rodape: 'Vale só neste celular: cada navegador guarda a própria permissão.',
+        }
+      : {
+          detalhe: 'Aparece no canto da tela, mesmo com o sistema minimizado.',
+          rodape: 'Cada navegador guarda a própria permissão, então vale só neste computador.',
+        };
+
   /* Aviso do navegador: o mesmo caminho do painel do sino, com a permissão
      pedida na hora em que a pessoa liga. */
   const mudarNavegador = async (valor) => {
@@ -672,42 +697,40 @@ export default function ConfiguracoesWindow({ onClose }) {
               </span>
             </div>
 
-            {!pequeno && (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                  padding: 12,
-                  borderRadius: 12,
-                  border: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
-                  background: 'color-mix(in srgb, var(--c8) 40%, transparent)',
-                }}
-              >
-                <span style={labelStyle}>Notificação no navegador</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <span style={{ fontSize: 11, color: 'var(--c3)' }}>Avisar fora da aba</span>
-                    <span style={dicaStyle}>Aparece no canto da tela, mesmo com o sistema minimizado.</span>
-                  </div>
-                  <Interruptor
-                    ligado={somPref.pref.notificar_navegador}
-                    onMudar={mudarNavegador}
-                    rotulo="Mostrar notificação do navegador"
-                  />
-                </div>
-                {(avisoNavegador ||
-                  (somPref.pref.notificar_navegador && permissaoNavegador === 'denied')) && (
-                  <span style={{ fontSize: 9.5, color: 'var(--erro)', lineHeight: 1.45 }}>
-                    {avisoNavegador ||
-                      'O navegador está bloqueando. Libere a permissão nas configurações do site.'}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                padding: 12,
+                borderRadius: 12,
+                border: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
+                background: 'color-mix(in srgb, var(--c8) 40%, transparent)',
+              }}
+            >
+              <span style={labelStyle}>Notificação no navegador</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontSize: 11, color: 'var(--c3)' }}>Avisar fora do app</span>
+                  <span style={dicaStyle}>
+                    {textoNavegador.detalhe}
                   </span>
-                )}
-                <span style={{ ...dicaStyle, opacity: 0.6 }}>
-                  Cada navegador guarda a própria permissão, então isso vale só neste computador.
-                </span>
+                </div>
+                <Interruptor
+                  ligado={somPref.pref.notificar_navegador}
+                  onMudar={mudarNavegador}
+                  rotulo="Mostrar notificação do navegador"
+                />
               </div>
-            )}
+              {(avisoNavegador ||
+                (somPref.pref.notificar_navegador && permissaoNavegador === 'denied')) && (
+                <span style={{ fontSize: 9.5, color: 'var(--erro)', lineHeight: 1.45 }}>
+                  {avisoNavegador ||
+                    'O navegador está bloqueando. Libere a permissão nas configurações do site.'}
+                </span>
+              )}
+              <span style={{ ...dicaStyle, opacity: 0.6 }}>{textoNavegador.rodape}</span>
+            </div>
           </div>
         )}
 
