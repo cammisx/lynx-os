@@ -1,13 +1,15 @@
 /**
  * Pastas e itens do conteúdo de cada modelo.
  *
- * A modelo tem pastas; dentro delas ficam os itens que ela vende ou publica.
- * Cada item guarda uma imagem (capa, obrigatória), o tipo (vídeo, foto ou
- * áudio), a duração quando é vídeo ou áudio, a data e, se quiser, nome,
- * descrição e tags.
+ * A modelo tem pastas; os itens ficam soltos no conteúdo e cada item diz em
+ * quais pastas ele aparece (uma ou mais). Assim o mesmo item pode viver em
+ * duas pastas sem virar duas cópias.
  *
- * Tags são sempre MAIÚSCULAS e sem espaço sobrando: assim "Natal", "natal" e
- * "NATAL " não viram três tags diferentes.
+ * Cada item guarda uma imagem (obrigatória), o tipo (vídeo, foto ou áudio), a
+ * duração quando é vídeo ou áudio, a data e, se quiser, descrição e tags.
+ *
+ * Tags são sempre MAIÚSCULAS e sem espaço sobrando: "Natal", "natal" e "NATAL "
+ * são a mesma tag.
  */
 
 export const TIPOS = [
@@ -99,13 +101,11 @@ export const comTag = (lista = [], tag) => {
 export const semTag = (lista = [], tag) =>
   juntarTags(lista).filter((item) => item !== tagNormalizada(tag));
 
-/** Tags usadas nas pastas abertas na tela (inclui o que acabou de ser digitado). */
-export const tagsDePastas = (pastas = []) => {
+/** Tags usadas nos itens (do item que está na tela, salvo ou não). */
+export const tagsDosItens = (itens = []) => {
   const todas = [];
-  (pastas || []).forEach((pasta) => {
-    (pasta.itens || []).forEach((item) => {
-      (item.tags || []).forEach((tag) => todas.push(tag));
-    });
+  (itens || []).forEach((item) => {
+    (item.tags || []).forEach((tag) => todas.push(tag));
   });
   return juntarTags(todas);
 };
@@ -114,18 +114,15 @@ export const tagsDePastas = (pastas = []) => {
 export const tagsDeConteudos = (conteudos = []) => {
   const todas = [];
   (conteudos || []).forEach((conteudo) => {
-    pastasDe(conteudo).forEach((pasta) => {
-      (pasta.itens || []).forEach((item) => {
-        (item.tags || []).forEach((tag) => todas.push(tag));
-      });
-    });
+    const { itens } = conteudoNormalizado(conteudo);
+    itens.forEach((item) => (item.tags || []).forEach((tag) => todas.push(tag)));
   });
   return juntarTags(todas);
 };
 
 /* ---------- pastas e itens ---------- */
 
-export const novoItemDeConteudo = () => ({
+export const novoItemDeConteudo = (pastas = []) => ({
   id: novoId('item'),
   nome: '',
   imagem_url: '',
@@ -134,6 +131,7 @@ export const novoItemDeConteudo = () => ({
   data: '',
   descricao: '',
   tags: [],
+  pastas: (pastas || []).filter(Boolean),
 });
 
 export const itemNormalizado = (item = {}) => ({
@@ -145,25 +143,93 @@ export const itemNormalizado = (item = {}) => ({
   data: String(item.data || ''),
   descricao: String(item.descricao || ''),
   tags: juntarTags(item.tags || []),
+  pastas: Array.from(new Set((item.pastas || []).filter(Boolean))),
 });
 
 export const novaPastaConteudo = (nome = 'Nova pasta') => ({
   id: novoId('pasta'),
   nome: String(nome || 'Nova pasta'),
-  itens: [],
 });
 
-export const pastasDe = (conteudo) =>
-  (conteudo?.pastas || []).map((pasta) => ({
+/**
+ * Lê o conteúdo em qualquer formato e devolve sempre { pastas, itens }.
+ *
+ * O formato antigo guardava os itens dentro de cada pasta. Quem abrir um
+ * conteúdo assim vê os itens migrados para a lista solta, marcados na pasta
+ * onde estavam, e nada se perde.
+ */
+export const conteudoNormalizado = (conteudo) => {
+  const pastasBrutas = conteudo?.pastas || [];
+
+  const pastas = pastasBrutas.map((pasta) => ({
     id: pasta.id || novoId('pasta'),
     nome: String(pasta.nome || 'Nova pasta'),
-    itens: (pasta.itens || []).map(itemNormalizado),
   }));
+
+  const itens = (conteudo?.itens || []).map(itemNormalizado);
+
+  pastasBrutas.forEach((pasta, indice) => {
+    const pastaId = pastas[indice].id;
+    (pasta.itens || []).forEach((bruto) => {
+      const item = itemNormalizado({ ...bruto, pastas: [pastaId] });
+      const igual = itens.find((linha) => linha.id === item.id);
+      if (igual) {
+        if (!igual.pastas.includes(pastaId)) igual.pastas.push(pastaId);
+      } else {
+        itens.push(item);
+      }
+    });
+  });
+
+  /* Pasta apagada não pode continuar marcada no item. */
+  const ids = new Set(pastas.map((pasta) => pasta.id));
+  itens.forEach((item) => {
+    item.pastas = item.pastas.filter((pastaId) => ids.has(pastaId));
+  });
+
+  return { pastas, itens };
+};
 
 export const pastaPorId = (pastas = [], pastaId) =>
   (pastas || []).find((pasta) => pasta.id === pastaId) || null;
 
-export const contarItens = (pasta) => (pasta?.itens || []).length;
+export const itensDaPasta = (itens = [], pastaId) =>
+  (itens || []).filter((item) => (item.pastas || []).includes(pastaId));
+
+export const contarItens = (itens = [], pastaId) => itensDaPasta(itens, pastaId).length;
+
+/** Nome das pastas de um item, na ordem das pastas do conteúdo. */
+export const nomesDasPastas = (item, pastas = []) =>
+  (item?.pastas || [])
+    .map((pastaId) => pastaPorId(pastas, pastaId)?.nome)
+    .filter(Boolean);
+
+/* ---------- busca e filtros ---------- */
+
+export const normalizarBusca = (texto) =>
+  String(texto || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+/**
+ * Busca por termo (descrição e tags, sem ligar para acento ou caixa) e filtro
+ * de tags: o item precisa ter TODAS as tags escolhidas.
+ */
+export const filtrarItens = (itens = [], { busca = '', tags = [] } = {}) => {
+  const termo = normalizarBusca(busca);
+  const pedidas = juntarTags(tags);
+  const partes = termo ? termo.split(/\s+/).filter(Boolean) : [];
+
+  return (itens || []).filter((item) => {
+    const tagsDoItem = juntarTags(item.tags || []);
+    if (pedidas.length && !pedidas.every((tag) => tagsDoItem.includes(tag))) return false;
+    if (!partes.length) return true;
+    const texto = normalizarBusca([item.descricao || '', tagsDoItem.join(' ')].join(' '));
+    return partes.every((parte) => texto.includes(parte));
+  });
+};
 
 /** O que falta para o item poder ser salvo. Vazio = tudo certo. */
 export const validarItem = (item = {}) => {
@@ -174,10 +240,11 @@ export const validarItem = (item = {}) => {
     erros.duracao = 'Diz a duração em minutos e segundos.';
   }
   if (!String(item.data || '').trim()) erros.data = 'Escolhe a data.';
+  if (!(item.pastas || []).length) erros.pastas = 'Marca pelo menos uma pasta.';
   return erros;
 };
 
-/** Título do cartão: o tipo com a data (o item não tem mais campo de nome). */
+/** Título do cartão: o tipo com a data (o item não tem campo de nome). */
 export const tituloDoItem = (item) => {
   const nome = String(item?.nome || '').trim();
   if (nome) return nome;

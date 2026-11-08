@@ -11,7 +11,7 @@ const selo = {
 };
 
 /** Cartão de um item do conteúdo: capa, tipo, duração, data e tags. */
-export default function CardItem({ item, admin, onAbrir, onRemover }) {
+export default function CardItem({ item, admin, pastasNomes = [], onAbrir, onRemover }) {
   const tags = item.tags || [];
   const visiveis = tags.slice(0, 3);
   const resto = tags.length - visiveis.length;
@@ -100,6 +100,22 @@ export default function CardItem({ item, admin, onAbrir, onRemover }) {
           {tituloDoItem(item)}
         </span>
         <span style={{ fontSize: 9, color: 'var(--c2)' }}>{diaTexto(item.data)}</span>
+
+        {pastasNomes.length ? (
+          <span
+            style={{
+              fontSize: 8.5,
+              color: 'var(--c2)',
+              opacity: 0.85,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            title={pastasNomes.join(' · ')}
+          >
+            {pastasNomes.join(' · ')}
+          </span>
+        ) : null}
 
         {visiveis.length ? (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>

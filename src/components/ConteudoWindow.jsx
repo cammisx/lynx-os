@@ -7,16 +7,20 @@ import useTagsConteudo from '@/hooks/useTagsConteudo';
 import { useAuth } from '@/lib/AuthContext';
 import { nomeDoConteudo } from '@/lib/conteudos';
 import {
+  conteudoNormalizado,
   contarItens,
+  filtrarItens,
+  itensDaPasta,
   juntarTags,
+  nomesDasPastas,
   novaPastaConteudo,
   pastaPorId,
-  pastasDe,
-  tagsDePastas,
+  tagsDosItens,
 } from '@/lib/conteudoPastas';
 import ModalTabelaPrecos from '@/components/conteudo/ModalTabelaPrecos';
 import ModalItem from '@/components/conteudo/ModalItem';
 import CardItem from '@/components/conteudo/CardItem';
+import SeletorTags from '@/components/conteudo/SeletorTags';
 
 const escuro = (valor) => `color-mix(in srgb, var(--c2) ${valor}%, transparent)`;
 const dourado = (valor) => `color-mix(in srgb, var(--c1) ${valor}%, transparent)`;
@@ -45,14 +49,35 @@ const botaoDiscreto = {
   cursor: 'pointer',
 };
 
+const campoBusca = {
+  flex: 1,
+  minWidth: 120,
+  padding: '7px 10px',
+  borderRadius: 8,
+  border: `1px solid ${escuro(18)}`,
+  background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
+  color: 'var(--c3)',
+  fontFamily: 'var(--font-main)',
+  fontSize: 11,
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const grade = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))',
+  gap: 8,
+};
+
 /**
  * Janela de Conteúdo: uma parte por modelo, igual ao playbook.
  *
- * Dentro da parte da modelo ficam as pastas (criadas pelo admin) e, dentro
- * delas, os itens: imagem obrigatória, tipo, duração quando é vídeo ou áudio,
- * data, e opcionalmente nome, descrição e tags. O chatter só lê.
+ * Dentro da parte da modelo ficam as pastas e os itens. O item é único e pode
+ * aparecer em mais de uma pasta. Quem decide isso é o campo "Pastas" do
+ * formulário do item, que exige pelo menos uma marcada.
  *
- * A tabela de preços da modelo abre pelo botão no topo.
+ * No topo da área ficam a busca (descrição e tags) e o filtro por tags: quando
+ * algum dos dois está ativo, a janela mostra o resultado de todas as pastas.
  */
 export default function ConteudoWindow({ onClose }) {
   const { user } = useAuth();
@@ -61,52 +86,60 @@ export default function ConteudoWindow({ onClose }) {
   const [ativoId, setAtivoId] = useState(null);
   const [tabelaAberta, setTabelaAberta] = useState(false);
   const [pastaAbertaId, setPastaAbertaId] = useState(null);
-  const [pastas, setPastas] = useState([]);
+  const [estado, setEstado] = useState({ pastas: [], itens: [] });
   const [itemEmEdicao, setItemEmEdicao] = useState(null);
   const [confirmarPasta, setConfirmarPasta] = useState(null);
+  const [busca, setBusca] = useState('');
+  const [tagsFiltro, setTagsFiltro] = useState([]);
   const [aviso, setAviso] = useState('');
   const [salvando, setSalvando] = useState(false);
 
   const ativo = conteudos.find((item) => item.id === ativoId) || conteudos[0] || null;
+  const { pastas, itens } = estado;
   const pastaAberta = pastaPorId(pastas, pastaAbertaId);
-  /* Sugestões do campo de tags: o cadastro do banco (vale para toda a agência)
-     mais o que já está nas pastas desta modelo, incluindo o que acabou de ser
-     digitado e ainda não foi salvo. */
-  const sugestoes = juntarTags([...tagsRegistradas, ...tagsDePastas(pastas)]);
   const autor = user?.full_name || user?.email || '';
+
+  const sugestoes = juntarTags([...tagsRegistradas, ...tagsDosItens(itens)]);
+  const filtrando = Boolean(busca.trim()) || tagsFiltro.length > 0;
+  const resultados = filtrarItens(itens, { busca, tags: tagsFiltro });
+
+  useEffect(() => {
+    setEstado(conteudoNormalizado(ativo));
+    setPastaAbertaId(null);
+    setBusca('');
+    setTagsFiltro([]);
+    setAviso('');
+  }, [ativo?.id]);
 
   /* Rede de segurança: tag que já estava num item salvo antes de existir o
      cadastro entra nele na primeira vez que a modelo é aberta. */
   useEffect(() => {
-    if (!admin || !tagsCarregadas || !pastas.length) return;
-    const usadas = tagsDePastas(pastas);
+    if (!admin || !tagsCarregadas || !itens.length) return;
+    const usadas = tagsDosItens(itens);
     if (usadas.length) registrar(usadas, autor);
-  }, [admin, tagsCarregadas, pastas, registrar, autor]);
-
-  useEffect(() => {
-    setPastas(pastasDe(ativo));
-    setPastaAbertaId(null);
-    setAviso('');
-  }, [ativo?.id]);
+  }, [admin, tagsCarregadas, itens, registrar, autor]);
 
   /* Toda mexida em pasta ou item é salva na hora; se o banco recusar, a tela
      volta para o que estava antes e a pessoa é avisada. */
-  const persistir = async (novasPastas, mensagemFalha) => {
-    if (!ativo?.id || !admin) return;
-    const antes = pastas;
-    setPastas(novasPastas);
+  const persistir = async (novo, mensagemFalha) => {
+    if (!ativo?.id || !admin) return false;
+    const antes = estado;
+    setEstado(novo);
     setSalvando(true);
     setAviso('');
     try {
       await base44.entities.Conteudo.update(ativo.id, {
-        pastas: novasPastas,
+        pastas: novo.pastas,
+        itens: novo.itens,
         atualizado_por: user?.id || '',
-        atualizado_por_nome: user?.full_name || user?.email || '',
+        atualizado_por_nome: autor,
       });
+      return true;
     } catch (falha) {
-      console.warn('[Conteúdo] salvar pastas', falha);
-      setPastas(antes);
+      console.warn('[Conteúdo] salvar', falha);
+      setEstado(antes);
       setAviso(mensagemFalha || 'Não consegui salvar agora. Tente de novo.');
+      return false;
     } finally {
       setSalvando(false);
     }
@@ -114,12 +147,22 @@ export default function ConteudoWindow({ onClose }) {
 
   const criarPasta = async () => {
     const nova = novaPastaConteudo(`Pasta ${pastas.length + 1}`);
-    await persistir([...pastas, nova], 'Não consegui criar a pasta agora.');
-    setPastaAbertaId(nova.id);
+    const salvou = await persistir(
+      { ...estado, pastas: [...pastas, nova] },
+      'Não consegui criar a pasta agora.'
+    );
+    if (salvou) {
+      setPastaAbertaId(nova.id);
+      setBusca('');
+      setTagsFiltro([]);
+    }
   };
 
   const renomearPasta = (pastaId, nome) => {
-    setPastas((atuais) => atuais.map((pasta) => (pasta.id === pastaId ? { ...pasta, nome } : pasta)));
+    setEstado((atual) => ({
+      ...atual,
+      pastas: atual.pastas.map((pasta) => (pasta.id === pastaId ? { ...pasta, nome } : pasta)),
+    }));
   };
 
   const gravarNomePasta = async (pastaId) => {
@@ -127,46 +170,55 @@ export default function ConteudoWindow({ onClose }) {
     if (!pasta) return;
     const nome = String(pasta.nome || '').trim() || 'Sem nome';
     await persistir(
-      pastas.map((item) => (item.id === pastaId ? { ...item, nome } : item)),
+      { ...estado, pastas: pastas.map((item) => (item.id === pastaId ? { ...item, nome } : item)) },
       'Não consegui renomear a pasta agora.'
     );
   };
 
   const removerPasta = async (pastaId) => {
+    const dentro = contarItens(itens, pastaId);
+    if (dentro > 0) {
+      setConfirmarPasta(null);
+      setAviso(
+        `Essa pasta tem ${dentro} item(ns). Tire eles da pasta (no campo "Pastas" do item) antes de apagar.`
+      );
+      return;
+    }
     setConfirmarPasta(null);
     if (pastaAbertaId === pastaId) setPastaAbertaId(null);
     await persistir(
-      pastas.filter((pasta) => pasta.id !== pastaId),
+      { ...estado, pastas: pastas.filter((pasta) => pasta.id !== pastaId) },
       'Não consegui apagar a pasta agora.'
     );
   };
 
   const salvarItem = async (item) => {
-    const pastaId = itemEmEdicao?.pastaId;
-    if (!pastaId) return;
-    const novas = pastas.map((pasta) => {
-      if (pasta.id !== pastaId) return pasta;
-      const existe = pasta.itens.some((linha) => linha.id === item.id);
-      return {
-        ...pasta,
-        itens: existe
-          ? pasta.itens.map((linha) => (linha.id === item.id ? item : linha))
-          : [...pasta.itens, item],
-      };
-    });
+    const existe = itens.some((linha) => linha.id === item.id);
+    const novosItens = existe
+      ? itens.map((linha) => (linha.id === item.id ? item : linha))
+      : [...itens, item];
     setItemEmEdicao(null);
-    await persistir(novas, 'Não consegui salvar o item agora.');
+    await persistir({ ...estado, itens: novosItens }, 'Não consegui salvar o item agora.');
     await registrar(item.tags, autor);
   };
 
-  const removerItem = async (pastaId, itemId) => {
-    const novas = pastas.map((pasta) =>
-      pasta.id === pastaId
-        ? { ...pasta, itens: pasta.itens.filter((linha) => linha.id !== itemId) }
-        : pasta
+  const removerItem = async (itemId) => {
+    await persistir(
+      { ...estado, itens: itens.filter((linha) => linha.id !== itemId) },
+      'Não consegui remover o item agora.'
     );
-    await persistir(novas, 'Não consegui remover o item agora.');
   };
+
+  const cartaoDoItem = (item) => (
+    <CardItem
+      key={item.id}
+      item={item}
+      admin={admin}
+      pastasNomes={nomesDasPastas(item, pastas)}
+      onAbrir={() => setItemEmEdicao({ item })}
+      onRemover={() => removerItem(item.id)}
+    />
+  );
 
   return (
     <Window title="Conteúdo" icon={ImageIcon} onClose={onClose} width={820} height={560}>
@@ -221,9 +273,7 @@ export default function ConteudoWindow({ onClose }) {
                 <span style={{ fontSize: 10.5, fontWeight: escolhido ? 700 : 500 }}>
                   {nomeDoConteudo(conteudo)}
                 </span>
-                <span style={{ fontSize: 8.5, opacity: 0.7, letterSpacing: '0.05em' }}>
-                  MODELO
-                </span>
+                <span style={{ fontSize: 8.5, opacity: 0.7, letterSpacing: '0.05em' }}>MODELO</span>
               </button>
             );
           })}
@@ -257,37 +307,71 @@ export default function ConteudoWindow({ onClose }) {
                 </div>
               </div>
 
+              {/* busca e filtro: valem para todas as pastas da modelo */}
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+                <input
+                  value={busca}
+                  onChange={(evento) => setBusca(evento.target.value)}
+                  placeholder="Buscar na descrição ou nas tags"
+                  style={campoBusca}
+                />
+                <div style={{ width: 210 }}>
+                  <SeletorTags
+                    valor={tagsFiltro}
+                    onChange={setTagsFiltro}
+                    sugestoes={sugestoes}
+                    label="Filtrar por tags"
+                    permiteCriar={false}
+                  />
+                </div>
+                {filtrando && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBusca('');
+                      setTagsFiltro([]);
+                    }}
+                    style={botaoDiscreto}
+                  >
+                    Limpar
+                  </button>
+                )}
+              </div>
+
               {aviso ? <span style={{ fontSize: 10.5, color: 'var(--erro)' }}>{aviso}</span> : null}
 
-              {pastaAberta ? (
+              {filtrando ? (
+                <>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--c1)' }}>
+                    {resultados.length} resultado(s) em todas as pastas
+                  </span>
+                  {resultados.length ? (
+                    <div style={grade}>{resultados.map(cartaoDoItem)}</div>
+                  ) : (
+                    <span style={{ fontSize: 10.5, color: 'var(--c2)', opacity: 0.75 }}>
+                      Nada encontrado com esse termo e essas tags.
+                    </span>
+                  )}
+                </>
+              ) : pastaAberta ? (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <button
-                      type="button"
-                      onClick={() => setPastaAbertaId(null)}
-                      style={botaoDiscreto}
-                    >
+                    <button type="button" onClick={() => setPastaAbertaId(null)} style={botaoDiscreto}>
                       ← Pastas
                     </button>
                     <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--c1)' }}>
                       {pastaAberta.nome}
                     </span>
                     <span style={{ fontSize: 9.5, color: 'var(--c2)' }}>
-                      {contarItens(pastaAberta)} item(ns)
+                      {itensDaPasta(itens, pastaAberta.id).length} item(ns)
                     </span>
                   </div>
 
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))',
-                      gap: 8,
-                    }}
-                  >
+                  <div style={grade}>
                     {admin && (
                       <button
                         type="button"
-                        onClick={() => setItemEmEdicao({ pastaId: pastaAberta.id, item: null })}
+                        onClick={() => setItemEmEdicao({ item: null, pastaInicial: pastaAberta.id })}
                         style={{
                           minHeight: 158,
                           borderRadius: 10,
@@ -304,21 +388,12 @@ export default function ConteudoWindow({ onClose }) {
                       </button>
                     )}
 
-                    {pastaAberta.itens.map((item) => (
-                      <CardItem
-                        key={item.id}
-                        item={item}
-                        admin={admin}
-                        onAbrir={() => setItemEmEdicao({ pastaId: pastaAberta.id, item })}
-                        onRemover={() => removerItem(pastaAberta.id, item.id)}
-                      />
-                    ))}
+                    {itensDaPasta(itens, pastaAberta.id).map(cartaoDoItem)}
                   </div>
 
-                  {!pastaAberta.itens.length && (
+                  {!itensDaPasta(itens, pastaAberta.id).length && (
                     <span style={{ fontSize: 10.5, color: 'var(--c2)', opacity: 0.75 }}>
-                      Pasta vazia.
-                      {admin ? ' Comece pelo “Novo item”.' : ''}
+                      Pasta vazia.{admin ? ' Comece pelo “Novo item”.' : ''}
                     </span>
                   )}
                 </>
@@ -402,7 +477,7 @@ export default function ConteudoWindow({ onClose }) {
                       </div>
 
                       <span style={{ fontSize: 9.5, color: 'var(--c2)' }}>
-                        {contarItens(pasta)} item(ns)
+                        {contarItens(itens, pasta.id)} item(ns)
                       </span>
 
                       <div style={{ display: 'flex', gap: 5 }}>
@@ -522,6 +597,8 @@ export default function ConteudoWindow({ onClose }) {
       {itemEmEdicao ? (
         <ModalItem
           item={itemEmEdicao.item}
+          pastaInicial={itemEmEdicao.pastaInicial || null}
+          pastasDisponiveis={pastas}
           sugestoesTags={sugestoes}
           onCriarTag={(tag) => registrar([tag], autor)}
           somenteLeitura={!admin}

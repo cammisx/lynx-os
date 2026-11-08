@@ -48,7 +48,7 @@
     },
     "pastas": {
       "type": "array",
-      "description": "Pastas do conteudo da modelo; dentro de cada uma ficam os itens",
+      "description": "Pastas do conteudo da modelo (so nome e id). Os itens ficam em \"itens\" e apontam para as pastas",
       "items": {
         "type": "object",
         "properties": {
@@ -56,19 +56,30 @@
           "nome": { "type": "string" },
           "itens": {
             "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": { "type": "string" },
-                "nome": { "type": "string", "description": "Opcional" },
-                "imagem_url": { "type": "string", "description": "Imagem do item (obrigatoria)" },
-                "tipo": { "type": "string", "enum": ["video", "foto", "audio"] },
-                "duracao_seg": { "type": "number", "description": "Duracao em segundos; usado em video e audio" },
-                "data": { "type": "string", "description": "Data do item, no formato AAAA-MM-DD" },
-                "descricao": { "type": "string" },
-                "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags sempre em MAIUSCULA" }
-              }
-            }
+            "description": "Formato antigo, quando o item morava dentro da pasta. Mantido para nao perder dado velho",
+            "items": { "type": "object" }
+          }
+        }
+      }
+    },
+    "itens": {
+      "type": "array",
+      "description": "Itens do conteudo; cada item diz em quais pastas aparece",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "nome": { "type": "string", "description": "Sempre vazio hoje; mantido por compatibilidade" },
+          "imagem_url": { "type": "string", "description": "Imagem do item (obrigatoria)" },
+          "tipo": { "type": "string", "enum": ["video", "foto", "audio"] },
+          "duracao_seg": { "type": "number", "description": "Duracao em segundos; usado em video e audio" },
+          "data": { "type": "string", "description": "Data do item, no formato AAAA-MM-DD" },
+          "descricao": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags sempre em MAIUSCULA" },
+          "pastas": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Ids das pastas onde o item aparece (pelo menos uma)"
           }
         }
       }

@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import GlassSelect from '@/components/GlassSelect';
 import DateTimePicker from '@/components/DateTimePicker';
 import SeletorTags from '@/components/conteudo/SeletorTags';
+import MultiSelect from '@/components/conteudo/MultiSelect';
 import { MODAL_CAIXA } from '@/lib/modalStyles';
 import { prepararFundo } from '@/lib/fundo';
 import {
@@ -52,13 +53,17 @@ const numero = (texto) => String(texto || '').replace(/\D/g, '').slice(0, 4);
  */
 export default function ModalItem({
   item = null,
+  pastasDisponiveis = [],
+  pastaInicial = null,
   sugestoesTags = [],
   somenteLeitura = false,
   onCriarTag,
   onFechar,
   onSalvar,
 }) {
-  const [dados, setDados] = useState(() => itemNormalizado(item || novoItemDeConteudo()));
+  const [dados, setDados] = useState(() =>
+    itemNormalizado(item || novoItemDeConteudo(pastaInicial ? [pastaInicial] : []))
+  );
   const [tentouSalvar, setTentouSalvar] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [falha, setFalha] = useState('');
@@ -172,7 +177,7 @@ export default function ModalItem({
               {item ? 'EDITAR ITEM' : 'NOVO ITEM'}
             </span>
             <span style={{ fontSize: 10, color: 'var(--c2)' }}>
-              {somenteLeitura ? 'só leitura' : 'imagem, tipo, duração e data são obrigatórios'}
+              {somenteLeitura ? 'só leitura' : 'imagem, tipo, duração, data e pasta são obrigatórios'}
             </span>
           </div>
           <button
@@ -286,6 +291,18 @@ export default function ModalItem({
           </div>
           {mostrarErro('tipo') ? <span style={erroTexto}>{erros.tipo}</span> : null}
           {mostrarErro('data') ? <span style={erroTexto}>{erros.data}</span> : null}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <MultiSelect
+              label="Pastas"
+              valores={dados.pastas}
+              opcoes={pastasDisponiveis.map((pasta) => ({ value: pasta.id, label: pasta.nome }))}
+              onChange={(pastas) => mudar('pastas', pastas)}
+              placeholder="Marcar uma ou mais pastas"
+              disabled={somenteLeitura}
+            />
+            {mostrarErro('pastas') ? <span style={erroTexto}>{erros.pastas}</span> : null}
+          </div>
 
           {precisaDuracao(dados.tipo) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

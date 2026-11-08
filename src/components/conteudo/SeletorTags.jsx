@@ -58,6 +58,7 @@ export default function SeletorTags({
   label = 'Tags',
   disabled = false,
   onCriarTag,
+  permiteCriar = true,
 }) {
   const [texto, setTexto] = useState('');
   const [aberto, setAberto] = useState(false);
@@ -99,7 +100,10 @@ export default function SeletorTags({
   }, [sugestoes, escolhidas, texto]);
 
   const digitada = tagNormalizada(texto);
-  const podeCriar = Boolean(digitada) && !juntarTags([...sugestoes, ...escolhidas]).includes(digitada);
+  const podeCriar =
+    permiteCriar &&
+    Boolean(digitada) &&
+    !juntarTags([...sugestoes, ...escolhidas]).includes(digitada);
 
   useEffect(() => {
     if (!aberto) {
@@ -136,7 +140,7 @@ export default function SeletorTags({
 
   const adicionar = (tag) => {
     onChange(comTag(escolhidas, tag));
-    onCriarTag?.(tag);
+    if (permiteCriar) onCriarTag?.(tag);
     setTexto('');
     setAberto(true);
   };
@@ -237,7 +241,7 @@ export default function SeletorTags({
             onChange={(evento) => setTexto(evento.target.value)}
             onFocus={() => setAberto(true)}
             onKeyDown={aoTeclar}
-            placeholder={escolhidas.length ? '' : 'Escolher ou criar tag'}
+            placeholder={escolhidas.length ? '' : permiteCriar ? 'Escolher ou criar tag' : 'Escolher tag'}
             style={{
               flex: 1,
               minWidth: 90,
