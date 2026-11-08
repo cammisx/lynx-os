@@ -19,6 +19,11 @@ const LARGURA_SUB = 190;
  * têm `filhos`. Cada item é { id, rotulo, marcado, filhos, acao, perigo } ou
  * { separador: true }; filho é { id, rotulo, marcado, cor, acao }.
  */
+/* A barra de tarefas ocupa 1.5/24 da altura da tela (ver .taskbar no tema).
+   Nenhum menu pode descer por cima dela. */
+const alturaDaBarra = () =>
+  typeof window === 'undefined' ? 0 : (window.innerHeight * 1.5) / 24;
+
 export default function MenuPet({ x = 0, y = 0, itens = [], cabecalho = '', onFechar }) {
   const caixaRef = useRef(null);
   /* O submenu é uma caixa separada: sem esta referência, o clique nele conta
@@ -37,7 +42,7 @@ export default function MenuPet({ x = 0, y = 0, itens = [], cabecalho = '', onFe
     const altura = caixa.offsetHeight;
     const zoom = zoomDaRaiz();
     const tela = window.innerWidth / zoom;
-    const alturaTela = window.innerHeight / zoom;
+    const alturaTela = (window.innerHeight - alturaDaBarra()) / zoom;
     const px = x / zoom;
     const py = y / zoom;
 
@@ -88,6 +93,18 @@ export default function MenuPet({ x = 0, y = 0, itens = [], cabecalho = '', onFe
       window.removeEventListener('blur', fechar);
     };
   }, [sub]);
+
+  /* O submenu só descobre a altura depois de aparecer: aqui ele se mede e
+     sobe o suficiente para nunca ficar atrás da barra de tarefas. */
+  useLayoutEffect(() => {
+    const caixa = subRef.current;
+    if (!sub || !caixa) return;
+    const zoom = zoomDaRaiz();
+    const altura = caixa.offsetHeight;
+    const limite = (window.innerHeight - alturaDaBarra()) / zoom - MARGEM;
+    const topo = Math.max(MARGEM, Math.min(topoSub, limite - altura));
+    if (Math.abs(topo - topoSub) > 0.5) setTopoSub(topo);
+  }, [sub, topoSub]);
 
   /* Abre o submenu encostado no item, virando para a esquerda quando não cabe. */
   const abrirSub = (item, evento) => {
