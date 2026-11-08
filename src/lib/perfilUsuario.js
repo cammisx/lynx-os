@@ -7,9 +7,9 @@
  */
 import { useEffect, useSyncExternalStore } from 'react';
 import { base44 } from '@/api/base44Client';
-import { MODO_SISTEMA, aplicarTema, modoValido, temaPorId } from '@/lib/temas';
+import { MODO_SISTEMA, aplicarTema, temaPorId } from '@/lib/temas';
 import { aplicarFonte, fonteDoNavegador, tamanhoPorId } from '@/lib/fonte';
-import { aplicarFonteApp, fonteAppDoNavegador, fonteAppValida } from '@/lib/fontesApp';
+import { aplicarFonteApp, fonteAppDoNavegador } from '@/lib/fontesApp';
 import { buscarPerfil, salvarPerfilPublico } from '@/lib/perfis';
 import { escreverBarra } from '@/lib/barraTarefas';
 import {
@@ -301,7 +301,17 @@ export const salvarPerfil = async (user, parcial = {}) => {
   const mexeuNaFoto = Object.prototype.hasOwnProperty.call(parcial, 'fotoUrl');
   if (user?.id && ((!atual.nomeExibicao && !mexeuNoNome) || (!atual.fotoUrl && !mexeuNaFoto))) {
     const doBanco = await buscarPerfil(user.id);
-    if (doBanco) atual = mesclarPerfil(atual, doBanco);
+    if (doBanco) {
+      /* Só o que é compartilhado volta: o visual de cada aparelho fica como
+         está, senão salvar no celular puxaria o tema do computador. */
+      compartilhado = {
+        ...compartilhado,
+        nomeExibicao: compartilhado.nomeExibicao || doBanco.nome_exibicao || '',
+        fotoUrl: compartilhado.fotoUrl || doBanco.foto_url || '',
+        subnick: compartilhado.subnick || doBanco.subnick || '',
+      };
+      atual = montarPerfil();
+    }
   }
 
   /* O spread não muda o `atual` antigo: para normalizar o modo é preciso ler
