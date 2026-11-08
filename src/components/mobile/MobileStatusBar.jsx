@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckAllIcon } from '@/components/icons';
+import { CheckAllIcon, GearIcon } from '@/components/icons';
 import NotificationRow from '@/components/notifications/NotificationRow';
 import MobileSheet from '@/components/mobile/MobileSheet';
 import useNotifications from '@/hooks/useNotifications';
@@ -9,9 +9,9 @@ import { isNaoLida } from '@/lib/notificacoes';
 import { iniciaisDe } from '@/lib/perfilLogica';
 
 /**
- * Barra de status do celular: nome do sistema e relógio à esquerda, sino e
- * avatar à direita. O sino abre as notificações numa folha e cada uma faz o
- * mesmo que a versão de desktop faria.
+ * Barra de status do celular: nome do sistema e relógio à esquerda, engrenagem,
+ * sino e avatar à direita. O sino abre as notificações numa folha e cada uma faz
+ * o mesmo que a versão de desktop faria; a engrenagem abre as configurações.
  */
 const ClockMini = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
@@ -105,6 +105,25 @@ export default function MobileStatusBar({ user, perfil, onPerfil, onAbrirChat, o
           {data} · {hora}
         </button>
         <span style={{ flex: 1 }} />
+
+        <button
+          type="button"
+          aria-label="Configurações"
+          onClick={onPerfil}
+          style={{
+            width: 42,
+            height: 42,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--c3)',
+            padding: 0,
+          }}
+        >
+          <GearIcon size={20} />
+        </button>
 
         <button
           type="button"

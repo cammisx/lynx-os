@@ -13,14 +13,26 @@ import {
   GearIcon,
 } from '@/components/icons';
 
+/*
+ * `somenteAdmin`: janela que um chatter nem enxerga no celular, igual ao menu
+ * iniciar do desktop (lá o chatter só vê playbook e conteúdo).
+ * `naGrade`: se o app aparece na grade do "Mais". Playbook e conteúdo já estão
+ * no dock e configurações mora na engrenagem da barra de status.
+ */
 export const JANELAS = {
-  chatters: { titulo: 'Chatters', Icone: UsersIcon },
-  modelos: { titulo: 'Modelos', Icone: StarIcon },
-  turnos: { titulo: 'Turnos', Icone: CalendarIcon },
-  financeiro: { titulo: 'Financeiro', Icone: MoneyIcon },
-  playbook: { titulo: 'Playbook', Icone: BookIcon },
-  conteudo: { titulo: 'Conteúdo', Icone: ImageIcon },
-  config: { titulo: 'Configurações', Icone: GearIcon },
+  chatters: { titulo: 'Chatters', Icone: UsersIcon, somenteAdmin: true, naGrade: true },
+  modelos: { titulo: 'Modelos', Icone: StarIcon, somenteAdmin: true, naGrade: true },
+  turnos: { titulo: 'Turnos', Icone: CalendarIcon, somenteAdmin: true, naGrade: true },
+  financeiro: { titulo: 'Financeiro', Icone: MoneyIcon, somenteAdmin: true, naGrade: true },
+  playbook: { titulo: 'Playbook', Icone: BookIcon, naGrade: false },
+  conteudo: { titulo: 'Conteúdo', Icone: ImageIcon, naGrade: false },
+  config: { titulo: 'Configurações', Icone: GearIcon, naGrade: false },
 };
+
+/* Apps que a grade do "Mais" mostra para quem está logado. */
+export const janelasDaGrade = (admin) =>
+  Object.entries(JANELAS).filter(
+    ([, meta]) => meta.naGrade && (admin || !meta.somenteAdmin)
+  );
 
 export const janelaPorId = (id) => JANELAS[id] || null;

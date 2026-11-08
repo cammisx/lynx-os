@@ -1,4 +1,5 @@
-import { JANELAS } from '@/lib/janelas';
+import { janelasDaGrade } from '@/lib/janelas';
+import { ehAdmin } from '@/lib/chat';
 import MobileResumoDia from '@/components/mobile/MobileResumoDia';
 import MobileStatusPaginas from '@/components/mobile/MobileStatusPaginas';
 import MobileAcoesRapidas from '@/components/mobile/MobileAcoesRapidas';
@@ -6,11 +7,15 @@ import MobileAcoesRapidas from '@/components/mobile/MobileAcoesRapidas';
 /**
  * Tela inicial do celular (o "Mais" do dock): saudação, status do shift, status
  * das páginas, ações rápidas e a grade com o resto do sistema.
+ * A grade segue o cargo: chatter só vê o que o desktop deixa (playbook e
+ * conteúdo, que aqui já estão no dock), então pra ele a grade nem aparece.
  */
-export default function MobileInicio({ nome = '', perfil, onAbrir, user }) {
+export default function MobileInicio({ nome = '', perfil, onAbrir, onRelogio, user }) {
   const hora = new Date().getHours();
   const saudacao = hora < 6 ? 'Boa madrugada' : hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
   const primeiro = String(nome || '').trim().split(/\s+/)[0] || '';
+  const admin = ehAdmin(user);
+  const apps = janelasDaGrade(admin);
 
   return (
     <div
@@ -35,12 +40,17 @@ export default function MobileInicio({ nome = '', perfil, onAbrir, user }) {
         </span>
       </div>
 
-      <MobileResumoDia user={user} onAbrirTurnos={() => onAbrir('turnos')} />
+      {/* Turnos é janela de admin: pro chatter o resumo abre a agenda do relógio. */}
+      <MobileResumoDia
+        user={user}
+        onAbrirTurnos={() => (admin ? onAbrir('turnos') : onRelogio?.())}
+      />
 
       <MobileStatusPaginas />
 
       <MobileAcoesRapidas user={user} />
 
+      {apps.length ? (
       <div
         style={{
           display: 'grid',
@@ -48,7 +58,7 @@ export default function MobileInicio({ nome = '', perfil, onAbrir, user }) {
           gap: 10,
         }}
       >
-        {Object.entries(JANELAS).map(([id, meta]) => {
+        {apps.map(([id, meta]) => {
           const Icone = meta.Icone;
           return (
             <button
@@ -79,6 +89,7 @@ export default function MobileInicio({ nome = '', perfil, onAbrir, user }) {
           );
         })}
       </div>
+      ) : null}
     </div>
   );
 }
