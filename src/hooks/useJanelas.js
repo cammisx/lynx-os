@@ -1,22 +1,48 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
-  abrirJanela,
-  alternarJanela,
-  fecharJanela,
-  janelaAtiva,
-  minimizarJanela,
+  abrirItem,
+  alternarItem,
+  fecharItem,
+  fixarItem,
+  focarItem,
+  itemNaFrente,
+  minimizarItem,
+  moverItem,
 } from '@/lib/gerenciadorJanelas';
 
-/** Estado das janelas abertas: abrir, fechar, minimizar e trazer para a frente. */
+/**
+ * Estado das janelas: quais estão abertas, qual está na frente, qual tem
+ * alteração não salva, e a ordem dos ícones na barra.
+ */
 export default function useJanelas() {
-  const [janelas, setJanelas] = useState([]);
+  const [itens, setItens] = useState([]);
+  const [sujas, setSujas] = useState({});
+  const camada = useRef(1);
+
+  const proximaCamada = useCallback(() => {
+    camada.current += 1;
+    return camada.current;
+  }, []);
 
   return {
-    janelas,
-    ativa: janelaAtiva(janelas),
-    abrir: useCallback((id) => setJanelas((atuais) => abrirJanela(atuais, id)), []),
-    fechar: useCallback((id) => setJanelas((atuais) => fecharJanela(atuais, id)), []),
-    minimizar: useCallback((id) => setJanelas((atuais) => minimizarJanela(atuais, id)), []),
-    alternar: useCallback((id) => setJanelas((atuais) => alternarJanela(atuais, id)), []),
+    itens,
+    ativa: itemNaFrente(itens),
+    sujas,
+    abrir: useCallback((id) => setItens((a) => abrirItem(a, id, proximaCamada())), [proximaCamada]),
+    fechar: useCallback((id) => setItens((a) => fecharItem(a, id)), []),
+    minimizar: useCallback((id) => setItens((a) => minimizarItem(a, id)), []),
+    focar: useCallback((id) => setItens((a) => focarItem(a, id, proximaCamada())), [proximaCamada]),
+    alternar: useCallback(
+      (id) => setItens((a) => alternarItem(a, id, proximaCamada())),
+      [proximaCamada]
+    ),
+    fixar: useCallback((id) => setItens((a) => fixarItem(a, id)), []),
+    mover: useCallback((origem, destino) => setItens((a) => moverItem(a, origem, destino)), []),
+    marcarSujo: useCallback((id, sujo) => {
+      setSujas((anteriores) => {
+        if (Boolean(anteriores[id]) === Boolean(sujo)) return anteriores;
+        return { ...anteriores, [id]: Boolean(sujo) };
+      });
+    }, []),
   };
 }

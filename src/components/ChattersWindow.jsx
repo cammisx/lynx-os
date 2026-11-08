@@ -6,6 +6,7 @@ import ChatterForm from '@/components/chatters/ChatterForm';
 import ChatterListRow from '@/components/chatters/ChatterListRow';
 import { UsersIcon } from '@/components/icons';
 import { emitChattersChanged } from '@/lib/desktopEvents';
+import { useMarcarSujo } from '@/components/desktop/JanelaContext';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
@@ -13,6 +14,7 @@ export default function ChattersWindow({ onClose }) {
   const [chatters, setChatters] = useState([]);
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(null);
+  useMarcarSujo(Boolean(form));
   const [pendingDelete, setPendingDelete] = useState(null);
 
   const load = async () => {

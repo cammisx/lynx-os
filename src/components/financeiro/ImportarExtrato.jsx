@@ -9,6 +9,7 @@ import { conferirExtrato, itensDaPlanilha, paraVendaMimo, SITUACOES } from '@/li
 import { lerArquivoPlanilha } from '@/lib/planilha';
 import { moeda } from '@/lib/financeiro';
 import { quandoLabel } from '@/lib/vendas';
+import { useMarcarSujo } from '@/components/desktop/JanelaContext';
 
 const asList = (resultado) => (Array.isArray(resultado) ? resultado : resultado?.items || []);
 
@@ -106,6 +107,8 @@ export default function ImportarExtrato({ modelos, chatters }) {
   const [pendentesAbertos, setPendentesAbertos] = useState(false);
   const [aprovando, setAprovando] = useState('');
   const [erroPendente, setErroPendente] = useState('');
+  /* Planilha lida e ainda não importada: fechar a janela perderia o lote. */
+  useMarcarSujo(Boolean(arquivo) || itensLidos.length > 0);
 
   const opcoesModelos = useMemo(
     () => modelos.filter((modelo) => !modelo.arquivada).map((modelo) => ({ value: modelo.id, label: modelo.nome })),

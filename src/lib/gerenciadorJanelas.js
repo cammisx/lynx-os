@@ -1,37 +1,82 @@
 /**
- * Quais janelas estão abertas e em que ordem.
+ * Janelas abertas e fixadas na barra de tarefas.
  *
- * A lista é a própria ordem de empilhamento: a última é a que está na frente.
- * Minimizada continua na lista (com o componente vivo, sem perder o que foi
- * digitado) e volta para a frente quando é restaurada.
+ * A lista é a ordem que aparece na barra, e ela NUNCA se mexe sozinha: abrir,
+ * focar ou minimizar não troca ninguém de lugar. Quem muda a ordem é o
+ * usuário, arrastando o ícone.
+ *
+ * Cada item guarda:
+ *   aberta      — a janela está montada (tem componente na tela ou minimizado);
+ *   minimizada  — montada, mas escondida;
+ *   fixada      — continua na barra mesmo fechada;
+ *   z           — quem está na frente (o maior manda).
  */
 
-export const abrirJanela = (janelas, id) => {
-  const existente = janelas.find((janela) => janela.id === id);
-  const jaNaFrente =
-    existente && !existente.minimizada && janelas[janelas.length - 1]?.id === id;
-  if (jaNaFrente) return janelas;
-  const semEla = janelas.filter((janela) => janela.id !== id);
-  if (existente) return [...semEla, { ...existente, minimizada: false }];
-  return [...semEla, { id, minimizada: false }];
+const proximaCamada = (itens) =>
+  itens.reduce((maior, item) => Math.max(maior, item.z || 0), 0) + 1;
+
+const criarItem = (id, z) => ({ id, aberta: true, minimizada: false, fixada: false, z });
+
+export const abrirItem = (itens, id, z) => {
+  const item = itens.find((atual) => atual.id === id);
+  if (!item) return [...itens, criarItem(id, z)];
+  return itens.map((atual) =>
+    atual.id === id ? { ...atual, aberta: true, minimizada: false, z } : atual
+  );
 };
 
-export const fecharJanela = (janelas, id) => janelas.filter((janela) => janela.id !== id);
-
-export const minimizarJanela = (janelas, id) =>
-  janelas.map((janela) => (janela.id === id ? { ...janela, minimizada: true } : janela));
-
-/** Clique no ícone da barra: minimiza a que está na frente, senão traz para a frente. */
-export const alternarJanela = (janelas, id) => {
-  const alvo = janelas.find((janela) => janela.id === id);
-  if (!alvo) return abrirJanela(janelas, id);
-  const naFrente = janelas[janelas.length - 1]?.id === id;
-  if (alvo.minimizada || !naFrente) return abrirJanela(janelas, id);
-  return minimizarJanela(janelas, id);
+/** Fechar tira da barra, a não ser que esteja fixada: aí ela ficaria só apagada. */
+export const fecharItem = (itens, id) => {
+  const item = itens.find((atual) => atual.id === id);
+  if (!item) return itens;
+  if (item.fixada) {
+    return itens.map((atual) =>
+      atual.id === id ? { ...atual, aberta: false, minimizada: false } : atual
+    );
+  }
+  return itens.filter((atual) => atual.id !== id);
 };
 
-/** A que está na frente e visível manda no destaque da barra. */
-export const janelaAtiva = (janelas) => {
-  const visiveis = janelas.filter((janela) => !janela.minimizada);
-  return visiveis.length ? visiveis[visiveis.length - 1].id : null;
+export const minimizarItem = (itens, id) =>
+  itens.map((atual) => (atual.id === id ? { ...atual, minimizada: true } : atual));
+
+export const focarItem = (itens, id, z) =>
+  itens.map((atual) =>
+    atual.id === id ? { ...atual, aberta: true, minimizada: false, z } : atual
+  );
+
+const visiveis = (itens) => itens.filter((item) => item.aberta && !item.minimizada);
+
+/** Id da janela que está na frente, ou null quando todas estão fechadas/minimizadas. */
+export const itemNaFrente = (itens) => {
+  const lista = visiveis(itens);
+  if (!lista.length) return null;
+  return lista.reduce((frente, item) => (item.z > frente.z ? item : frente)).id;
+};
+
+/** Clique esquerdo no ícone: abre, restaura, foca ou minimiza. */
+export const alternarItem = (itens, id, z) => {
+  const item = itens.find((atual) => atual.id === id);
+  if (!item || !item.aberta) return abrirItem(itens, id, z);
+  if (item.minimizada) return focarItem(itens, id, z);
+  if (itemNaFrente(itens) === id) return minimizarItem(itens, id);
+  return focarItem(itens, id, z);
+};
+
+/** Fixar/desafixar. Desafixar uma janela fechada tira ela da barra de vez. */
+export const fixarItem = (itens, id) => {
+  const item = itens.find((atual) => atual.id === id);
+  if (!item) return itens;
+  if (item.fixada && !item.aberta) return itens.filter((atual) => atual.id !== id);
+  return itens.map((atual) => (atual.id === id ? { ...atual, fixada: !atual.fixada } : atual));
+};
+
+/** Reordenar: sai da posição de origem e entra na de destino. */
+export const moverItem = (itens, origem, destino) => {
+  if (origem === destino) return itens;
+  if (origem < 0 || destino < 0 || origem >= itens.length || destino >= itens.length) return itens;
+  const copia = [...itens];
+  const [item] = copia.splice(origem, 1);
+  copia.splice(destino, 0, item);
+  return copia;
 };

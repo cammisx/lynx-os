@@ -12,6 +12,7 @@ import { buildChatterNames } from '@/lib/chatterNames';
 import { useAuth } from '@/lib/AuthContext';
 import { sincronizarAdminsUmaVez } from '@/lib/admins';
 import { arquivarPlaybookDaModelo, restaurarPlaybookDaModelo } from '@/lib/playbooksSync';
+import { useMarcarSujo } from '@/components/desktop/JanelaContext';
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
@@ -31,6 +32,7 @@ export default function ModelosWindow({ onClose }) {
   const [chatters, setChatters] = useState([]);
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(null);
+  useMarcarSujo(Boolean(form));
   const [pendingArchive, setPendingArchive] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [falhouModelos, setFalhouModelos] = useState(false);

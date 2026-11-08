@@ -273,6 +273,41 @@ body {
   background: color-mix(in srgb, var(--c2) 45%, transparent);
 }
 
+
+/* Fixada e fechada: continua na barra, só que apagada. */
+.taskbar-janela.is-fechada {
+  opacity: 0.42;
+  background: transparent;
+  border-color: color-mix(in srgb, var(--c2) 22%, transparent);
+  border-style: dashed;
+}
+
+.taskbar-janela.is-fechada:hover {
+  opacity: 1;
+  border-style: solid;
+}
+
+/* Durante o arrasto o ícone fica fantasma e o destino ganha um marcador. */
+.taskbar-janela.is-arrastando {
+  opacity: 0.35;
+  transform: scale(0.94);
+}
+
+.taskbar-janela.is-alvo {
+  box-shadow: -3px 0 0 0 var(--c1);
+}
+
+@keyframes clk-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .taskbar-right {
   display: flex;
   align-items: center;

@@ -29,6 +29,7 @@ import {
   totalDePerguntas,
 } from '@/lib/playbooks';
 import { useAuth } from '@/lib/AuthContext';
+import { useMarcarSujo } from '@/components/desktop/JanelaContext';
 
 const escuro = (valor) => `color-mix(in srgb, var(--c2) ${valor}%, transparent)`;
 const dourado = (valor) => `color-mix(in srgb, var(--c1) ${valor}%, transparent)`;
@@ -875,6 +876,7 @@ export default function PlaybookWindow({ onClose }) {
   const podeEditar = podeEditarPlaybook(user);
   const [ativoId, setAtivoId] = useState(null);
   const [editando, setEditando] = useState(false);
+  useMarcarSujo(editando);
   const [salvando, setSalvando] = useState(false);
   const [gerandoLink, setGerandoLink] = useState(false);
   const [busca, setBusca] = useState('');

@@ -8,6 +8,7 @@ import { MODO_CLARO, MODO_ESCURO, MODO_SISTEMA, TEMAS, paletaDoTema, resolverMod
 import { TAMANHOS } from '@/lib/fonte';
 import { MODOS_FUNDO } from '@/lib/perfilLogica';
 import { prepararFundo } from '@/lib/fundo';
+import { useMarcarSujo } from '@/components/desktop/JanelaContext';
 
 const ABAS = [
   { id: 'perfil', label: 'Perfil' },
@@ -62,6 +63,12 @@ export default function ConfiguracoesWindow({ onClose }) {
   const [nome, setNome] = useState(perfil.nomeExibicao);
   const [subnick, setSubnick] = useState(perfil.subnick);
   const [foto, setFoto] = useState(perfil.fotoUrl);
+  /* Texto digitado que ainda não foi para o banco se perde ao fechar. */
+  useMarcarSujo(
+    nome !== (perfil.nomeExibicao || '') ||
+      subnick !== (perfil.subnick || '') ||
+      foto !== (perfil.fotoUrl || '')
+  );
   const [salvando, setSalvando] = useState(false);
   const [enviandoFoto, setEnviandoFoto] = useState(false);
   const [enviandoFundo, setEnviandoFundo] = useState(false);

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import '@/theme.css';
 import DesktopBackground from '@/components/DesktopBackground';
 import DesktopWidgets from '@/components/desktop/DesktopWidgets';
@@ -10,6 +10,8 @@ import FinanceiroWindow from '@/components/FinanceiroWindow';
 import ConfiguracoesWindow from '@/components/ConfiguracoesWindow';
 import PlaybookWindow from '@/components/PlaybookWindow';
 import { JanelaContext } from '@/components/desktop/JanelaContext';
+import ConfirmarFechar from '@/components/desktop/ConfirmarFechar';
+import { janelaPorId } from '@/lib/janelas';
 import useJanelas from '@/hooks/useJanelas';
 import { useAuth } from '@/lib/AuthContext';
 import { usePerfil } from '@/lib/perfilUsuario';
@@ -33,6 +35,13 @@ const COMPONENTES = {
 
 export default function Dashboard() {
   const janelas = useJanelas();
+  /* Janela esperando confirmação: só entra aqui quando tem alteração não salva. */
+  const [fechando, setFechando] = useState(null);
+
+  const pedirFechar = (id) => {
+    if (janelas.sujas[id]) setFechando(id);
+    else janelas.fechar(id);
+  };
   const { user } = useAuth();
   // Carrega o perfil (tema, nome, foto, fundo) antes de tudo aparecer na tela.
   const perfil = usePerfil(user);
@@ -74,31 +83,50 @@ export default function Dashboard() {
         <DesktopWidgets />
         <Taskbar
           onOpenApp={janelas.abrir}
-          janelas={janelas.janelas}
+          itens={janelas.itens}
           janelaAtiva={janelas.ativa}
           onAlternarJanela={janelas.alternar}
+          onFixarJanela={janelas.fixar}
+          onAbrirJanela={janelas.abrir}
+          onFecharJanela={pedirFechar}
+          onMoverJanela={janelas.mover}
         />
         <ChatSidebar />
       </ChatProvider>
 
-      {/* A ordem da lista é o empilhamento: a última aberta fica na frente. */}
-      {janelas.janelas.map((janela, indice) => {
-        const Componente = COMPONENTES[janela.id];
-        if (!Componente) return null;
-        return (
-          <JanelaContext.Provider
-            key={janela.id}
-            value={{
-              zIndex: 8000 + indice,
-              oculta: janela.minimizada,
-              onMinimize: () => janelas.minimizar(janela.id),
-              onFocus: () => janelas.abrir(janela.id),
-            }}
-          >
-            <Componente onClose={() => janelas.fechar(janela.id)} />
-          </JanelaContext.Provider>
-        );
-      })}
+      {/* A ordem da barra é fixa; quem manda na frente é a camada (z) de cada uma. */}
+      {janelas.itens
+        .filter((item) => item.aberta)
+        .map((item) => {
+          const Componente = COMPONENTES[item.id];
+          if (!Componente) return null;
+          return (
+            <JanelaContext.Provider
+              key={item.id}
+              value={{
+                id: item.id,
+                zIndex: 8000 + item.z,
+                oculta: item.minimizada,
+                onMinimize: () => janelas.minimizar(item.id),
+                onFocus: () => janelas.focar(item.id),
+                marcarSujo: janelas.marcarSujo,
+              }}
+            >
+              <Componente onClose={() => pedirFechar(item.id)} />
+            </JanelaContext.Provider>
+          );
+        })}
+
+      {fechando ? (
+        <ConfirmarFechar
+          titulo={janelaPorId(fechando)?.titulo}
+          onCancelar={() => setFechando(null)}
+          onConfirmar={() => {
+            janelas.fechar(fechando);
+            setFechando(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { emitShiftsChanged } from '@/lib/desktopEvents';
 import { daysLabel, expandShift, hasWeekdays, sortDays } from '@/lib/shiftRepeat';
 import { ACEITE_COLOR, ACEITE_LABEL, aceiteOf } from '@/lib/aceite';
 import { buildChatterNames, chatterName } from '@/lib/chatterNames';
+import { useMarcarSujo } from '@/components/desktop/JanelaContext';
 
 const DAY_MS = 86400000;
 
@@ -95,6 +96,7 @@ export default function TurnosWindow({ onClose }) {
   const [users, setUsers] = useState([]);
   const [chatters, setChatters] = useState([]);
   const [form, setForm] = useState(null);
+  useMarcarSujo(Boolean(form));
   const [pendingDelete, setPendingDelete] = useState(null);
   const [atualizando, setAtualizando] = useState(false);
 

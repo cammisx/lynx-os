@@ -16,8 +16,18 @@ import { useChatPanel } from '@/components/chat/ChatProvider';
 import { useAuth } from '@/lib/AuthContext';
 import { nomeDaPessoa } from '@/lib/pessoas';
 import { janelaPorId } from '@/lib/janelas';
+import MenuJanela from '@/components/desktop/MenuJanela';
 
-export default function Taskbar({ onOpenApp, janelas = [], janelaAtiva = null, onAlternarJanela }) {
+export default function Taskbar({
+  onOpenApp,
+  itens = [],
+  janelaAtiva = null,
+  onAlternarJanela,
+  onFixarJanela,
+  onAbrirJanela,
+  onFecharJanela,
+  onMoverJanela,
+}) {
   const { user } = useAuth();
   const { items, naoLidas, markRead, markAllRead, reload } = useNotifications(
     user?.id,
@@ -35,6 +45,9 @@ export default function Taskbar({ onOpenApp, janelas = [], janelaAtiva = null, o
   const [folgaPendente, setFolgaPendente] = useState(null);
   const [horarioLivre, setHorarioLivre] = useState(null);
   const [cutucada, setCutucada] = useState(null);
+  const [menuJanela, setMenuJanela] = useState(null);
+  const [arrastando, setArrastando] = useState(null);
+  const [alvo, setAlvo] = useState(null);
   const clockRef = useRef(null);
   const bellRef = useRef(null);
 
@@ -139,25 +152,59 @@ export default function Taskbar({ onOpenApp, janelas = [], janelaAtiva = null, o
       />
 
       <div className="taskbar-janelas">
-        {janelas.map((janela) => {
-          const meta = janelaPorId(janela.id);
+        {itens.map((item, indice) => {
+          const meta = janelaPorId(item.id);
           if (!meta) return null;
           const Icone = meta.Icone;
-          const ativa = janelaAtiva === janela.id && !janela.minimizada;
+          const ativa = janelaAtiva === item.id && item.aberta && !item.minimizada;
           const classes = [
             'taskbar-janela',
             ativa ? 'is-ativa' : '',
-            janela.minimizada ? 'is-minimizada' : '',
+            item.minimizada ? 'is-minimizada' : '',
+            !item.aberta ? 'is-fechada' : '',
+            item.fixada ? 'is-fixada' : '',
+            arrastando === indice ? 'is-arrastando' : '',
+            alvo === indice && arrastando !== null && arrastando !== indice ? 'is-alvo' : '',
           ]
             .filter(Boolean)
             .join(' ');
+
+          const abrirMenu = (evento) => {
+            evento.preventDefault();
+            setMenuJanela({ id: item.id, x: evento.clientX, y: evento.clientY });
+          };
+
           return (
             <button
-              key={janela.id}
+              key={item.id}
               type="button"
               className={classes}
-              onClick={() => onAlternarJanela && onAlternarJanela(janela.id)}
-              title={janela.minimizada ? `Restaurar ${meta.titulo}` : `Minimizar ${meta.titulo}`}
+              draggable
+              onDragStart={(evento) => {
+                setArrastando(indice);
+                setMenuJanela(null);
+                evento.dataTransfer.effectAllowed = 'move';
+                evento.dataTransfer.setData('text/plain', item.id);
+              }}
+              onDragOver={(evento) => {
+                if (arrastando === null) return;
+                evento.preventDefault();
+                evento.dataTransfer.dropEffect = 'move';
+                setAlvo(indice);
+              }}
+              onDrop={(evento) => {
+                evento.preventDefault();
+                if (arrastando !== null && onMoverJanela) onMoverJanela(arrastando, indice);
+                setArrastando(null);
+                setAlvo(null);
+              }}
+              onDragEnd={() => {
+                setArrastando(null);
+                setAlvo(null);
+              }}
+              onClick={() => onAlternarJanela && onAlternarJanela(item.id)}
+              onContextMenu={abrirMenu}
+              title={item.aberta ? meta.titulo : `${meta.titulo} (fechada, fixada)`}
               aria-label={meta.titulo}
               aria-pressed={ativa}
               data-rotulo={meta.titulo}
@@ -266,6 +313,37 @@ export default function Taskbar({ onOpenApp, janelas = [], janelaAtiva = null, o
         notificacoes={items}
         onOpenJustificativa={openNotification}
       />
+
+      {menuJanela
+        ? (() => {
+            const item = itens.find((atual) => atual.id === menuJanela.id);
+            const meta = janelaPorId(menuJanela.id);
+            if (!item || !meta) return null;
+            const opcoes = [
+              {
+                id: 'fixar',
+                rotulo: item.fixada ? 'Desafixar da barra de tarefas' : 'Fixar na barra de tarefas',
+              },
+              !item.aberta || item.minimizada
+                ? { id: 'abrir', rotulo: item.minimizada ? 'Restaurar' : 'Abrir' }
+                : null,
+              item.aberta ? { id: 'fechar', rotulo: 'Fechar', perigo: true } : null,
+            ].filter(Boolean);
+            return (
+              <MenuJanela
+                x={menuJanela.x}
+                y={menuJanela.y}
+                opcoes={opcoes}
+                onFechar={() => setMenuJanela(null)}
+                onEscolher={(escolha) => {
+                  if (escolha === 'fixar' && onFixarJanela) onFixarJanela(menuJanela.id);
+                  if (escolha === 'abrir' && onAbrirJanela) onAbrirJanela(menuJanela.id);
+                  if (escolha === 'fechar' && onFecharJanela) onFecharJanela(menuJanela.id);
+                }}
+              />
+            );
+          })()
+        : null}
 
       {cutucada && (
         <CutucadaModal
