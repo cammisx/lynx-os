@@ -5,6 +5,7 @@ import GlassSelect from '@/components/GlassSelect';
 import DateTimePicker from '@/components/DateTimePicker';
 import SeletorTags from '@/components/conteudo/SeletorTags';
 import MultiSelect from '@/components/conteudo/MultiSelect';
+import CampoMoeda from '@/components/conteudo/CampoMoeda';
 import { MODAL_CAIXA } from '@/lib/modalStyles';
 import { prepararFundo } from '@/lib/fundo';
 import {
@@ -302,6 +303,26 @@ export default function ModalItem({
               disabled={somenteLeitura}
             />
             {mostrarErro('pastas') ? <span style={erroTexto}>{erros.pastas}</span> : null}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={rotulo}>Preço (opcional)</span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              {[
+                { chave: 'preco_minimo', nome: 'Mínimo' },
+                { chave: 'preco_normal', nome: 'Normal' },
+                { chave: 'preco_maximo', nome: 'Máximo' },
+              ].map(({ chave, nome }) => (
+                <div key={chave} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: 9, color: 'var(--c2)', opacity: 0.85 }}>{nome}</span>
+                  <CampoMoeda
+                    valor={dados[chave]}
+                    onChange={(valor) => mudar(chave, valor)}
+                    disabled={somenteLeitura}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
           {precisaDuracao(dados.tipo) && (

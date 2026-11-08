@@ -1,4 +1,12 @@
-import { diaTexto, duracaoTexto, precisaDuracao, tipoLabel, tituloDoItem } from '@/lib/conteudoPastas';
+import { moeda } from '@/lib/financeiro';
+import {
+  diaTexto,
+  duracaoTexto,
+  precisaDuracao,
+  precosDoItem,
+  tipoLabel,
+  tituloDoItem,
+} from '@/lib/conteudoPastas';
 
 const selo = {
   padding: '2px 6px',
@@ -12,6 +20,15 @@ const selo = {
 
 /** Cartão de um item do conteúdo: capa, tipo, duração, data e tags. */
 export default function CardItem({ item, admin, pastasNomes = [], onAbrir, onRemover }) {
+  const [minimo, normal, maximo] = precosDoItem(item);
+  const precoSimples = [minimo, normal, maximo].find((valor) => valor !== null);
+  const preco =
+    minimo !== null && maximo !== null && minimo !== maximo
+      ? `${moeda(minimo)} a ${moeda(maximo)}`
+      : precoSimples !== undefined
+        ? moeda(precoSimples)
+        : '';
+
   const tags = item.tags || [];
   const visiveis = tags.slice(0, 3);
   const resto = tags.length - visiveis.length;
@@ -100,6 +117,10 @@ export default function CardItem({ item, admin, pastasNomes = [], onAbrir, onRem
           {tituloDoItem(item)}
         </span>
         <span style={{ fontSize: 9, color: 'var(--c2)' }}>{diaTexto(item.data)}</span>
+
+        {preco ? (
+          <span style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--c1)' }}>{preco}</span>
+        ) : null}
 
         {pastasNomes.length ? (
           <span

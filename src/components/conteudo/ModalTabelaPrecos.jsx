@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { nomeDoConteudo } from '@/lib/conteudos';
 import { MODAL_CAIXA } from '@/lib/modalStyles';
+import CampoMoeda from '@/components/conteudo/CampoMoeda';
 import {
   COLUNAS,
   avisosDaTabela,
@@ -11,7 +12,6 @@ import {
   itensParaSalvar,
   novoItemPreco,
   tabelaDe,
-  valorDigitado,
 } from '@/lib/tabelaPrecos';
 
 const GRADE = 'minmax(0, 1fr) 86px 86px 86px 24px';
@@ -28,36 +28,6 @@ const campo = {
   outline: 'none',
   boxSizing: 'border-box',
 };
-
-const formatar = (valor) => (valor === null || valor === undefined ? '' : valor.toFixed(2).replace('.', ','));
-
-/** Campo de dinheiro: quem digita pensa em centavos, a tela mostra "120,00". */
-function CampoValor({ valor, onChange, disabled }) {
-  return (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-      <span
-        style={{
-          position: 'absolute',
-          left: 7,
-          fontSize: 9.5,
-          color: 'var(--c2)',
-          opacity: 0.75,
-          pointerEvents: 'none',
-        }}
-      >
-        R$
-      </span>
-      <input
-        value={formatar(valor)}
-        onChange={(evento) => onChange(valorDigitado(evento.target.value))}
-        disabled={disabled}
-        inputMode="numeric"
-        placeholder="0,00"
-        style={{ ...campo, paddingLeft: 24, textAlign: 'right', opacity: disabled ? 0.6 : 1 }}
-      />
-    </div>
-  );
-}
 
 /**
  * Tabela de preços da modelo: guia padrão com item e três valores (mínimo,
@@ -249,7 +219,7 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
                         style={campo}
                       />
                       {COLUNAS.map((coluna) => (
-                        <CampoValor
+                        <CampoMoeda
                           key={coluna.id}
                           valor={linha[coluna.id]}
                           onChange={(valor) => mudarItem(linha.id, coluna.id, valor)}
@@ -285,7 +255,9 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
                           key={coluna.id}
                           style={{ fontSize: 11, color: 'var(--c3)', textAlign: 'right' }}
                         >
-                          {linha[coluna.id] === null ? '—' : formatar(linha[coluna.id])}
+                          {linha[coluna.id] === null
+                            ? '—'
+                            : linha[coluna.id].toFixed(2).replace('.', ',')}
                         </span>
                       ))}
                       <span />

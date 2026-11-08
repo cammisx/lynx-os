@@ -122,6 +122,14 @@ export const tagsDeConteudos = (conteudos = []) => {
 
 /* ---------- pastas e itens ---------- */
 
+/** Preço em reais com dois decimais, ou null quando está vazio. */
+export const numeroPreco = (valor) => {
+  if (valor === null || valor === undefined || valor === '') return null;
+  const numero = Number(String(valor).replace(',', '.'));
+  if (!Number.isFinite(numero) || numero < 0) return null;
+  return Math.round(numero * 100) / 100;
+};
+
 export const novoItemDeConteudo = (pastas = []) => ({
   id: novoId('item'),
   nome: '',
@@ -132,6 +140,9 @@ export const novoItemDeConteudo = (pastas = []) => ({
   descricao: '',
   tags: [],
   pastas: (pastas || []).filter(Boolean),
+  preco_minimo: null,
+  preco_normal: null,
+  preco_maximo: null,
 });
 
 export const itemNormalizado = (item = {}) => ({
@@ -144,6 +155,9 @@ export const itemNormalizado = (item = {}) => ({
   descricao: String(item.descricao || ''),
   tags: juntarTags(item.tags || []),
   pastas: Array.from(new Set((item.pastas || []).filter(Boolean))),
+  preco_minimo: numeroPreco(item.preco_minimo),
+  preco_normal: numeroPreco(item.preco_normal),
+  preco_maximo: numeroPreco(item.preco_maximo),
 });
 
 export const novaPastaConteudo = (nome = 'Nova pasta') => ({
@@ -243,6 +257,13 @@ export const validarItem = (item = {}) => {
   if (!(item.pastas || []).length) erros.pastas = 'Marca pelo menos uma pasta.';
   return erros;
 };
+
+/** Preços do item, na ordem mínimo, normal e máximo (null quando vazio). */
+export const precosDoItem = (item) => [
+  numeroPreco(item?.preco_minimo),
+  numeroPreco(item?.preco_normal),
+  numeroPreco(item?.preco_maximo),
+];
 
 /** Título do cartão: o tipo com a data (o item não tem campo de nome). */
 export const tituloDoItem = (item) => {

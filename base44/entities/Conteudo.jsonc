@@ -80,7 +80,10 @@
             "type": "array",
             "items": { "type": "string" },
             "description": "Ids das pastas onde o item aparece (pelo menos uma)"
-          }
+          },
+          "preco_minimo": { "type": "number", "description": "Preco minimo do item, em reais (null quando vazio)" },
+          "preco_normal": { "type": "number", "description": "Preco normal do item, em reais (null quando vazio)" },
+          "preco_maximo": { "type": "number", "description": "Preco maximo do item, em reais (null quando vazio)" }
         }
       }
     },
