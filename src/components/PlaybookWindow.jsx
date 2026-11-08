@@ -10,6 +10,8 @@ import {
   TrashIcon,
   UsersIcon,
 } from '@/components/icons';
+import { SearchIcon } from '@/components/chat/chatIcons';
+import { contarItens, filtrarSecoes, pedacosDestacados } from '@/lib/buscaPlaybook';
 import usePlaybooks from '@/hooks/usePlaybooks';
 import {
   ROTULO_DO_TIPO,
@@ -136,8 +138,26 @@ function Interruptor({ ativo, onToggle, children, titulo }) {
   );
 }
 
+/** O texto com o termo buscado destacado, sem perder a acentuação original. */
+function TextoComMarca({ texto, termo }) {
+  const pedacos = pedacosDestacados(texto, termo);
+  if (pedacos.length === 1 && !pedacos[0].destaque) return pedacos[0].texto;
+  return pedacos.map((pedaco, indice) =>
+    pedaco.destaque ? (
+      <mark
+        key={`${indice}-${pedaco.texto}`}
+        style={{ background: dourado(26), color: 'var(--c1)', borderRadius: 3, padding: '0 1px' }}
+      >
+        {pedaco.texto}
+      </mark>
+    ) : (
+      pedaco.texto
+    )
+  );
+}
+
 /** Uma pergunta com a resposta. Só ganha botão de copiar se a pergunta pedir. */
-function ItemLeitura({ item }) {
+function ItemLeitura({ item, termo }) {
   const [copiado, setCopiado] = useState(false);
   const relogio = useRef(null);
 
@@ -153,9 +173,15 @@ function ItemLeitura({ item }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {item.pergunta ? <span style={estiloPergunta}>{item.pergunta}</span> : null}
+      {item.pergunta ? (
+        <span style={estiloPergunta}>
+          <TextoComMarca texto={item.pergunta} termo={termo} />
+        </span>
+      ) : null}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-        <span style={{ ...estiloResposta, flex: 1, minWidth: 0 }}>{item.resposta}</span>
+        <span style={{ ...estiloResposta, flex: 1, minWidth: 0 }}>
+          <TextoComMarca texto={item.resposta} termo={termo} />
+        </span>
         {item.copiar ? (
           <button
             type="button"
@@ -182,7 +208,7 @@ function ItemLeitura({ item }) {
 }
 
 /** Leitura das diretrizes: seção por seção, pergunta por pergunta. */
-function Leitura({ playbook }) {
+function Leitura({ playbook, termo = '' }) {
   const secoes = (playbook?.secoes || [])
     .map((secao) => ({
       ...secao,
@@ -191,6 +217,18 @@ function Leitura({ playbook }) {
       texto: String(secao?.texto || ''),
     }))
     .filter((secao) => secao.itens.length || secao.texto.trim());
+
+  const encontradas = filtrarSecoes(secoes, termo);
+
+  if (termo.trim() && !encontradas.length) {
+    return (
+      <div style={{ padding: '28px 18px', textAlign: 'center', color: 'var(--c2)', fontSize: 11, lineHeight: 1.6 }}>
+        Nada encontrado para “{termo.trim()}”.
+        <br />
+        Tente uma palavra mais curta, como “risada”, “personalizado” ou “limite”.
+      </div>
+    );
+  }
 
   if (!secoes.length) {
     return (
@@ -204,7 +242,7 @@ function Leitura({ playbook }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      {secoes.map((secao, indice) => (
+      {encontradas.map((secao, indice) => (
         <div key={secao.id} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span
             style={{
@@ -216,13 +254,17 @@ function Leitura({ playbook }) {
               borderBottom: `1px solid ${dourado(18)}`,
             }}
           >
-            {secao.titulo || `Seção ${indice + 1}`}
+            <TextoComMarca texto={secao.titulo || `Seção ${indice + 1}`} termo={termo} />
           </span>
 
-          {secao.texto.trim() ? <span style={estiloResposta}>{secao.texto}</span> : null}
+          {secao.texto.trim() ? (
+            <span style={estiloResposta}>
+              <TextoComMarca texto={secao.texto} termo={termo} />
+            </span>
+          ) : null}
 
           {secao.itens.map((item) => (
-            <ItemLeitura key={item.id} item={item} />
+            <ItemLeitura key={item.id} item={item} termo={termo} />
           ))}
         </div>
       ))}
@@ -836,6 +878,7 @@ export default function PlaybookWindow({ onClose }) {
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [gerandoLink, setGerandoLink] = useState(false);
+  const [busca, setBusca] = useState('');
 
   useEffect(() => {
     if (ativoId === ID_TEMPLATE && podeEditar) return;
@@ -850,6 +893,24 @@ export default function PlaybookWindow({ onClose }) {
     () => playbooks.find((item) => item.id === ativoId) || null,
     [playbooks, ativoId]
   );
+
+  useEffect(() => {
+    setBusca('');
+  }, [ativoId]);
+
+  useEffect(() => {
+    if (editando) setBusca('');
+  }, [editando]);
+
+  /* Quantas perguntas a busca encontrou, para mostrar ao lado do campo. */
+  const achados = useMemo(() => {
+    const termo = busca.trim();
+    if (!termo || !ativo) return null;
+    const secoes = (ativo.secoes || [])
+      .map((secao) => ({ ...secao, itens: itensVisiveis(secao) }))
+      .filter((secao) => secao.itens.length || String(secao.texto || '').trim());
+    return contarItens(filtrarSecoes(secoes, termo));
+  }, [ativo, busca]);
 
   return (
     <Window title="Playbook" icon={UsersIcon} onClose={onClose} width={820} height={580}>
@@ -1036,6 +1097,63 @@ export default function PlaybookWindow({ onClose }) {
                 )}
               </div>
 
+              {!editando ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+                  <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        position: 'absolute',
+                        left: 9,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        display: 'flex',
+                        color: 'var(--c2)',
+                        opacity: 0.75,
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      <SearchIcon size={11} />
+                    </span>
+                    <input
+                      type="search"
+                      value={busca}
+                      onChange={(evento) => setBusca(evento.target.value)}
+                      onKeyDown={(evento) => {
+                        if (evento.key === 'Escape') setBusca('');
+                      }}
+                      placeholder="Pesquisar no playbook…"
+                      aria-label="Pesquisar no playbook"
+                      style={{
+                        ...campoStyle,
+                        height: 29,
+                        padding: '0 8px 0 26px',
+                        fontSize: 10.5,
+                        borderRadius: 8,
+                      }}
+                    />
+                  </div>
+                  {busca.trim() ? (
+                    <>
+                      <span style={{ fontSize: 9.5, color: 'var(--c2)', whiteSpace: 'nowrap' }}>
+                        {achados === 0
+                          ? 'nada'
+                          : `${achados} ${achados === 1 ? 'achado' : 'achados'}`}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setBusca('')}
+                        aria-label="Limpar pesquisa"
+                        title="Limpar pesquisa"
+                        style={{ ...botaoBase, padding: '4px 6px', color: 'var(--c2)', border: `1px solid ${escuro(18)}`, background: escuro(6) }}
+                      >
+                        <CloseIcon size={10} />
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+
               {podeEditar && ativo.tipo !== TIPO_EMPRESA ? (
                 <LinkDoFormulario
                   playbook={ativo}
@@ -1063,7 +1181,7 @@ export default function PlaybookWindow({ onClose }) {
                     }}
                   />
                 ) : (
-                  <Leitura playbook={ativo} />
+                  <Leitura playbook={ativo} termo={busca.trim()} />
                 )}
               </div>
             </>
