@@ -188,6 +188,13 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
 
   if (!open) return null;
 
+  const tabs = [
+    { id: 'agenda', label: 'Minha Agenda' },
+    ...modelosEmOrdem.map((model) => ({ id: model.id, label: model.nome, ordenavel: true })),
+  ];
+  /* A aba escolhida só vale se ainda existir: modelo arquivada sai da lista. */
+  const activeTabSafe = tabs.some((tab) => tab.id === activeTab) ? activeTab : 'agenda';
+
   const modeloAtivo =
     activeTabSafe === 'agenda'
       ? null
@@ -215,12 +222,6 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
     : null;
 
   const aoClicarBloco = ehAdmin(user) ? (block) => setFormTurno({ shift: block.shift }) : null;
-
-  const tabs = [
-    { id: 'agenda', label: 'Minha Agenda' },
-    ...modelosEmOrdem.map((model) => ({ id: model.id, label: model.nome, ordenavel: true })),
-  ];
-  const activeTabSafe = tabs.some((tab) => tab.id === activeTab) ? activeTab : 'agenda';
 
   const gridShifts = (() => {
     const base = weekShifts.filter((shift) => {
