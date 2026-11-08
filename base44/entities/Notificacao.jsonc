@@ -25,7 +25,8 @@
         "horario_disponivel",
         "turno_espontaneo_encerrado",
         "cutucada",
-        "mencao"
+        "mencao",
+        "vaga_coberta"
       ],
       "enumColors": [
         "yellow",
@@ -39,7 +40,8 @@
         "purple",
         "gray",
         "orange",
-        "teal"
+        "teal",
+        "green"
       ],
       "default": "turno_esquecido"
     },

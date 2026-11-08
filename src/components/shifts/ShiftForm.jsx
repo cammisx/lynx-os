@@ -23,19 +23,34 @@ const atHour = (date, hour) => {
   return base;
 };
 
-export default function ShiftForm({ users, models, chatters, shift, defaultDate, onCancel, onSaved }) {
+export default function ShiftForm({
+  users,
+  models,
+  chatters,
+  shift,
+  defaultDate,
+  defaults = null,
+  onCancel,
+  onSaved,
+}) {
   const shiftModel = shift?.modelo_id ? models.find((item) => item.id === shift.modelo_id) : null;
   const archivedModel = shiftModel?.arquivada ? shiftModel : null;
   const activeModels = models.filter((model) => !model.arquivada);
 
-  const [modeloId, setModeloId] = useState(archivedModel ? '' : shift?.modelo_id || '');
+  const [modeloId, setModeloId] = useState(
+    archivedModel ? '' : shift?.modelo_id || defaults?.modeloId || ''
+  );
   const [usuarioId, setUsuarioId] = useState(shift?.usuario_id || '');
-  const [inicio, setInicio] = useState(() =>
-    shift?.inicio ? new Date(shift.inicio) : atHour(defaultDate || new Date(), 8)
-  );
-  const [fim, setFim] = useState(() =>
-    shift?.fim ? new Date(shift.fim) : atHour(defaultDate || new Date(), 16)
-  );
+  const [inicio, setInicio] = useState(() => {
+    if (shift?.inicio) return new Date(shift.inicio);
+    if (defaults?.inicio) return new Date(defaults.inicio);
+    return atHour(defaultDate || new Date(), 8);
+  });
+  const [fim, setFim] = useState(() => {
+    if (shift?.fim) return new Date(shift.fim);
+    if (defaults?.inicio) return new Date(new Date(defaults.inicio).getTime() + 8 * 3600000);
+    return atHour(defaultDate || new Date(), 16);
+  });
   const [dias, setDias] = useState(() =>
     Array.isArray(shift?.dias_semana) ? shift.dias_semana.map(Number) : []
   );

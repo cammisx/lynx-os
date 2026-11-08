@@ -98,12 +98,14 @@ export default function WeekGrid({
   pontoIndex,
   modelo = null,
   agendaPessoal = false,
+  onClicarDia = null,
+  onClicarBloco = null,
 }) {
   const [hover, setHover] = useState(null);
   const blocksByDay = buildBlocks(days, shifts, pontoIndex);
   /* Área da modelo sem ninguém escalado. Na agenda pessoal do chatter não faz
      sentido: ali a coluna mostra só o que é dele, em todas as modelos. */
-  const vagasPorDia = agendaPessoal ? [] : janelasVagas({ shifts, dias, modelo });
+  const vagasPorDia = agendaPessoal ? [] : janelasVagas({ shifts, dias: days, modelo });
   const totalBlocks = blocksByDay.reduce((sum, list) => sum + list.length, 0);
 
   return (
@@ -177,6 +179,36 @@ export default function WeekGrid({
 
           {blocksByDay.map((blocks, index) => (
             <div key={days[index].toISOString()} style={{ position: 'relative', height: '100%' }}>
+              {onClicarDia && (
+                <div
+                  onClick={(evento) => {
+                    const caixa = evento.currentTarget.getBoundingClientRect();
+                    if (!caixa.height) return;
+                    const proporcao = Math.min(
+                      1,
+                      Math.max(0, (evento.clientY - caixa.top) / caixa.height)
+                    );
+                    const dia = days[index];
+                    const dayStart = new Date(
+                      dia.getFullYear(),
+                      dia.getMonth(),
+                      dia.getDate()
+                    ).getTime();
+                    const momento = dayStart + proporcao * 86400000;
+                    const vaga =
+                      (vagasPorDia[index] || []).find(
+                        (item) => momento >= item.start && momento < item.end
+                      ) || null;
+                    onClicarDia({ dia: dayStart, momento, vaga });
+                  }}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                  }}
+                />
+              )}
               {(vagasPorDia[index] || []).map((vaga) => (
                 <div
                   key={`vago-${vaga.start}`}
@@ -224,7 +256,7 @@ export default function WeekGrid({
                   width: `calc((100% - 4px) / ${block.lanes})`,
                   borderRadius: 8,
                   transition: 'box-shadow 0.15s',
-                  cursor: 'default',
+                  cursor: onClicarBloco ? 'pointer' : 'default',
                 };
 
                 if (isLive) {
@@ -246,6 +278,14 @@ export default function WeekGrid({
                   <div
                     key={block.key}
                     style={style}
+                    onClick={
+                      onClicarBloco
+                        ? (evento) => {
+                            evento.stopPropagation();
+                            onClicarBloco(block);
+                          }
+                        : undefined
+                    }
                     onMouseEnter={(event) =>
                       setHover({
                         key: block.key,

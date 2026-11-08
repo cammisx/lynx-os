@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import ChatterRow from '@/components/models/ChatterRow';
+import JanelaOperacao from '@/components/models/JanelaOperacao';
 
 // Menor centavo (01–99) livre na modelo, para o novo chatter já entrar válido.
 const proximoLivre = (ocupados) => {
@@ -31,6 +32,13 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
     () => new Set((model?.chatters || []).map((chatter) => chatter.usuario_id))
   );
   const [saving, setSaving] = useState(false);
+  const [janela, setJanela] = useState(() => {
+    const doBanco = Array.isArray(model?.janela_operacao) ? model.janela_operacao : [];
+    return Array.from({ length: 7 }, (_, dia) => {
+      const item = doBanco[dia];
+      return item?.inicio && item?.fim ? { inicio: item.inicio, fim: item.fim } : {};
+    });
+  });
   const [saveError, setSaveError] = useState('');
   const [comissaoAgencia, setComissaoAgencia] = useState(
     model?.comissao_agencia === null || model?.comissao_agencia === undefined
@@ -135,7 +143,12 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
       identificador: ids[chatter.usuario_id] || '',
     }));
     const percentual = Math.min(100, Math.max(0, Number(comissaoAgencia.replace(',', '.')) || 0));
-    const dados = { nome: cleanName, chatters: members, comissao_agencia: percentual };
+    const dados = {
+      nome: cleanName,
+      chatters: members,
+      comissao_agencia: percentual,
+      janela_operacao: janela,
+    };
 
     try {
       // O backend grava com service role; sem ele, o RLS deixa o formulário
@@ -199,6 +212,8 @@ export default function ModeloForm({ chatters, model, onCancel, onSaved }) {
           </span>
         </div>
       </div>
+
+      <JanelaOperacao valor={janela} onChange={setJanela} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span style={{ fontSize: 10, color: 'var(--c2)', opacity: 0.7 }}>Chatters</span>

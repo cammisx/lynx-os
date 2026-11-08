@@ -16,6 +16,10 @@ import ShiftWidget from '@/components/shifts/ShiftWidget';
 import WeekToolbar from '@/components/shifts/WeekToolbar';
 import WeekGrid from '@/components/shifts/WeekGrid';
 import { BackIcon } from '@/components/chat/chatIcons';
+import ShiftForm from '@/components/shifts/ShiftForm';
+import CobrirVagoModal from '@/components/shifts/CobrirVagoModal';
+import { CloseIcon } from '@/components/icons';
+import { MODAL_CAIXA } from '@/lib/modalStyles';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const DAY_MS = 86400000;
@@ -44,6 +48,7 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
     userId,
     chatterNames,
     models,
+    chatters,
     pontoIndex,
     ponto,
     saving,
@@ -57,6 +62,11 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
   /* Ordem das abas das modelos: preferência de quem está olhando. */
   const [ordem, setOrdem] = useState(() => ordemAgendaInicial(user));
   const [arrastando, setArrastando] = useState(null);
+  const [usuarios, setUsuarios] = useState([]);
+  /* Clique na agenda: o admin abre o editor do turno (ou cria um no ponto
+     clicado), o chatter só pode se escalar num horário vago. */
+  const [formTurno, setFormTurno] = useState(null);
+  const [vagaAberta, setVagaAberta] = useState(null);
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -75,6 +85,22 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
     const id = setInterval(() => setTick((n) => n + 1), REFRESH_MS);
     return () => clearInterval(id);
   }, [open]);
+
+  /* O editor de turno precisa da lista de pessoas; só o admin chega nele. */
+  useEffect(() => {
+    if (!open || !ehAdmin(user)) return undefined;
+    let ativo = true;
+    base44.entities.User.list()
+      .then((resultado) => {
+        if (ativo) setUsuarios(asList(resultado));
+      })
+      .catch(() => {
+        if (ativo) setUsuarios([]);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [open, user]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -161,6 +187,34 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
   );
 
   if (!open) return null;
+
+  const modeloAtivo =
+    activeTabSafe === 'agenda'
+      ? null
+      : visibleModels.find((item) => item.id === activeTabSafe) || null;
+
+  const aoClicarDia = modeloAtivo
+    ? ({ momento, vaga }) => {
+        if (vaga) {
+          if (ehAdmin(user)) {
+            setFormTurno({
+              novo: true,
+              modeloId: modeloAtivo.id,
+              inicio: new Date(vaga.start),
+              fim: new Date(vaga.end),
+            });
+          } else {
+            setVagaAberta({ modelo: modeloAtivo, vaga });
+          }
+          return;
+        }
+        if (ehAdmin(user)) {
+          setFormTurno({ novo: true, modeloId: modeloAtivo.id, inicio: new Date(momento) });
+        }
+      }
+    : null;
+
+  const aoClicarBloco = ehAdmin(user) ? (block) => setFormTurno({ shift: block.shift }) : null;
 
   const tabs = [
     { id: 'agenda', label: 'Minha Agenda' },
@@ -306,11 +360,102 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
             userId={userId}
             chatterNames={chatterNames}
             pontoIndex={pontoIndex}
-            modelo={activeTabSafe === 'agenda' ? null : visibleModels.find((item) => item.id === activeTabSafe) || null}
+            modelo={modeloAtivo}
             agendaPessoal={activeTabSafe === 'agenda'}
+            onClicarDia={aoClicarDia}
+            onClicarBloco={aoClicarBloco}
           />
         </div>
       </div>
+
+      {vagaAberta && (
+        <CobrirVagoModal
+          modelo={vagaAberta.modelo}
+          vaga={vagaAberta.vaga}
+          onClose={() => setVagaAberta(null)}
+          onSaved={() => setTick((n) => n + 1)}
+        />
+      )}
+
+      {formTurno && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(evento) => {
+            if (evento.target === evento.currentTarget) setFormTurno(null);
+          }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.45)',
+            backdropFilter: 'blur(2px)',
+            padding: 16,
+          }}
+        >
+          <div style={{ ...MODAL_CAIXA, width: 440 }}>
+            <div
+              style={{
+                height: 34,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0 8px 0 12px',
+                borderBottom: '1px solid color-mix(in srgb, var(--c2) 10%, transparent)',
+              }}
+            >
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--c3)' }}>
+                {formTurno.shift ? 'Editar turno' : 'Novo turno'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setFormTurno(null)}
+                aria-label="Fechar"
+                style={{
+                  width: 24,
+                  height: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 0,
+                  border: 'none',
+                  borderRadius: 6,
+                  background: 'transparent',
+                  color: 'var(--c2)',
+                  cursor: 'pointer',
+                }}
+              >
+                <CloseIcon size={13} />
+              </button>
+            </div>
+            <div className="glass-scroll" style={{ padding: 12, overflowY: 'auto' }}>
+              <ShiftForm
+                users={usuarios}
+                models={models}
+                chatters={chatters}
+                shift={formTurno.shift || null}
+                defaultDate={
+                  formTurno.inicio ? new Date(formTurno.inicio) : new Date(anchor)
+                }
+                defaults={
+                  formTurno.novo
+                    ? { modeloId: formTurno.modeloId, inicio: formTurno.inicio, fim: formTurno.fim }
+                    : null
+                }
+                onCancel={() => setFormTurno(null)}
+                onSaved={async () => {
+                  setFormTurno(null);
+                  setTick((n) => n + 1);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );

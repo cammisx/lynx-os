@@ -4,9 +4,35 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.27';
 // cada um. Também roda com service role: sem isso o admin de uma conta sob
 // RLS vê o formulário salvar sem nada acontecer na entidade.
 //
-// Payload: { id?, nome, comissao_agencia, chatters: [{ usuario_id, usuario_nome, identificador }] }
+// Payload: { id?, nome, comissao_agencia, janela_operacao?, chatters: [{ usuario_id, usuario_nome, identificador }] }
 
 const semAcento = (valor: any) => String(valor ?? '').trim();
+
+/** 'HH:MM' válido vira 'HH:MM'; qualquer outra coisa vira vazio (24h). */
+const horaValida = (valor: any) => {
+  const bruto = String(valor ?? '').trim();
+  const achado = bruto.match(/^(\d{1,2}):(\d{2})$/);
+  if (!achado) return '';
+  const horas = Number(achado[1]);
+  const minutos = Number(achado[2]);
+  if (horas > 23 || minutos > 59) return '';
+  return `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
+};
+
+/**
+ * Janela de operação: sete itens, um por dia da semana, do domingo ao sábado.
+ * Dia sem início e fim válidos fica vazio, e vazio significa 24 horas.
+ */
+const limparJanela = (janela: any) => {
+  const lista = Array.isArray(janela) ? janela : [];
+  return Array.from({ length: 7 }, (_, dia) => {
+    const item = lista[dia];
+    const inicio = horaValida(item?.inicio);
+    const fim = horaValida(item?.fim);
+    if (!inicio || !fim || fim <= inicio) return {};
+    return { inicio, fim };
+  });
+};
 
 const limparChatters = (chatters: any) => {
   const saida: any[] = [];
@@ -65,7 +91,10 @@ Deno.serve(async (req: Request) => {
     );
     const chatters = limparChatters(corpo?.chatters);
 
-    const dados = { nome, chatters, comissao_agencia: percentual };
+    const dados: any = { nome, chatters, comissao_agencia: percentual };
+    if (corpo?.janela_operacao !== undefined) {
+      dados.janela_operacao = limparJanela(corpo.janela_operacao);
+    }
 
     const modelo = corpo?.id
       ? await base44.asServiceRole.entities.Modelo.update(String(corpo.id), dados)

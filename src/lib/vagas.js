@@ -175,3 +175,105 @@ export function janelasVagas({
       }));
   });
 }
+
+const asLista = (resultado) => (Array.isArray(resultado) ? resultado : resultado?.items || []);
+
+/**
+ * Turno que o próprio chatter cria ao cobrir um horário vago.
+ *
+ * Mesma conferência do formulário: uma modelo, um chatter por horário. Como o
+ * banco não tem trava, depois de criar o turno a gente reconfere: se alguém
+ * criou o mesmo horário antes, quem chegou segundo apaga o próprio turno.
+ */
+export async function criarVagaCobertura(base44, { modelo, usuario, inicio, fim }) {
+  const modeloId = modelo?.id || '';
+  const candidato = {
+    modelo_id: modeloId,
+    usuario_id: usuario?.id || '',
+    inicio: new Date(inicio).toISOString(),
+    fim: new Date(fim).toISOString(),
+  };
+
+  const agenda = async () => {
+    if (!modeloId) return [];
+    try {
+      return asLista(await base44.entities.Shift.filter({ modelo_id: modeloId }, '-inicio', 500));
+    } catch (erro) {
+      console.warn('[Vagas] agenda da modelo', erro);
+      return [];
+    }
+  };
+
+  const antes = await agenda();
+  const choques = conflitosDeTurno({ candidato, existentes: antes });
+  if (choques.length) {
+    throw new Error(
+      `${choques[0].usuarioNome || 'Outra pessoa'} já está escalado nesse horário nesta modelo.`
+    );
+  }
+
+  const turno = await base44.entities.Shift.create({
+    usuario_id: usuario?.id || '',
+    usuario_nome: usuario?.full_name || usuario?.email || '',
+    modelo_id: modeloId,
+    modelo_nome: modelo?.nome || '',
+    pagina_nome: modelo?.nome || '',
+    inicio: candidato.inicio,
+    fim: candidato.fim,
+    status: 'agendado',
+    aceite: 'aceito',
+    aceite_em: new Date().toISOString(),
+    repeticao: 'nenhuma',
+    avulso: true,
+  });
+
+  const depos = await agenda();
+  const rivais = conflitosDeTurno({
+    candidato,
+    existentes: depos.filter((item) => item.id !== turno.id),
+  })
+    .map((choque) => depos.find((item) => item.id === choque.shiftId))
+    .filter(Boolean);
+
+  const perdeu = rivais.some(
+    (rival) =>
+      new Date(rival.created_date || 0).getTime() < new Date(turno.created_date || 0).getTime()
+  );
+  if (perdeu) {
+    await base44.entities.Shift.delete(turno.id).catch((erro) =>
+      console.warn('[Vagas] desfazer', erro)
+    );
+    throw new Error(`${rivais[0]?.usuario_nome || 'Outra pessoa'} pegou esse horário antes de você.`);
+  }
+
+  return turno;
+}
+
+/** Avisa os admins que um horário vago foi coberto por conta própria. */
+export async function avisarAdminsDaCobertura(base44, { modelo, usuario, inicio, fim }) {
+  try {
+    const admins = asLista(await base44.entities.User.filter({ role: 'admin' }, '-created_date', 50));
+    const quando = `${dataCurta(inicio)} ${horaCurta(inicio)} — ${horaCurta(fim)}`;
+    await Promise.all(
+      admins.map((admin) =>
+        base44.entities.Notificacao.create({
+          usuario_id: admin.id,
+          titulo: 'Horário vago coberto',
+          mensagem: `${usuario?.full_name || usuario?.email || 'Um chatter'} se escalou em ${
+            modelo?.nome || 'uma modelo'
+          }, ${quando}.`,
+          tipo: 'vaga_coberta',
+          status: 'pendente',
+          lida: false,
+          criado_por_automacao: true,
+          modelo_id: modelo?.id || '',
+          modelo_nome: modelo?.nome || '',
+          turno_inicio: new Date(inicio).toISOString(),
+          turno_fim: new Date(fim).toISOString(),
+        })
+      )
+    );
+  } catch (erro) {
+    console.warn('[Vagas] aviso aos admins', erro);
+  }
+}
