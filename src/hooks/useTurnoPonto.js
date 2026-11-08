@@ -297,6 +297,13 @@ export default function useTurnoPonto() {
           status: 'em_andamento',
           inicio_real: timestamp,
         });
+        // Quem estava com o ponto aberto nesta modelo recebe o aviso de saída.
+        base44.functions
+          .invoke('avisarSaidaPendente', {
+            modelo_id: ponto.modeloId || '',
+            usuario_id: userId,
+          })
+          .catch((erro) => console.warn('[Ponto] aviso de saída pendente', erro));
         // Quem entra no turno programado tira do ar o espontâneo que estava na página.
         encerrarEspontaneos({
           modeloId: ponto.modeloId,

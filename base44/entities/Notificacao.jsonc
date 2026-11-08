@@ -26,7 +26,9 @@
         "turno_espontaneo_encerrado",
         "cutucada",
         "mencao",
-        "vaga_coberta"
+        "vaga_coberta",
+        "saida_automatica",
+        "saida_pendente"
       ],
       "enumColors": [
         "yellow",

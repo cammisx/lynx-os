@@ -65,7 +65,7 @@ const juntar = (dia, hora) => {
   return base;
 };
 
-export default function AjustePontoModal({ usuario, onClose, onSaved }) {
+export default function AjustePontoModal({ usuario, chaveInicial = '', onClose, onSaved }) {
   const [ocorrencias, setOcorrencias] = useState([]);
   const [selecionada, setSelecionada] = useState('');
   const [registros, setRegistros] = useState([]);
@@ -110,7 +110,10 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
             aSeguir: occurrence.start > agora,
           }));
         setOcorrencias(lista);
-        setSelecionada((atual) => atual || lista[0]?.chave || '');
+        setSelecionada((atual) => {
+          if (chaveInicial && lista.some((item) => item.chave === chaveInicial)) return chaveInicial;
+          return atual || lista[0]?.chave || '';
+        });
       })
       .catch(() => setOcorrencias([]))
       .finally(() => {
@@ -119,7 +122,7 @@ export default function AjustePontoModal({ usuario, onClose, onSaved }) {
     return () => {
       ativo = false;
     };
-  }, [usuario?.id]);
+  }, [usuario?.id, chaveInicial]);
 
   const ocorrencia = useMemo(
     () => ocorrencias.find((item) => item.chave === selecionada) || null,

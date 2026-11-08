@@ -9,6 +9,7 @@ import CutucadaModal from '@/components/notifications/CutucadaModal';
 import VendaPendenteModal from '@/components/vendas/VendaPendenteModal';
 import FolgaPendenteModal from '@/components/solicitacoes/FolgaPendenteModal';
 import HorarioDisponivelModal from '@/components/solicitacoes/HorarioDisponivelModal';
+import AjustePontoModal from '@/components/solicitacoes/AjustePontoModal';
 
 /**
  * O que acontece ao tocar numa notificação.
@@ -27,6 +28,9 @@ export default function useAcoesNotificacoes({ reload, aoAbrirChat } = {}) {
   const [folgaPendente, setFolgaPendente] = useState(null);
   const [horarioLivre, setHorarioLivre] = useState(null);
   const [cutucada, setCutucada] = useState(null);
+  /* Saída automática e saída pendente levam a pessoa direto para o ajuste do
+     ponto, já na ocorrência do aviso: é lá que ela corrige o horário real. */
+  const [ajustePonto, setAjustePonto] = useState(null);
 
   const abrir = async (notificacao) => {
     if (!notificacao) return;
@@ -54,6 +58,11 @@ export default function useAcoesNotificacoes({ reload, aoAbrirChat } = {}) {
 
     if (notificacao.tipo === 'turno_esquecido') {
       setJustificativa(notificacao);
+      return;
+    }
+
+    if (notificacao.tipo === 'saida_automatica' || notificacao.tipo === 'saida_pendente') {
+      setAjustePonto(notificacao);
       return;
     }
 
@@ -130,6 +139,24 @@ export default function useAcoesNotificacoes({ reload, aoAbrirChat } = {}) {
           notification={justificativa}
           onClose={() => setJustificativa(null)}
           onSaved={reload}
+        />
+      ) : null}
+      {ajustePonto ? (
+        <AjustePontoModal
+          usuario={user}
+          chaveInicial={
+            ajustePonto.shift_id && ajustePonto.ocorrencia_data
+              ? `${ajustePonto.shift_id}|${ajustePonto.ocorrencia_data}`
+              : ''
+          }
+          onClose={() => {
+            setAjustePonto(null);
+            reload?.();
+          }}
+          onSaved={() => {
+            setAjustePonto(null);
+            reload?.();
+          }}
         />
       ) : null}
       {confirmacao ? (

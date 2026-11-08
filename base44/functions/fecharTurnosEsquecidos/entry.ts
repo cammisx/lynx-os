@@ -1,14 +1,23 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.27';
 
-// Fecha turnos esquecidos: ocorrências com entrada registrada e sem saída,
-// 2 horas após o fim previsto, ganham saída automática e geram uma notificação
-// pedindo justificativa ao chatter.
+// Fecha turnos deixados abertos: ocorrências com entrada registrada e sem saída
+// ganham saída automática no fim previsto do turno e uma notificação pedindo
+// para o chatter confirmar o horário real em que saiu.
+//
+// A regra da casa: a saída não precisa ser batida no horário do fim. O turno
+// fica aberto enquanto o chatter está trabalhando, e é fechado quando ele sai
+// e bate a saída, quando o próximo chatter da modelo assume, ou 15 minutos
+// depois do fim previsto se ele estiver offline. Quem está online nunca é
+// fechado por aqui.
 //
 // Pode rodar por automação agendada (sem usuário), por admin (varre a equipe
 // inteira) ou por um chatter (varre apenas as próprias ocorrências).
 // É idempotente: nunca duplica saída nem notificação para a mesma ocorrência.
 
-const GRACE_MS = 2 * 60 * 60 * 1000;
+/* Carência depois do fim previsto antes de fechar sozinho. */
+const CARENCIA_MS = 15 * 60 * 1000;
+/* Até 5 minutos atrás conta como "está aqui". Presença é a do chat. */
+const ONLINE_MS = 5 * 60 * 1000;
 const TZ = 'America/Sao_Paulo';
 const PAGE = 500;
 
@@ -158,8 +167,39 @@ export const buildOccurrences = (registros) => {
  * Núcleo do fechamento, sem depender do SDK.
  * `entities` precisa de RegistroPonto.create e Notificacao.filter/create.
  */
-export const processarFechamento = async ({ registros, shifts, now, scopeUserId, entities }) => {
+const ultimoVistoMs = (presenca) => {
+  const bruto = presenca?.ultimo_visto_em;
+  if (!bruto) return 0;
+  const valor = new Date(bruto).getTime();
+  return Number.isFinite(valor) ? valor : 0;
+};
+
+/** Mapa usuario_id -> quando foi visto por último no app. */
+export const mapaDePresenca = (presencas) => {
+  const mapa = new Map();
+  (presencas || []).forEach((presenca) => {
+    const id = presenca?.usuario_id;
+    if (!id) return;
+    const visto = ultimoVistoMs(presenca);
+    if (!mapa.has(id) || mapa.get(id) < visto) mapa.set(id, visto);
+  });
+  return mapa;
+};
+
+export const processarFechamento = async ({
+  registros,
+  shifts,
+  presencas,
+  now,
+  scopeUserId,
+  entities,
+}) => {
   const shiftById = new Map((shifts || []).map((shift) => [shift.id, shift]));
+  const presenca = mapaDePresenca(presencas);
+  const estaOnline = (usuarioId) => {
+    const visto = presenca.get(usuarioId) || 0;
+    return visto > 0 && now - visto <= ONLINE_MS;
+  };
   const occurrences = buildOccurrences(registros || []);
 
   let fechadas = 0;
@@ -178,7 +218,11 @@ export const processarFechamento = async ({ registros, shifts, now, scopeUserId,
 
     const window = occurrenceWindow(shift, entry.dateKey);
     if (!window) continue;
-    if (now < window.end + GRACE_MS) continue;
+    if (now < window.end + CARENCIA_MS) continue;
+
+    /* Online, o turno continua aberto: ele está trabalhando e bate a saída
+       quando terminar de verdade. */
+    if (estaOnline(entry.usuarioId)) continue;
 
     const closeIso = new Date(window.end).toISOString();
     const modeloNome = entry.modeloNome || shift.modelo_nome || '—';
@@ -222,13 +266,17 @@ export const processarFechamento = async ({ registros, shifts, now, scopeUserId,
       if (!jaNotificado) {
         await entities.Notificacao.create({
           usuario_id: entry.usuarioId,
-          titulo: 'Saída não registrada',
+          titulo: 'Saída marcada automaticamente',
           mensagem: `Seu turno em ${modeloNome} de ${dateLabel(
             entry.dateKey
-          )} foi encerrado automaticamente às ${timeLabel(
+          )} foi fechado no fim previsto, às ${timeLabel(
             window.end
-          )} porque a saída não foi registrada. Informe o que aconteceu.`,
-          tipo: 'turno_esquecido',
+          )}, porque você estava fora do app. Saída registrada às ${timeLabel(
+            window.end
+          )}. Se você saiu em outro horário, ajuste aqui.`,
+          tipo: 'saida_automatica',
+          turno_inicio: new Date(window.start).toISOString(),
+          turno_fim: new Date(window.end).toISOString(),
           shift_id: entry.shiftId,
           ocorrencia_data: entry.dateKey,
           status: 'pendente',
@@ -275,11 +323,18 @@ Deno.serve(async (req) => {
       return out;
     };
 
-    const [registros, shifts] = await Promise.all([fetchAll('RegistroPonto'), fetchAll('Shift')]);
+    const [registros, shifts, presencas] = await Promise.all([
+      fetchAll('RegistroPonto'),
+      fetchAll('Shift'),
+      base44.asServiceRole.entities.ChatPresenca.list('-ultimo_visto_em', PAGE)
+        .then((lista) => lista || [])
+        .catch(() => []),
+    ]);
 
     const result = await processarFechamento({
       registros,
       shifts,
+      presencas,
       now: Date.now(),
       scopeUserId,
       entities: base44.asServiceRole.entities,
