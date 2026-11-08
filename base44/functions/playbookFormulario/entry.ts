@@ -6,7 +6,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.27';
 // precisa de nenhuma: esta função é chamada por HTTP, sem usuário logado, e
 // trabalha com service role.
 //
-// O que ela sabe fazer, e só isso:
+// O que ela sabe fazer, e só isso: 
 //   GET  ?token=...        devolve o formulário daquele convite
 //   POST token + q_<id>    grava as respostas no playbook da modelo
 //
