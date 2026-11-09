@@ -31,3 +31,25 @@ export const itemChamarPixie = ({ x = 0, y = 0, alvo = null } = {}) => ({
   rotulo: 'Chamar Pixie',
   acao: () => chamarPixie({ x, y, alvo }),
 });
+
+/* ---------- o tutorial da primeira vez ---------- */
+
+const CHAVE_VISTO = 'lynx:tutorial-pixie-visto';
+
+/* Se a pessoa já passou pelo tutorial da Pixie. */
+export const tutorialPixieVisto = () => {
+  try {
+    return window.localStorage.getItem(CHAVE_VISTO) === '1';
+  } catch {
+    return false;
+  }
+};
+
+/* Marca que ela já se apresentou: na sequência da conta, não volta. */
+export const marcarTutorialPixieVisto = () => {
+  try {
+    window.localStorage.setItem(CHAVE_VISTO, '1');
+  } catch {
+    /* Sem armazenamento o tutorial só repete: nada quebra. */
+  }
+};

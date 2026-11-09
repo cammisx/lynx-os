@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import GuiaPixie from '@/components/tutorial/GuiaPixie';
 import MenuFlutuante from '@/components/desktop/MenuFlutuante';
 import { useAuth } from '@/lib/AuthContext';
 import { salvarPerfil } from '@/lib/perfilUsuario';
-import { assinarChamadoPixie } from '@/lib/pixie';
+import { assinarChamadoPixie, marcarTutorialPixieVisto } from '@/lib/pixie';
 import { SEM_TUTORIAL, falaDoElemento, falaDoPonto } from '@/lib/pixieTutoriais';
 
 /**
@@ -44,18 +45,23 @@ const PROXIMO = {
 };
 
 const CHAMADO_PARA_PERGUNTAR = 'Sobre o que você quer saber? Clique no lugar.';
-const DESPEDIDA = 'Ok, se precisar, é só me chamar com o botão direito!';
+const AGRADECIMENTO = 'Eu que agradeço! Qualquer coisa, é só me chamar com o botão direito.';
+const DESPEDIDA = 'Até logo! Se precisar, é só me chamar com o botão direito!';
 const ESPERA_DA_DESPEDIDA = 2600; // tempo para ler a despedida antes de sair
+
+/* Depois dela, o sistema é da pessoa: a rota inicial, com a mesa à vontade. */
+const ROTA_DEPOIS = '/';
 
 export default function TutorialRoteiro() {
   const { user } = useAuth();
+  const navegar = useNavigate();
   const [passo, setPasso] = useState('boasVindas');
   const [nome, setNome] = useState(() => user?.nome_exibicao || '');
   const [enviando, setEnviando] = useState(false);
   const [resposta, setResposta] = useState(null);
   const [apontando, setApontando] = useState(false);
   const [menu, setMenu] = useState(null);
-  const [saindo, setSaindo] = useState(false);
+  const [saida, setSaida] = useState(null);
   const [encerrado, setEncerrado] = useState(false);
   const campoRef = useRef(null);
 
@@ -78,24 +84,27 @@ export default function TutorialRoteiro() {
     []
   );
 
-  /* Depois da despedida ela sai da tela. */
+  /* Terminada a fala de saída, ela sai da tela e a pessoa cai na mesa. */
   useEffect(() => {
-    if (!saindo) return undefined;
-    const t = setTimeout(() => setEncerrado(true), ESPERA_DA_DESPEDIDA);
+    if (!saida) return undefined;
+    const t = setTimeout(() => {
+      setEncerrado(true);
+      navegar(ROTA_DEPOIS, { replace: true });
+    }, ESPERA_DA_DESPEDIDA);
     return () => clearTimeout(t);
-  }, [saindo]);
+  }, [saida, navegar]);
 
   const fala = useMemo(() => {
-    if (saindo) return DESPEDIDA;
+    if (saida) return saida;
     if (resposta) return resposta;
     if (apontando) return CHAMADO_PARA_PERGUNTAR;
     return FALAS[passo];
-  }, [saindo, resposta, apontando, passo]);
+  }, [saida, resposta, apontando, passo]);
 
   /* O clique na tela: aponta o lugar, fecha uma resposta antiga ou segue o
      roteiro. O menu aberto não deixa o clique vazar para cá. */
   const aoCliqueNaTela = (evento) => {
-    if (saindo) return;
+    if (saida) return;
 
     if (apontando) {
       const apontado =
@@ -108,12 +117,21 @@ export default function TutorialRoteiro() {
       setResposta(null);
       return;
     }
+    /* No último passo do roteiro ela já está explicando: um clique normal
+       vira "me conta o que é isso aqui" em vez de não fazer nada. */
+    if (passo === 'atalho') {
+      setResposta(falaDoPonto(evento?.clientX ?? 0, evento?.clientY ?? 0) || SEM_TUTORIAL);
+      return;
+    }
     const proximo = PROXIMO[passo];
     if (proximo) setPasso(proximo);
   };
 
   const capturarClique =
-    !encerrado && !saindo && !menu && (apontando || Boolean(resposta) || SAI_NO_CLIQUE.includes(passo));
+    !encerrado &&
+    !saida &&
+    !menu &&
+    (apontando || Boolean(resposta) || passo === 'atalho' || SAI_NO_CLIQUE.includes(passo));
 
   const enviarNome = async (evento) => {
     evento.preventDefault();
@@ -131,6 +149,15 @@ export default function TutorialRoteiro() {
     setPasso('apresentacao');
   };
 
+  /* Ela sai da tela: fala a frase, some e a pessoa fica na mesa. */
+  const sair = (fala) => {
+    setMenu(null);
+    setApontando(false);
+    setResposta(null);
+    marcarTutorialPixieVisto();
+    setSaida(fala);
+  };
+
   const itensDoMenu = [
     {
       id: 'perguntar',
@@ -141,7 +168,8 @@ export default function TutorialRoteiro() {
       },
     },
     { separador: true },
-    { id: 'pular', rotulo: 'Pular tutorial', acao: () => setSaindo(true) },
+    { id: 'agradecer', rotulo: 'Agradecer', acao: () => sair(AGRADECIMENTO) },
+    { id: 'despedir', rotulo: 'Se despedir', acao: () => sair(DESPEDIDA) },
   ];
 
   if (encerrado) return null;
@@ -154,7 +182,7 @@ export default function TutorialRoteiro() {
         aoClique={aoCliqueNaTela}
         aoMenu={({ x, y }) => setMenu({ x, y })}
       >
-        {passo === 'nome' && !saindo && !resposta && !apontando ? (
+        {passo === 'nome' && !saida && !resposta && !apontando ? (
           <form
             onSubmit={enviarNome}
             style={{
