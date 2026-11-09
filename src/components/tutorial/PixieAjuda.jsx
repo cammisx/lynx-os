@@ -209,15 +209,19 @@ export default function PixieAjuda() {
               explicarLugar(x, y);
               return;
             }
-            /* Parada em silêncio: só o clique nela reage, abrindo o menu. */
-            if (descansando || !estado?.apontando) {
-              setMenu({ x, y });
-              return;
-            }
-            /* Esperando um pedido: clique nela é pedido para ela se explicar. */
+            /* Clique nela: em qualquer estado ela se explica (o menu dela
+               continua no botão direito). */
             if (naPixie) {
               setEstado(null);
+              setMenu(null);
+              setDescansando(false);
               setSobre(0);
+              return;
+            }
+            /* Sem espera (já explicou o lugar, ou está em silêncio): o clique
+               na tela é o menu de antes. */
+            if (descansando || !estado?.apontando) {
+              setMenu({ x, y });
               return;
             }
             explicarLugar(x, y);
