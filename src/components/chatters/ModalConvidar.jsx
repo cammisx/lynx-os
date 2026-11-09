@@ -219,7 +219,7 @@ export default function ModalConvidar({ modelos = [], onFechar, onEnviar }) {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 14000,
+        zIndex: 9900,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

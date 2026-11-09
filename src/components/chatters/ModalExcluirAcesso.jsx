@@ -76,7 +76,7 @@ export default function ModalExcluirAcesso({ usuario, onFechar, onConfirmar }) {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 14000,
+        zIndex: 9900,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
