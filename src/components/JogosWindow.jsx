@@ -16,7 +16,7 @@ import {
 import { IconeEngrenagem, PainelConfig, dourado, escuro, formatarTempo } from '@/components/jogos/EstruturaJogo';
 import { Icone2048, IconeCampo, IconeCobrinha, IconePokemon, IconeRebate } from '@/components/jogos/icones';
 import Jogo2048 from '@/components/jogos/Jogo2048';
-import JogoSnake from '@/components/jogos/JogoSnake';
+import JogoSolicitacaoMidia from '@/components/jogos/JogoSolicitacaoMidia';
 import JogoCampoMinado from '@/components/jogos/JogoCampoMinado';
 import JogoBreakout from '@/components/jogos/JogoBreakout';
 import QuemEhEssePokemon from '@/components/jogos/QuemEhEssePokemon';
@@ -43,10 +43,10 @@ const JOGOS = [
   },
   {
     id: 'snake',
-    nome: 'Cobrinha',
-    dica: 'Coma e nao se enrosque',
+    nome: 'SOLICITAÇÃO DE MÍDIA',
+    dica: 'Vai, amor, deixa eu ver a sua cobrinha',
     Icone: IconeCobrinha,
-    Componente: JogoSnake,
+    Componente: JogoSolicitacaoMidia,
     rotuloRecorde: 'recorde',
   },
   {

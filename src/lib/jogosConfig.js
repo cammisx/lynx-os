@@ -13,6 +13,7 @@
  */
 
 import { PASSOS_COM_FRASE } from './sextingTextos.js';
+import { TONS_PELE } from './solicitacaoMidia.js';
 
 /* Versao do formato: se um dia mudar a regua dos recordes, subir aqui deixa
    claro que o valor antigo pode nao valer mais. */
@@ -45,7 +46,7 @@ export const JOGOS_PADRAO = {
   /* `direcional`: mostra as setas de vidro na tela (util no celular). */
   geral: { direcional: true, pausarFora: true },
   '2048': { tamanho: 4, partidas: {}, vistos: [] },
-  snake: { velocidade: 'normal', grade: 'media', paredes: 'morte' },
+  snake: { velocidade: 'normal', grade: 'media', paredes: 'morte', pele: 'morena', pelos: false },
   campo: { dificuldade: 'facil', largura: 9, altura: 9, minas: 10 },
   breakout: { vidas: 5, velocidade: 'normal', fileiras: 5 },
   recordes: {},
@@ -170,6 +171,9 @@ export const normalizarJogos = (bruto) => {
       velocidade: escolha(snake.velocidade, VELOCIDADES, JOGOS_PADRAO.snake.velocidade),
       grade: escolha(snake.grade, GRADES, JOGOS_PADRAO.snake.grade),
       paredes: escolha(snake.paredes, PAREDES, JOGOS_PADRAO.snake.paredes),
+      /* Pele e pelos sao so visual: nao entram na chave do recorde. */
+      pele: escolha(snake.pele, TONS_PELE, JOGOS_PADRAO.snake.pele),
+      pelos: typeof snake.pelos === 'boolean' ? snake.pelos : JOGOS_PADRAO.snake.pelos,
     },
     campo: normalizarCampo(base.campo),
     breakout: {
