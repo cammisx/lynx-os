@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import MenuFlutuante from '@/components/desktop/MenuFlutuante';
 import { CloseIcon } from '@/components/icons';
@@ -1437,16 +1438,17 @@ export default function PaintCanvas() {
         <MenuFlutuante x={menu.x} y={menu.y} itens={itensMenu} onFechar={() => setMenu(null)} />
       ) : null}
 
-      {confirmarLimpar ? (
+      {confirmarLimpar ? createPortal(
         <div
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 9400,
             display: 'flex',
-            alignItems: 'center',
+            alignItems: pequeno ? 'flex-end' : 'center',
             justifyContent: 'center',
-            padding: 12,
+            /* No celular o aviso sobe acima da barra inferior do app. */
+            padding: pequeno ? '12px 12px calc(70px + env(safe-area-inset-bottom))' : 12,
             background: 'rgba(0,0,0,0.45)',
             backdropFilter: 'blur(3px)',
             WebkitBackdropFilter: 'blur(3px)',
@@ -1456,7 +1458,17 @@ export default function PaintCanvas() {
             if (evento.target === evento.currentTarget) setConfirmarLimpar(false);
           }}
         >
-          <div role="dialog" aria-modal="true" aria-label="Limpar tudo" style={{ ...MODAL_CAIXA, width: 380 }}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Limpar tudo"
+            style={{
+              ...MODAL_CAIXA,
+              width: 380,
+              maxWidth: '100%',
+              ...(pequeno ? { maxHeight: 'calc(100dvh - 140px)' } : null),
+            }}
+          >
             <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
               <span
                 style={{
@@ -1489,7 +1501,8 @@ export default function PaintCanvas() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       ) : null}
 
       {novoAberto ? (
