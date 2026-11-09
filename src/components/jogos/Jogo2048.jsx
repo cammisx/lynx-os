@@ -1,12 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BotaoVidro, MolduraJogo, PainelConfig, dourado, escuro } from '@/components/jogos/EstruturaJogo';
 import { AvisoJogo, DpadVidro, useSwipe, useTeclado } from '@/components/jogos/ControlesJogo';
+import {
+  INSTRUCAO_SEXTING,
+  nomeDoPasso,
+  rotuloDoBloco,
+  sortearFrase,
+  temFrase,
+} from '@/components/jogos/sextingTextos';
 
 /**
- * 2048: some numeros iguais ate chegar na meta.
+ * SEXTING (o 2048 da casa): junte dois passos iguais e suba a sequencia.
  *
  * Tabuleiro de 3x3 a 6x6 (o 4x4 classico e o padrao). Cada tamanho tem o seu
- * recorde, porque um 6x6 da muito mais espaco para pontuar que um 3x3.
+ * recorde, porque um 6x6 da muito mais espaco para pontuar que um 3x3. Nao
+ * existe meta: depois da Chamada (8192) a partida segue somando pontos.
  */
 
 const vazio = (n) => Array.from({ length: n * n }, () => 0);
@@ -110,7 +118,6 @@ export default function Jogo2048({
   aoApagarRecordes,
 }) {
   const n = valores.tamanho;
-  const meta = valores.meta;
 
   /* A partida salva so vale se for do mesmo tamanho de tabuleiro: um 4x4 nao
      pode aparecer num 6x6. */
@@ -121,10 +128,8 @@ export default function Jogo2048({
   );
   const [pontos, setPontos] = useState(() => (partidaSalva ? partidaSalva.pontos : 0));
   const [fim, setFim] = useState(null);
-  const [metaBatida, setMetaBatida] = useState(() =>
-    Boolean(partidaSalva && partidaSalva.celulas.some((valor) => valor >= meta))
-  );
   const [painel, setPainel] = useState(false);
+  const [balao, setBalao] = useState(null);
   const tabuleiro = useRef(null);
 
   /* O tabuleiro que vale fica na ref: salvar e desenhar nao esperam o setState. */
@@ -136,6 +141,37 @@ export default function Jogo2048({
   const relogioSalvar = useRef(null);
   const partidaPendente = useRef(null);
   const jaMontou = useRef(false);
+
+  /* Passos que ja mandaram recado nesta partida: cada fala aparece so na
+     primeira vez. Partida retomada ja nasce com o que esta no tabuleiro. */
+  const anunciados = useRef(new Set());
+  const ultimaFrase = useRef(null);
+  const relogioBalao = useRef(null);
+
+  const marcarAnunciados = useCallback((tab) => {
+    anunciados.current = new Set(tab.filter((valor) => temFrase(valor)));
+  }, []);
+
+  useEffect(() => {
+    if (partidaSalva) marcarAnunciados(partidaSalva.celulas);
+  }, [marcarAnunciados, partidaSalva]);
+
+  const mostrarBalao = useCallback((valor) => {
+    const frase = sortearFrase(valor, ultimaFrase.current);
+    if (!frase) return;
+    ultimaFrase.current = frase;
+    anunciados.current.add(valor);
+    setBalao({ valor, frase });
+    if (relogioBalao.current) clearTimeout(relogioBalao.current);
+    relogioBalao.current = setTimeout(() => setBalao(null), 9000);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (relogioBalao.current) clearTimeout(relogioBalao.current);
+    },
+    []
+  );
 
   const gravarAgora = useCallback(() => {
     if (relogioSalvar.current) {
@@ -181,24 +217,26 @@ export default function Jogo2048({
     setCelulas(nova);
     setPontos(0);
     setFim(null);
-    setMetaBatida(false);
+    setBalao(null);
+    anunciados.current = new Set();
     esquecerPartida();
   }, [esquecerPartida, n]);
 
   /* Trocar o tamanho no painel abre a partida salva daquele tamanho (ou uma
-     nova, se nao houver). Mudar a meta nao reinicia nada. */
+     nova, se nao houver). */
   useEffect(() => {
     if (!jaMontou.current) {
       jaMontou.current = true;
       return;
     }
     setFim(null);
+    setBalao(null);
     if (partidaSalva) {
       celulasRef.current = partidaSalva.celulas;
       pontosRef.current = partidaSalva.pontos;
       setCelulas(partidaSalva.celulas);
       setPontos(partidaSalva.pontos);
-      setMetaBatida(partidaSalva.celulas.some((valor) => valor >= meta));
+      marcarAnunciados(partidaSalva.celulas);
       return;
     }
     const nova = comecar(n);
@@ -206,7 +244,7 @@ export default function Jogo2048({
     pontosRef.current = 0;
     setCelulas(nova);
     setPontos(0);
-    setMetaBatida(false);
+    anunciados.current = new Set();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [n]);
 
@@ -247,11 +285,9 @@ export default function Jogo2048({
       setCelulas(comNova);
       setPontos(total);
 
-      /* Chegar na meta nao para o jogo: so avisa uma vez e segue somando. */
-      if (Math.max(...comNova) >= meta && !metaBatida) {
-        setMetaBatida(true);
-        aoRecorde?.(total);
-      }
+      /* Recado da modelo na primeira vez que o passo aparece nesta partida. */
+      const novos = comNova.filter((valor) => temFrase(valor) && !anunciados.current.has(valor));
+      if (novos.length) mostrarBalao(Math.max(...novos));
 
       if (!temJogada(comNova, n)) {
         setFim('derrota');
@@ -262,7 +298,7 @@ export default function Jogo2048({
 
       agendarPartida(comNova, total);
     },
-    [agendarPartida, aoRecorde, esquecerPartida, fim, meta, metaBatida, n, painel]
+    [agendarPartida, aoRecorde, esquecerPartida, fim, mostrarBalao, n, painel]
   );
 
   useTeclado(
@@ -287,26 +323,26 @@ export default function Jogo2048({
       tipo: 'segmentos',
       opcoes: [3, 4, 5, 6].map((valor) => ({ valor, rotulo: `${valor}x${valor}` })),
     },
-    {
-      chave: 'meta',
-      rotulo: 'Meta',
-      tipo: 'segmentos',
-      opcoes: [1024, 2048, 4096, 8192].map((valor) => ({ valor, rotulo: String(valor) })),
-    },
   ];
 
-  /* Fonte presa a grade: o bloco nunca muda de tamanho, so o numero encolhe
-     quando ganha mais digitos. */
+  /* Fonte presa ao bloco: o bloco nunca muda de tamanho, so o texto encolhe
+     quando a palavra e longa ou o tabuleiro e grande. */
   const fonteCasa = (valor) => {
+    if (!valor) return 12;
+    const texto = rotuloDoBloco(valor);
+    const numerico = /^\d+$/.test(texto);
+    if (!numerico) {
+      return n >= 6 ? 9 : n === 5 ? 10 : n === 4 ? 11.5 : 13;
+    }
     const base = n >= 6 ? 14 : n === 5 ? 16 : n === 4 ? 20 : 23;
-    const digitos = String(valor || 0).length;
-    const fator = digitos >= 5 ? 0.6 : digitos === 4 ? 0.74 : digitos === 3 ? 0.9 : 1;
+    const digitos = texto.length;
+    const fator = digitos >= 5 ? 0.6 : digitos === 4 ? 0.74 : 1;
     return Math.round(base * fator);
   };
 
   return (
     <MolduraJogo
-      titulo="2048"
+      titulo="SEXTING"
       aoVoltar={aoVoltar}
       recorde={recorde}
       aoAbrirConfig={() => setPainel((aberto) => !aberto)}
@@ -314,14 +350,14 @@ export default function Jogo2048({
       painel={
         painel ? (
           <PainelConfig
-            titulo="2048"
+            titulo="SEXTING"
             campos={campos}
             valores={valores}
             aoMudar={aoMudar}
             aoFechar={() => setPainel(false)}
             aoRestaurar={aoRestaurar}
             aoApagarRecordes={aoApagarRecordes}
-            nota="Cada tamanho de tabuleiro tem o seu proprio recorde. A partida em andamento volta quando voce reabrir, em qualquer aparelho."
+            nota={`${INSTRUCAO_SEXTING} Cada tamanho de tabuleiro tem o seu próprio recorde, e a partida em andamento volta quando você reabrir, em qualquer aparelho.`}
           />
         ) : null
       }
@@ -336,11 +372,54 @@ export default function Jogo2048({
           </span>
           <div style={{ flex: 1 }} />
           <span style={{ fontFamily: 'var(--font-main)', fontSize: 10, color: escuro(50) }}>
-            {metaBatida ? `meta ${meta} batida` : `meta ${meta}`}
+            sem meta: vai até o infinito
           </span>
         </div>
 
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+          {balao ? (
+            <div
+              role="status"
+              onClick={() => setBalao(null)}
+              style={{
+                position: 'absolute',
+                top: -4,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 3,
+                maxWidth: 300,
+                padding: '9px 12px',
+                borderRadius: 12,
+                border: `1px solid ${dourado(46)}`,
+                background: 'color-mix(in srgb, var(--c8) 88%, transparent)',
+                boxShadow: '0 10px 26px rgba(0,0,0,0.35)',
+                fontFamily: 'var(--font-main)',
+                cursor: 'pointer',
+                animation: 'balaoSobe 220ms ease-out',
+              }}
+            >
+              <div style={{ fontSize: 8.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: dourado(72), marginBottom: 3 }}>
+                {nomeDoPasso(balao.valor)}
+              </div>
+              <div style={{ fontSize: 12.5, lineHeight: 1.35, color: 'var(--c3)' }}>
+                {balao.frase}
+              </div>
+              <span
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  bottom: -6,
+                  width: 10,
+                  height: 10,
+                  transform: 'translateX(-50%) rotate(45deg)',
+                  borderRight: `1px solid ${dourado(46)}`,
+                  borderBottom: `1px solid ${dourado(46)}`,
+                  background: 'color-mix(in srgb, var(--c8) 88%, transparent)',
+                }}
+              />
+            </div>
+          ) : null}
+
           <div
             ref={tabuleiro}
             style={{
@@ -370,7 +449,9 @@ export default function Jogo2048({
                   minHeight: 0,
                   overflow: 'hidden',
                   padding: 0,
-                  lineHeight: 1,
+                  lineHeight: 1.05,
+                  textAlign: 'center',
+                  letterSpacing: '0.02em',
                   borderRadius: 8,
                   fontFamily: 'var(--font-main)',
                   fontSize: fonteCasa(valor),
@@ -378,7 +459,7 @@ export default function Jogo2048({
                   transition: 'background 120ms ease, color 120ms ease',
                 }}
               >
-                {valor || ''}
+                {valor ? rotuloDoBloco(valor) : ''}
               </div>
             ))}
           </div>
@@ -397,25 +478,19 @@ export default function Jogo2048({
           ) : null}
         </div>
 
-        {metaBatida && !fim ? (
-          <div
-            style={{
-              fontFamily: 'var(--font-main)',
-              fontSize: 11,
-              color: dourado(72),
-              textAlign: 'center',
-            }}
-          >
-            Chegou em {meta}! O jogo continua, some o quanto quiser.
-          </div>
-        ) : null}
-
         {geral.direcional ? (
           <div style={{ marginTop: 'auto' }}>
             <DpadVidro aoDirecao={jogar} desabilitado={Boolean(fim)} />
           </div>
         ) : null}
       </div>
+
+      <style>{`
+        @keyframes balaoSobe {
+          from { opacity: 0; transform: translate(-50%, 8px); }
+          to   { opacity: 1; transform: translate(-50%, 0); }
+        }
+      `}</style>
     </MolduraJogo>
   );
 }

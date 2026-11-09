@@ -32,7 +32,6 @@ export const CAMPO_PRESETS = {
 
 export const LIMITES = {
   tamanho2048: [3, 6],
-  meta2048: [1024, 16384],
   campoLargura: [5, 30],
   campoAltura: [5, 20],
   vidasBreakout: [1, 9],
@@ -43,7 +42,7 @@ export const JOGOS_PADRAO = {
   versao: VERSAO_JOGOS,
   /* `direcional`: mostra as setas de vidro na tela (util no celular). */
   geral: { direcional: true, pausarFora: true },
-  '2048': { tamanho: 4, meta: 2048, partidas: {} },
+  '2048': { tamanho: 4, partidas: {} },
   snake: { velocidade: 'normal', grade: 'media', paredes: 'morte' },
   campo: { dificuldade: 'facil', largura: 9, altura: 9, minas: 10 },
   breakout: { vidas: 5, velocidade: 'normal', fileiras: 5 },
@@ -149,7 +148,6 @@ export const normalizarJogos = (bruto) => {
     },
     '2048': {
       tamanho: inteiro(j2048.tamanho, LIMITES.tamanho2048, JOGOS_PADRAO['2048'].tamanho),
-      meta: inteiro(j2048.meta, LIMITES.meta2048, JOGOS_PADRAO['2048'].meta),
       partidas: normalizarPartidas(j2048.partidas),
     },
     snake: {

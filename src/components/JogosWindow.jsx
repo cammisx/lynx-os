@@ -35,8 +35,8 @@ import QuemEhEssePokemon from '@/components/jogos/QuemEhEssePokemon';
 const JOGOS = [
   {
     id: '2048',
-    nome: '2048',
-    dica: 'Some os numeros iguais',
+    nome: 'SEXTING',
+    dica: 'Siga os passos e venda o máximo que puder',
     Icone: Icone2048,
     Componente: Jogo2048,
     rotuloRecorde: 'recorde',
