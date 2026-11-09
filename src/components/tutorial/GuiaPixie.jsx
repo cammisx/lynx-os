@@ -28,7 +28,7 @@ const VELOCIDADE_Y = 1.35; // radianos por segundo: um sobe e desce a cada 4,6s
 /* Tamanho de um quadro na folha e o quanto ele cresce na tela. */
 const QUADRO_LARG = 104;
 const QUADRO_ALT = 96;
-const QUADROS = 9;
+const QUADROS = 3;
 /* 0,75 deixa o desenho no mesmo tamanho de antes na tela (78x72). */
 const ESCALA = 0.75;
 const LARGURA = QUADRO_LARG * ESCALA;
@@ -76,7 +76,7 @@ const ESTILOS = `
   inset: 0;
   background-image: url(/tutorial/pixie-corpo.png);
   background-size: ${LARGURA * QUADROS}px ${ALTURA}px;
-  animation: pixie-quadros 0.9s steps(${QUADROS}) infinite;
+  animation: pixie-quadros 0.42s steps(${QUADROS}) infinite;
 }
 .pixie-pisca { animation: pixie-pisca 2.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
