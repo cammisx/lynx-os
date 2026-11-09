@@ -168,6 +168,7 @@ export default function JogosWindow({ onClose }) {
               geral={config.geral}
               recorde={recordeDaConfig(jogoAberto.id, config)}
               partida={partidaDoJogo(config, jogoAberto.id, config[jogoAberto.id]?.tamanho)}
+              vistos={config[jogoAberto.id]?.vistos || []}
               aoPartida={(partida) => salvarPartida(jogoAberto.id, partida)}
               aoRecorde={(valor) => registrar(jogoAberto.id, valor)}
               aoMudar={(parcial) => mudarJogo(jogoAberto.id, parcial)}

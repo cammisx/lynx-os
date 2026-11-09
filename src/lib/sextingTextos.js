@@ -6,35 +6,35 @@
  * volta a mostrar o numero, porque a sequencia nao tem fim (16384, 32768...).
  */
 export const PASSOS = {
-  2: { curto: 'Inicial', nome: 'Inicial' },
-  4: { curto: 'Peito', nome: 'Vídeo do peito' },
-  8: { curto: 'Strip', nome: 'Vídeo strip' },
-  16: { curto: 'PPK', nome: 'Vídeo peito e PPK' },
-  32: { curto: 'Mast. 1', nome: 'Masturbação 1' },
-  64: { curto: 'Mast. 2', nome: 'Masturbação 2' },
-  128: { curto: 'Mast. 3', nome: 'Masturbação 3' },
-  256: { curto: 'Mast. 4', nome: 'Masturbação 4' },
-  512: { curto: 'Mast. 5', nome: 'Masturbação 5' },
-  1024: { curto: 'Final', nome: 'Finalização' },
-  2048: { curto: 'Mídia', nome: 'Solicitação de mídia' },
-  4096: { curto: 'Perso', nome: 'Personalizado' },
-  8192: { curto: 'Chamada', nome: 'Chamada' },
+  2: 'Inicial',
+  4: 'Vídeo do peito',
+  8: 'Vídeo strip',
+  16: 'Vídeo peito e PPK',
+  32: 'Masturbação 1',
+  64: 'Masturbação 2',
+  128: 'Masturbação 3',
+  256: 'Masturbação 4',
+  512: 'Masturbação 5',
+  1024: 'Finalização',
+  2048: 'Solicitação de mídia',
+  4096: 'Personalizado',
+  8192: 'Chamada',
 };
 
 /** A tabela completa, na ordem, para a instrucao das configuracoes. */
-export const SEQUENCIA = Object.entries(PASSOS).map(([valor, passo]) => ({
+export const SEQUENCIA = Object.entries(PASSOS).map(([valor, nome]) => ({
   valor: Number(valor),
-  ...passo,
+  nome,
 }));
 
-/** Texto que aparece dentro do bloco: o passo, ou o numero quando passa de 8192. */
-export const rotuloDoBloco = (valor) => {
-  const passo = PASSOS[valor];
-  if (!passo) return String(valor);
-  return passo.curto.toUpperCase();
-};
+/**
+ * Texto que aparece dentro do bloco: o nome inteiro do passo, ou o numero
+ * quando passa de 8192 (a sequencia nao tem fim).
+ */
+export const rotuloDoBloco = (valor) => (PASSOS[valor] ? PASSOS[valor].toUpperCase() : String(valor));
 
-export const nomeDoPasso = (valor) => PASSOS[valor]?.nome || String(valor);
+export const nomeDoPasso = (valor) => PASSOS[valor] || String(valor);
+
 
 /**
  * Falas da modelo, disparadas na PRIMEIRA vez que o passo aparece na partida.
@@ -57,6 +57,11 @@ export const FRASES = {
 };
 
 export const temFrase = (valor) => Object.prototype.hasOwnProperty.call(FRASES, valor);
+
+/** Todos os passos que tem fala, em ordem. */
+export const PASSOS_COM_FRASE = Object.keys(FRASES)
+  .map(Number)
+  .sort((a, b) => a - b);
 
 /** Sorteia uma fala do passo, sem repetir a ultima que saiu. */
 export const sortearFrase = (valor, ultima = null) => {

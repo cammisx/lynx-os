@@ -7,7 +7,7 @@ import {
   rotuloDoBloco,
   sortearFrase,
   temFrase,
-} from '@/components/jogos/sextingTextos';
+} from '@/lib/sextingTextos';
 
 /**
  * SEXTING (o 2048 da casa): junte dois passos iguais e suba a sequencia.
@@ -39,11 +39,13 @@ const comecar = (n) => plantar(plantar(vazio(n)));
 const juntar = (valores) => {
   const numeros = valores.filter(Boolean);
   const saida = [];
+  const criados = [];
   let ganho = 0;
   for (let i = 0; i < numeros.length; i += 1) {
     if (numeros[i] === numeros[i + 1]) {
       const dobrado = numeros[i] * 2;
       saida.push(dobrado);
+      criados.push(dobrado);
       ganho += dobrado;
       i += 1;
     } else {
@@ -51,7 +53,7 @@ const juntar = (valores) => {
     }
   }
   while (saida.length < valores.length) saida.push(0);
-  return { linha: saida, ganho };
+  return { linha: saida, ganho, criados };
 };
 
 const indicesDaLinha = (i, n, direcao) => {
@@ -65,18 +67,20 @@ const indicesDaLinha = (i, n, direcao) => {
 
 const mover = (celulas, n, direcao) => {
   const saida = [...celulas];
+  const criados = [];
   let ganho = 0;
   let mudou = false;
   for (let i = 0; i < n; i += 1) {
     const indices = indicesDaLinha(i, n, direcao);
-    const { linha, ganho: soma } = juntar(indices.map((indice) => celulas[indice]));
+    const { linha, ganho: soma, criados: novos } = juntar(indices.map((indice) => celulas[indice]));
     ganho += soma;
+    criados.push(...novos);
     indices.forEach((indice, k) => {
       if (saida[indice] !== linha[k]) mudou = true;
       saida[indice] = linha[k];
     });
   }
-  return { celulas: saida, ganho, mudou };
+  return { celulas: saida, ganho, mudou, criados };
 };
 
 const temJogada = (celulas, n) =>
@@ -110,6 +114,7 @@ export default function Jogo2048({
   geral,
   recorde,
   partida,
+  vistos,
   aoRecorde,
   aoPartida,
   aoMudar,
@@ -130,6 +135,7 @@ export default function Jogo2048({
   const [fim, setFim] = useState(null);
   const [painel, setPainel] = useState(false);
   const [balao, setBalao] = useState(null);
+  const [larguraTabuleiro, setLarguraTabuleiro] = useState(380);
   const tabuleiro = useRef(null);
 
   /* O tabuleiro que vale fica na ref: salvar e desenhar nao esperam o setState. */
@@ -142,29 +148,28 @@ export default function Jogo2048({
   const partidaPendente = useRef(null);
   const jaMontou = useRef(false);
 
-  /* Passos que ja mandaram recado nesta partida: cada fala aparece so na
-     primeira vez. Partida retomada ja nasce com o que esta no tabuleiro. */
-  const anunciados = useRef(new Set());
+  /* Cada fala aparece UMA vez na vida da conta: a lista do que ja foi visto
+     fica no perfil (jogos_config), nao no aparelho. */
+  const vistosRef = useRef(vistos || []);
+  vistosRef.current = vistos || [];
   const ultimaFrase = useRef(null);
   const relogioBalao = useRef(null);
 
-  const marcarAnunciados = useCallback((tab) => {
-    anunciados.current = new Set(tab.filter((valor) => temFrase(valor)));
-  }, []);
-
-  useEffect(() => {
-    if (partidaSalva) marcarAnunciados(partidaSalva.celulas);
-  }, [marcarAnunciados, partidaSalva]);
-
-  const mostrarBalao = useCallback((valor) => {
-    const frase = sortearFrase(valor, ultimaFrase.current);
-    if (!frase) return;
-    ultimaFrase.current = frase;
-    anunciados.current.add(valor);
-    setBalao({ valor, frase });
-    if (relogioBalao.current) clearTimeout(relogioBalao.current);
-    relogioBalao.current = setTimeout(() => setBalao(null), 9000);
-  }, []);
+  const mostrarBalao = useCallback(
+    (valor) => {
+      const frase = sortearFrase(valor, ultimaFrase.current);
+      if (!frase) return;
+      ultimaFrase.current = frase;
+      /* Marca antes de mandar para o banco: dois merges seguidos nao repetem. */
+      const novosVistos = [...new Set([...vistosRef.current, valor])];
+      vistosRef.current = novosVistos;
+      aoMudar?.({ vistos: novosVistos });
+      setBalao({ valor, frase });
+      if (relogioBalao.current) clearTimeout(relogioBalao.current);
+      relogioBalao.current = setTimeout(() => setBalao(null), 9000);
+    },
+    [aoMudar]
+  );
 
   useEffect(
     () => () => {
@@ -218,7 +223,6 @@ export default function Jogo2048({
     setPontos(0);
     setFim(null);
     setBalao(null);
-    anunciados.current = new Set();
     esquecerPartida();
   }, [esquecerPartida, n]);
 
@@ -236,7 +240,6 @@ export default function Jogo2048({
       pontosRef.current = partidaSalva.pontos;
       setCelulas(partidaSalva.celulas);
       setPontos(partidaSalva.pontos);
-      marcarAnunciados(partidaSalva.celulas);
       return;
     }
     const nova = comecar(n);
@@ -244,7 +247,6 @@ export default function Jogo2048({
     pontosRef.current = 0;
     setCelulas(nova);
     setPontos(0);
-    anunciados.current = new Set();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [n]);
 
@@ -275,7 +277,7 @@ export default function Jogo2048({
     (direcao) => {
       if (fim || painel) return;
       const anteriores = celulasRef.current;
-      const { celulas: proximas, ganho, mudou } = mover(anteriores, n, direcao);
+      const { celulas: proximas, ganho, mudou, criados } = mover(anteriores, n, direcao);
       if (!mudou) return;
 
       const comNova = plantar(proximas);
@@ -285,8 +287,8 @@ export default function Jogo2048({
       setCelulas(comNova);
       setPontos(total);
 
-      /* Recado da modelo na primeira vez que o passo aparece nesta partida. */
-      const novos = comNova.filter((valor) => temFrase(valor) && !anunciados.current.has(valor));
+      /* Recado da modelo so na primeira vez que o passo e feito na conta. */
+      const novos = criados.filter((valor) => temFrase(valor) && !vistosRef.current.includes(valor));
       if (novos.length) mostrarBalao(Math.max(...novos));
 
       if (!temJogada(comNova, n)) {
@@ -316,6 +318,23 @@ export default function Jogo2048({
   );
   useSwipe(tabuleiro, jogar, !painel);
 
+  /* O tamanho do bloco muda com a tela (janela no PC, tela cheia no celular):
+     medir evita texto grande demais no 6x6 e miudo demais no 3x3. */
+  useEffect(() => {
+    const elemento = tabuleiro.current;
+    if (!elemento) return undefined;
+    const medir = () => setLarguraTabuleiro(elemento.getBoundingClientRect().width || 380);
+    medir();
+    const observador =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null;
+    observador?.observe(elemento);
+    window.addEventListener('resize', medir);
+    return () => {
+      observador?.disconnect();
+      window.removeEventListener('resize', medir);
+    };
+  }, []);
+
   const campos = [
     {
       chave: 'tamanho',
@@ -325,19 +344,26 @@ export default function Jogo2048({
     },
   ];
 
-  /* Fonte presa ao bloco: o bloco nunca muda de tamanho, so o texto encolhe
-     quando a palavra e longa ou o tabuleiro e grande. */
+  /* Fonte presa ao bloco: o bloco nunca muda de tamanho, so o texto se ajusta
+     ao espaco que existe de verdade. */
   const fonteCasa = (valor) => {
     if (!valor) return 12;
     const texto = rotuloDoBloco(valor);
-    const numerico = /^\d+$/.test(texto);
-    if (!numerico) {
-      return n >= 6 ? 9 : n === 5 ? 10 : n === 4 ? 11.5 : 13;
+    const celula = Math.max(26, (larguraTabuleiro - 12 - (n - 1) * 6) / n);
+
+    if (/^\d+$/.test(texto)) {
+      const base = n >= 6 ? 14 : n === 5 ? 16 : n === 4 ? 20 : 23;
+      const digitos = texto.length;
+      const fator = digitos >= 5 ? 0.6 : digitos === 4 ? 0.74 : 1;
+      return Math.min(Math.round(base * fator), Math.round(celula * 0.5));
     }
-    const base = n >= 6 ? 14 : n === 5 ? 16 : n === 4 ? 20 : 23;
-    const digitos = texto.length;
-    const fator = digitos >= 5 ? 0.6 : digitos === 4 ? 0.74 : 1;
-    return Math.round(base * fator);
+
+    /* O limite e a MAIOR palavra: o texto quebra em linhas, mas nenhuma
+       palavra pode passar da largura do bloco. */
+    const maiorPalavra = texto.split(/\s+/).reduce((maior, parte) => Math.max(maior, parte.length), 1);
+    const cabe = (celula * 0.92) / (maiorPalavra * 0.58);
+    const base = n >= 6 ? 10 : n === 5 ? 11 : n === 4 ? 12.5 : 15;
+    return Math.max(6, Math.min(base, cabe));
   };
 
   return (
@@ -448,10 +474,13 @@ export default function Jogo2048({
                   minWidth: 0,
                   minHeight: 0,
                   overflow: 'hidden',
-                  padding: 0,
-                  lineHeight: 1.05,
+                  padding: 1,
+                  lineHeight: 1.08,
                   textAlign: 'center',
-                  letterSpacing: '0.02em',
+                  whiteSpace: 'normal',
+                  overflowWrap: 'break-word',
+                  wordBreak: 'normal',
+                  letterSpacing: '0.01em',
                   borderRadius: 8,
                   fontFamily: 'var(--font-main)',
                   fontSize: fonteCasa(valor),

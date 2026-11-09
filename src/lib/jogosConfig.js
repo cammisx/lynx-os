@@ -12,6 +12,8 @@
  * Este arquivo e puro: nada de React, nada de banco. Quem grava e o perfil.
  */
 
+import { PASSOS_COM_FRASE } from './sextingTextos.js';
+
 /* Versao do formato: se um dia mudar a regua dos recordes, subir aqui deixa
    claro que o valor antigo pode nao valer mais. */
 export const VERSAO_JOGOS = 1;
@@ -42,7 +44,7 @@ export const JOGOS_PADRAO = {
   versao: VERSAO_JOGOS,
   /* `direcional`: mostra as setas de vidro na tela (util no celular). */
   geral: { direcional: true, pausarFora: true },
-  '2048': { tamanho: 4, partidas: {} },
+  '2048': { tamanho: 4, partidas: {}, vistos: [] },
   snake: { velocidade: 'normal', grade: 'media', paredes: 'morte' },
   campo: { dificuldade: 'facil', largura: 9, altura: 9, minas: 10 },
   breakout: { vidas: 5, velocidade: 'normal', fileiras: 5 },
@@ -128,6 +130,19 @@ const normalizarPartidas = (bruto) => {
 };
 
 /**
+ * Passos do SEXTING que ja mandaram recado. Fica na conta (nao no aparelho):
+ * a fala aparece so na primeira vez, mesmo depois de fechar o jogo ou trocar
+ * de celular. Restaurar as configuracoes limpa a lista.
+ */
+const normalizarVistos = (bruto) => {
+  if (!Array.isArray(bruto)) return [];
+  const limpos = bruto
+    .map((valor) => Math.round(Number(valor)))
+    .filter((valor) => PASSOS_COM_FRASE.includes(valor));
+  return [...new Set(limpos)];
+};
+
+/**
  * Recebe o que veio do banco (ou nada) e devolve uma configuracao completa,
  * com todo valor fora da regua voltando para o padrao. Nunca lanca.
  */
@@ -149,6 +164,7 @@ export const normalizarJogos = (bruto) => {
     '2048': {
       tamanho: inteiro(j2048.tamanho, LIMITES.tamanho2048, JOGOS_PADRAO['2048'].tamanho),
       partidas: normalizarPartidas(j2048.partidas),
+      vistos: normalizarVistos(j2048.vistos),
     },
     snake: {
       velocidade: escolha(snake.velocidade, VELOCIDADES, JOGOS_PADRAO.snake.velocidade),
@@ -318,9 +334,13 @@ export const mesclarJogos = (local, remoto) => {
     if (maisNova) partidas[chave] = partida;
   });
 
+  /* Recados ja vistos: a uniao dos dois lados. Uma fala que apareceu no PC
+     nao volta a aparecer no celular. */
+  const vistos = [...new Set([...(doBanco['2048']?.vistos || []), ...(doLocal['2048']?.vistos || [])])];
+
   return {
     ...doBanco,
-    '2048': { ...doBanco['2048'], partidas },
+    '2048': { ...doBanco['2048'], partidas, vistos },
     recordes,
   };
 };
