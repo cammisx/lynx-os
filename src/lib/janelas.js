@@ -17,7 +17,7 @@ import {
 
 /*
  * `somenteAdmin`: janela que um chatter nem enxerga no celular, igual ao menu
- * iniciar do desktop (lá o chatter só vê playbook e conteúdo).
+ * iniciar do desktop (lá o chatter só vê playbook, conteúdo, paint e jogos).
  * `naGrade`: se o app aparece na grade do "Mais". Playbook e conteúdo já estão
  * no dock e configurações mora na engrenagem da barra de status.
  */
@@ -28,7 +28,7 @@ export const JANELAS = {
   financeiro: { titulo: 'Financeiro', Icone: MoneyIcon, somenteAdmin: true, naGrade: true },
   playbook: { titulo: 'Playbook', Icone: BookIcon, naGrade: false },
   conteudo: { titulo: 'Conteúdo', Icone: ImageIcon, naGrade: false },
-  paint: { titulo: 'Paint', Icone: PaletteIcon, somenteAdmin: true, naGrade: true },
+  paint: { titulo: 'Paint', Icone: PaletteIcon, naGrade: true },
   jogos: { titulo: 'Jogos', Icone: GamepadIcon, naGrade: true },
   config: { titulo: 'Configurações', Icone: GearIcon, naGrade: false },
 };

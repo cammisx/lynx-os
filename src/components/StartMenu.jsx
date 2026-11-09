@@ -59,10 +59,15 @@ const APPS = [
   },
 ];
 
-/* Playbook e conteúdo são de todo mundo: o chatter vê o da empresa e o das
-   modelos dele, e só o admin edita. */
+/* Playbook, conteúdo, jogos e paint são de todo mundo: no playbook e no conteúdo
+   o chatter vê o da empresa e o das modelos dele e só o admin edita; os jogos e
+   o paint são livres para qualquer pessoa. */
 const APPS_CHATTER = APPS.filter(
-  (app) => app.id === "playbook" || app.id === "conteudo" || app.id === "jogos"
+  (app) =>
+    app.id === "playbook" ||
+    app.id === "conteudo" ||
+    app.id === "jogos" ||
+    app.id === "paint"
 );
 
 export default function StartMenu({ open, onClose, onOpenApp, onOpenConfig }) {
