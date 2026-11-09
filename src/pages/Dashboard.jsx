@@ -166,10 +166,14 @@ export default function Dashboard({ tutorial = false }) {
   useEffect(
     () =>
       registrar((alvo) => {
-        if (!alvo.closest?.('[data-desktop]')) return null;
         /* Barra de tarefas e chat têm vida própria. */
         if (alvo.closest('.taskbar, .chat-painel')) return null;
-        return itensDesktop.current;
+        /* As janelas moram num portal fora do desktop, mas os atalhos da mesa
+           (Preferências, abrir janelas, fechar todas) valem dentro delas. */
+        if (alvo.closest('[data-desktop]') || alvo.closest('[data-janela]')) {
+          return itensDesktop.current;
+        }
+        return null;
       }),
     [registrar]
   );
