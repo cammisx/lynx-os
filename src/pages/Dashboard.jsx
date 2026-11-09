@@ -34,6 +34,7 @@ import { sincronizarAdminsUmaVez } from '@/lib/admins';
 import useAplicarConvite from '@/hooks/useAplicarConvite';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileShell from '@/components/mobile/MobileShell';
+import GuiaPixie from '@/components/tutorial/GuiaPixie';
 
 /* Cada janela do menu iniciar é um componente; o id é o mesmo da taskbar. */
 const COMPONENTES = {
@@ -49,7 +50,9 @@ const COMPONENTES = {
   jogos: JogosWindow,
 };
 
-export default function Dashboard() {
+/* `tutorial` liga a rota /tutorial: o mesmo desktop de sempre, com a pixie
+   passeando por cima para guiar quem está entrando agora. */
+export default function Dashboard({ tutorial = false }) {
   const { user } = useAuth();
   /* Abaixo de 768px o sistema vira o modo celular: uma tela por vez. */
   const telaPequena = useIsMobile();
@@ -231,6 +234,8 @@ export default function Dashboard() {
             </JanelaContext.Provider>
           );
         })}
+
+      {tutorial && !telaPequena ? <GuiaPixie /> : null}
 
       {fechando ? (
         <ConfirmarFechar

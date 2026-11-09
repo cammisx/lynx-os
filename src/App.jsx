@@ -47,6 +47,7 @@ const AuthenticatedApp = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/tutorial" element={<Dashboard tutorial />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
