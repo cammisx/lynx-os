@@ -34,7 +34,7 @@ import { sincronizarAdminsUmaVez } from '@/lib/admins';
 import useAplicarConvite from '@/hooks/useAplicarConvite';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileShell from '@/components/mobile/MobileShell';
-import GuiaPixie from '@/components/tutorial/GuiaPixie';
+import TutorialRoteiro from '@/components/tutorial/TutorialRoteiro';
 
 /* Cada janela do menu iniciar é um componente; o id é o mesmo da taskbar. */
 const COMPONENTES = {
@@ -235,7 +235,7 @@ export default function Dashboard({ tutorial = false }) {
           );
         })}
 
-      {tutorial && !telaPequena ? <GuiaPixie /> : null}
+      {tutorial && !telaPequena ? <TutorialRoteiro /> : null}
 
       {fechando ? (
         <ConfirmarFechar

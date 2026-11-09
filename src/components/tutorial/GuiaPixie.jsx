@@ -35,16 +35,16 @@ import tiraVirar from '@/assets/pixie/tiras/pixie-virar.png';
 /* O vaivém: ela flutua de um lado para o outro e sobe e desce. */
 const BASE_X = 0.68; // ela passeia do meio para a direita
 const AMPLITUDE_X = 0.22; // metade do caminho horizontal, em fração da largura
-const FREQ_X = Math.PI / 10; // rad/s: uma travessia a cada 10s
+const FREQ_X = Math.PI / 12; // rad/s: uma travessia a cada 12s
 const AMPLITUDE_X2 = 0.05; // segunda senoide, para o caminho não ser robótico
 const FREQ_X2 = Math.PI / 20; // metade da frequência: não cria troca de lado extra
 const FASE_X2 = 1.2;
 
 const BASE_Y = 0.62;
 const AMPLITUDE_Y = 0.045; // quanto sobe e desce, em fração da altura da tela
-const FREQ_Y = 1.35; // rad/s: um sobe e desce a cada 4,6s
+const FREQ_Y = 1.12; // rad/s: um sobe e desce a cada 5,6s
 const AMPLITUDE_Y2 = 0.012;
-const FREQ_Y2 = 2.3;
+const FREQ_Y2 = 1.9;
 
 /* A virada: a cada dez segundos ela roda as nove poses uma vez, no ar. Não é
    presa à troca de lado: indo para a esquerda ela também vai de frente. */
@@ -152,7 +152,12 @@ const Estrela = ({ tamanho, atraso, x, y, duracao }) => (
 
 const limitar = (valor, minimo, maximo) => Math.min(Math.max(valor, minimo), Math.max(minimo, maximo));
 
-export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
+export default function GuiaPixie({
+  texto = 'Boas vindas à Lynx',
+  children = null,
+  capturarClique = false,
+  aoClique = null,
+}) {
   const grupoRef = useRef(null);
   const corpoRef = useRef(null);
   const asaRef = useRef(null);
@@ -175,7 +180,13 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
     medir();
     window.addEventListener('resize', medir);
     document.fonts?.ready?.then(medir).catch(() => {});
-    return () => window.removeEventListener('resize', medir);
+    /* O balão cresce quando entra o campo do nome ou um texto mais longo. */
+    const observador = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(medir);
+    observador?.observe(balao);
+    return () => {
+      window.removeEventListener('resize', medir);
+      observador?.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -262,6 +273,15 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
     <div aria-live="polite" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9500 }}>
       <style>{ESTILOS}</style>
 
+      {/* Enquanto o roteiro espera um clique, a tela toda vira o botão: o
+          clique não chega no desktop, só avança a fala dela. */}
+      {capturarClique ? (
+        <div
+          onClick={aoClique || undefined}
+          style={{ position: 'fixed', inset: 0, pointerEvents: 'auto', cursor: 'default' }}
+        />
+      ) : null}
+
       <div
         ref={grupoRef}
         style={{ position: 'absolute', left: 0, top: 0, width: 0, height: 0, willChange: 'transform' }}
@@ -297,7 +317,10 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
             position: 'absolute',
             left: 0,
             top: 0,
-            maxWidth: 'calc(100vw - 16px)',
+            /* O balão vive dentro de um grupo de largura zero: sem o
+               max-content ele encolheria até a largura da palavra mais longa. */
+            width: 'max-content',
+            maxWidth: 'min(264px, calc(100vw - 16px))',
             padding: '8px 13px',
             borderRadius: 12,
             fontSize: 12,
@@ -315,6 +338,7 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
           }}
         >
           {texto}
+          {children}
           <span
             ref={pontaRef}
             style={{
