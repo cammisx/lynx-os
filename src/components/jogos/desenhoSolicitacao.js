@@ -107,140 +107,44 @@ export const desenharCobra = (ctx, corpo, passo, pele, pelos) => {
   ctx.restore();
 };
 
-export const desenharEstrela = (ctx, x, y, raio, cor) => {
-  ctx.beginPath();
-  for (let i = 0; i < 10; i += 1) {
-    const r = i % 2 === 0 ? raio : raio * 0.45;
-    const a = -Math.PI / 2 + (i * Math.PI) / 5;
-    const px = x + Math.cos(a) * r;
-    const py = y + Math.sin(a) * r;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  }
-  ctx.closePath();
-  ctx.fillStyle = cor;
-  ctx.fill();
+/* Os premios sao emoji: o desenho vetorial ficava sujo no tamanho de celula do
+   tabuleiro. O aro do tempo continua sendo desenhado por cima do emoji. */
+export const EMOJI_ITEM = {
+  berinjela: '🍆',
+  foto: '📷',
+  video: '🎥',
+  estrela: '⭐',
+  telefone: '📱',
+  moeda: '💰',
 };
+
+const FONTE_EMOJI =
+  '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif';
 
 export const desenharItem = (ctx, item, passo, agora) => {
   const x = item.x * passo + passo / 2;
   const y = item.y * passo + passo / 2;
-  const r = passo * 0.38;
   const restante = Math.max(0, Math.min(1, (item.expira - agora) / item.duracao));
 
   ctx.save();
+
   /* Aro do tempo que sobra. */
   ctx.beginPath();
-  ctx.arc(x, y, passo * 0.46, 0, TAU);
+  ctx.arc(x, y, passo * 0.485, 0, TAU);
   ctx.strokeStyle = 'rgba(255,255,255,0.10)';
   ctx.lineWidth = Math.max(1, passo * 0.08);
   ctx.stroke();
   ctx.beginPath();
-  ctx.arc(x, y, passo * 0.46, -Math.PI / 2, -Math.PI / 2 + TAU * restante);
+  ctx.arc(x, y, passo * 0.485, -Math.PI / 2, -Math.PI / 2 + TAU * restante);
   ctx.strokeStyle = restante < 0.25 ? '#ff7b7b' : 'rgba(224,192,110,0.85)';
   ctx.stroke();
 
-  if (item.tipo === 'berinjela') {
-    ctx.save();
-    ctx.translate(x, y + passo * 0.04);
-    ctx.rotate(-0.35);
-    ctx.fillStyle = '#6b3f9c';
-    ctx.beginPath();
-    ctx.ellipse(0, 0, r * 0.62, r * 1.02, 0, 0, TAU);
-    ctx.fill();
-    ctx.fillStyle = '#a06ad0';
-    ctx.beginPath();
-    ctx.ellipse(-r * 0.16, -r * 0.12, r * 0.2, r * 0.55, 0, 0, TAU);
-    ctx.fill();
-    ctx.fillStyle = '#4f8a3d';
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.5, -r * 0.9);
-    ctx.lineTo(0, -r * 1.25);
-    ctx.lineTo(r * 0.5, -r * 0.9);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
-
-  if (item.tipo === 'foto') {
-    ctx.fillStyle = '#f4efe2';
-    ctx.beginPath();
-    ctx.roundRect?.(x - r * 0.9, y - r * 0.78, r * 1.8, r * 1.56, r * 0.22);
-    if (!ctx.roundRect) ctx.rect(x - r * 0.9, y - r * 0.78, r * 1.8, r * 1.56);
-    ctx.fill();
-    ctx.fillStyle = '#9ed0e6';
-    ctx.beginPath();
-    ctx.arc(x + r * 0.36, y - r * 0.34, r * 0.2, 0, TAU);
-    ctx.fill();
-    ctx.fillStyle = '#7ba86a';
-    ctx.beginPath();
-    ctx.moveTo(x - r * 0.78, y + r * 0.66);
-    ctx.lineTo(x - r * 0.1, y - r * 0.1);
-    ctx.lineTo(x + r * 0.72, y + r * 0.66);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  if (item.tipo === 'video') {
-    ctx.fillStyle = '#2b2440';
-    ctx.beginPath();
-    ctx.roundRect?.(x - r, y - r * 0.72, r * 2, r * 1.44, r * 0.24);
-    if (!ctx.roundRect) ctx.rect(x - r, y - r * 0.72, r * 2, r * 1.44);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = '#e8c46a';
-    ctx.beginPath();
-    ctx.moveTo(x - r * 0.26, y - r * 0.4);
-    ctx.lineTo(x + r * 0.5, y);
-    ctx.lineTo(x - r * 0.26, y + r * 0.4);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  if (item.tipo === 'estrela') {
-    desenharEstrela(ctx, x, y, r * 1.05, '#f2c94c');
-    desenharEstrela(ctx, x, y, r * 0.55, '#fff3c4');
-  }
-
-  if (item.tipo === 'telefone') {
-    ctx.fillStyle = '#20304a';
-    ctx.beginPath();
-    ctx.roundRect?.(x - r * 0.62, y - r, r * 1.24, r * 2, r * 0.28);
-    if (!ctx.roundRect) ctx.rect(x - r * 0.62, y - r, r * 1.24, r * 2);
-    ctx.fill();
-    ctx.fillStyle = '#8fd3ff';
-    ctx.beginPath();
-    ctx.roundRect?.(x - r * 0.46, y - r * 0.76, r * 0.92, r * 1.36, r * 0.14);
-    if (!ctx.roundRect) ctx.rect(x - r * 0.46, y - r * 0.76, r * 0.92, r * 1.36);
-    ctx.fill();
-    ctx.fillStyle = '#20304a';
-    ctx.beginPath();
-    ctx.arc(x, y + r * 0.78, r * 0.12, 0, TAU);
-    ctx.fill();
-  }
-
-  if (item.tipo === 'moeda') {
-    ctx.fillStyle = '#d9a929';
-    ctx.beginPath();
-    ctx.arc(x, y, r * 0.95, 0, TAU);
-    ctx.fill();
-    ctx.strokeStyle = '#8a6412';
-    ctx.lineWidth = Math.max(1, passo * 0.06);
-    ctx.stroke();
-    ctx.strokeStyle = '#ffe08a';
-    ctx.lineWidth = Math.max(1, passo * 0.045);
-    ctx.beginPath();
-    ctx.arc(x, y, r * 0.62, 0, TAU);
-    ctx.stroke();
-    ctx.fillStyle = '#8a6412';
-    ctx.font = `bold ${Math.max(7, Math.round(passo * 0.34))}px "Roboto Mono", monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('$', x, y + passo * 0.02);
-  }
+  const emoji = EMOJI_ITEM[item.tipo] || '❓';
+  ctx.font = `${Math.max(11, Math.round(passo * 0.82))}px ${FONTE_EMOJI}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(emoji, x, y + passo * 0.03);
 
   ctx.restore();
 };
-
