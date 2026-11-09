@@ -21,49 +21,41 @@ const APPS = [
     id: "chatters",
     Icon: UsersIcon,
     title: "Chatters",
-    desc: "Comissões e nomes de exibição",
   },
   {
     id: "modelos",
     Icon: StarIcon,
     title: "Modelos",
-    desc: "Gerenciar modelos e chatters",
   },
   {
     id: "turnos",
     Icon: CalendarIcon,
     title: "Turnos",
-    desc: "Escala e turnos da equipe",
   },
   {
     id: "financeiro",
     Icon: MoneyIcon,
     title: "Financeiro",
-    desc: "Extratos, comissões e repasses",
   },
   {
     id: "playbook",
     Icon: BookIcon,
     title: "Playbook",
-    desc: "Diretrizes da agência e das modelos",
   },
   {
     id: "conteudo",
     Icon: ImageIcon,
     title: "Conteúdo",
-    desc: "Conteúdos das modelos",
   },
   {
     id: "paint",
     Icon: PaletteIcon,
     title: "Paint",
-    desc: "Referência da API de plugins do Paint.NET",
   },
   {
     id: "jogos",
     Icon: GamepadIcon,
     title: "Jogos",
-    desc: "Xadrez do Lichess e quiz de Pokémon",
   },
 ];
 
@@ -220,11 +212,6 @@ export default function StartMenu({ open, onClose, onOpenApp, onOpenConfig }) {
                   style={{ fontSize: 13, fontWeight: 700, color: "var(--c3)" }}
                 >
                   {app.title}
-                </span>
-                <span
-                  style={{ fontSize: 11, color: "var(--c2)", opacity: 0.7 }}
-                >
-                  {app.desc}
                 </span>
               </span>
             </button>
