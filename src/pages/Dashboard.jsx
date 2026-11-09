@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '@/theme.css';
 import DesktopBackground from '@/components/DesktopBackground';
 import DesktopPet from '@/components/desktop/DesktopPet';
@@ -18,6 +19,7 @@ import JogosWindow from '@/components/JogosWindow';
 import { JanelaContext } from '@/components/desktop/JanelaContext';
 import ConfirmarFechar from '@/components/desktop/ConfirmarFechar';
 import { janelaPorId } from '@/lib/janelas';
+import { tutorialPixieVisto } from '@/lib/pixie';
 import { SEPARADOR, useMenuContexto } from '@/components/desktop/MenuContexto';
 import { abrirConfigNaAba, registrarAbridorConfig } from '@/lib/configAba';
 import useJanelas from '@/hooks/useJanelas';
@@ -57,10 +59,19 @@ export default function Dashboard({ tutorial = false }) {
   const { user } = useAuth();
   /* Abaixo de 768px o sistema vira o modo celular: uma tela por vez. */
   const telaPequena = useIsMobile();
+  const navegar = useNavigate();
   // Carrega o perfil (tema, nome, foto, fundo) antes de tudo aparecer na tela.
   const perfil = usePerfil(user);
   // Convite pendente vira cargo, modelos e turnos no primeiro acesso.
   useAplicarConvite(user);
+
+  /* Quem ainda não passou pelo tutorial cai nele no primeiro acesso e, depois
+     de se despedir dela, não volta mais (a marca fica neste navegador).
+     No celular não: lá não tem botão direito nem a Pixie na tela. */
+  useEffect(() => {
+    if (tutorial || telaPequena !== false) return;
+    if (!tutorialPixieVisto()) navegar('/tutorial', { replace: true });
+  }, [tutorial, telaPequena, navegar]);
 
   /* Ordem dos ícones da barra: entra pelo perfil e volta para ele quando muda. */
   const salvarBarra = useCallback(
