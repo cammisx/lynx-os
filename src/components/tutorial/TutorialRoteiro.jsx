@@ -12,7 +12,7 @@ import {
   falaDoPonto,
   lugarDoElemento,
 } from '@/lib/pixieTutoriais';
-import { TOUR_MESA, executarAcaoDoTour } from '@/lib/pixieTourMesa';
+import useTourMesa from '@/lib/useTourMesa';
 
 /**
  * O roteiro do tutorial da rota /tutorial.
@@ -61,7 +61,6 @@ const CHAMADO_PARA_PERGUNTAR = 'Sobre o que você quer saber? Clique no lugar.';
 const AGRADECIMENTO = 'Eu que agradeço! Qualquer coisa, é só me chamar com o botão direito.';
 const DESPEDIDA = 'Até logo! Se precisar, é só me chamar com o botão direito!';
 const ESPERA_DA_DESPEDIDA = 2600; // tempo para ler a despedida antes de sair
-const ESPERA_DO_TOUR = 8000; // sem clique, o passeio da mesa segue sozinho
 
 /* Depois dela, o sistema é da pessoa: a rota inicial, com a mesa à vontade. */
 const ROTA_DEPOIS = '/';
@@ -76,10 +75,10 @@ export default function TutorialRoteiro() {
   const [apontando, setApontando] = useState(false);
   const [menu, setMenu] = useState(null);
   const [saida, setSaida] = useState(null);
-  /* Passo do passeio da mesa (null = fora dele) e a marca de já ter passado
-     por ele inteiro: depois disso, clicar na mesa não repete o passeio. */
-  const [tour, setTour] = useState(null);
+  /* O passeio da mesa (mesmo fio da ajuda do sistema) e a marca de já ter
+     passado por ele inteiro: depois disso, clicar na mesa não repete. */
   const [tourVisto, setTourVisto] = useState(false);
+  const tour = useTourMesa({ aoTerminar: () => setTourVisto(true) });
   const [encerrado, setEncerrado] = useState(false);
   const campoRef = useRef(null);
 
@@ -114,33 +113,11 @@ export default function TutorialRoteiro() {
 
   const fala = useMemo(() => {
     if (saida) return saida;
-    if (tour !== null) return TOUR_MESA[tour]?.fala || FALAS[passo];
+    if (tour.emTour) return tour.fala || FALAS[passo];
     if (resposta) return resposta;
     if (apontando) return CHAMADO_PARA_PERGUNTAR;
     return FALAS[passo];
   }, [saida, tour, resposta, apontando, passo]);
-
-  /* Cada passo do passeio pode abrir menu/janela e sai no clique ou no tempo. */
-  useEffect(() => {
-    if (tour === null || saida) return undefined;
-    const passoDoTour = TOUR_MESA[tour];
-    if (!passoDoTour) return undefined;
-    if (passoDoTour.acao) executarAcaoDoTour(passoDoTour.acao);
-    const t = setTimeout(() => avancarTour(), ESPERA_DO_TOUR);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tour, saida]);
-
-  /* O passeio termina e ela volta a ficar disponível, com a janela aberta. */
-  function avancarTour() {
-    setTour((atual) => {
-      if (atual === null) return null;
-      const proximo = atual + 1;
-      if (proximo < TOUR_MESA.length) return proximo;
-      setTourVisto(true);
-      return null;
-    });
-  }
 
   /* O clique na tela: aponta o lugar, fecha uma resposta antiga ou segue o
      roteiro. O menu aberto não deixa o clique vazar para cá. */
@@ -151,8 +128,8 @@ export default function TutorialRoteiro() {
     const y = evento?.clientY ?? 0;
 
     /* No passeio da mesa o clique é o "continua". */
-    if (tour !== null) {
-      avancarTour();
+    if (tour.emTour) {
+      tour.avancar();
       return;
     }
     if (apontando) {
@@ -172,7 +149,7 @@ export default function TutorialRoteiro() {
       if (lugarDoElemento(alvoDoPonto(x, y)) === 'mesa' && !tourVisto) {
         setResposta(null);
         setApontando(false);
-        setTour(0);
+        tour.iniciar();
         return;
       }
       setResposta(falaDoPonto(x, y) || SEM_TUTORIAL);
@@ -187,7 +164,7 @@ export default function TutorialRoteiro() {
     !saida &&
     !menu &&
     (apontando ||
-      tour !== null ||
+      tour.emTour ||
       Boolean(resposta) ||
       passo === 'atalho' ||
       SAI_NO_CLIQUE.includes(passo));
@@ -213,7 +190,7 @@ export default function TutorialRoteiro() {
     setMenu(null);
     setApontando(false);
     setResposta(null);
-    setTour(null);
+    tour.parar();
     marcarTutorialPixieVisto();
     setSaida(fala);
   };
