@@ -11,8 +11,8 @@
  * (barra de tarefas, relógio, janela, chat). Sem nada disso a resposta é
  * null: ela se apresenta e espera a pessoa apontar o que quer saber.
  *
- * A mesa não tem fala curta de propósito: explicar a área de trabalho é o
- * passeio inteiro (TOUR_MESA), que ela conta quando é chamada ali.
+ * A área de trabalho só tem o passeio inteiro (TOUR_MESA) no tutorial. Fora
+ * dele, chamar ela na mesa mostra a saudação e espera o clique.
  */
 
 export const SAUDACAO = 'Com o que posso te ajudar hoje? Clique num lugar que eu te explico.';
@@ -20,17 +20,18 @@ export const SAUDACAO = 'Com o que posso te ajudar hoje? Clique num lugar que eu
 /* Quem ela é, para quando a pessoa clica nela em vez de apontar um lugar. */
 export const SOBRE_PIXIE = [
   'Eu sou a Pixie! Apareço quando você me chama com o botão direito e explico o pedaço da tela que você apontar.',
-  'Clique num ícone, numa janela, num widget ou na área de trabalho e eu conto o que tem ali. Na mesa eu conto a área de trabalho inteira.',
-  'E o meu menu tem três coisas: perguntar outro lugar, agradecer e me despedir. Quando quiser, é só me chamar de novo.',
+  'Clique num ícone, numa janela, num widget ou na área de trabalho e eu conto o que tem ali.',
+  'E o meu menu tem duas coisas: perguntar outro lugar, e agradecer e se despedir. Quando quiser, é só me chamar de novo.',
 ];
 
 export const SEM_TUTORIAL = 'Ainda não tenho tutorial dessa parte. Quer apontar outro lugar?';
 
 /* O menu dela quando já não há roteiro: perguntar outro lugar ou se despedir. */
 export const CHAMADO_PARA_PERGUNTAR = 'Sobre o que você quer saber? Clique no lugar.';
-export const AGRADECIMENTO =
-  'Eu que agradeço! Qualquer coisa, é só me chamar com o botão direito.';
-export const DESPEDIDA = 'Até logo! Se precisar, é só me chamar com o botão direito!';
+/* Um item só no menu: agradecer e sair. O passeio da área de trabalho é só no
+   tutorial; aqui a mesa tem fala curta como qualquer outro lugar. */
+export const AGRADECER_E_DESPEDIR =
+  'Eu que agradeço! Até logo, e se precisar é só me chamar com o botão direito.';
 
 /* Tutoriais por marcador (data-pixie-alvo): o que ela conta quando é chamada
    em cima daquele pedaço da tela. Ícone ensina o atalho; janela ensina a
@@ -96,6 +97,8 @@ const TUTORIAIS = {
 
 /* Os lugares da tela, quando o elemento não tem marcador próprio. */
 const POR_LUGAR = {
+  mesa: 'Aqui é a área de trabalho: as janelas e os widgets ficam por cima dela, e o botão direito abre os atalhos.',
+  mesa: 'Aqui é a área de trabalho: as janelas e os widgets ficam por cima dela, e o botão direito abre os atalhos.',
   barra:
     'Essa é a barra de tarefas: cada ícone abre uma janela. Clique direito num ícone para fixar ou tirar ele da barra.',
   relogio: 'No relógio ficam seus turnos, o ponto do dia e a agenda da semana.',

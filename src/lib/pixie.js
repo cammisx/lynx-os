@@ -32,6 +32,35 @@ export const itemChamarPixie = ({ x = 0, y = 0, alvo = null } = {}) => ({
   acao: () => chamarPixie({ x, y, alvo }),
 });
 
+/* ---------- ela fica flutuando depois do tutorial ---------- */
+
+const CHAVE_ESPERA = 'lynx:pixie-em-espera';
+
+/* Terminado o tutorial, ela fica na tela em silêncio até alguém fechar. */
+export const marcarPixieEmEspera = () => {
+  try {
+    window.sessionStorage.setItem(CHAVE_ESPERA, '1');
+  } catch {
+    /* sem armazenamento ela só não fica em espera: nada quebra */
+  }
+};
+
+export const pixieEmEspera = () => {
+  try {
+    return window.sessionStorage.getItem(CHAVE_ESPERA) === '1';
+  } catch {
+    return false;
+  }
+};
+
+export const limparPixieEmEspera = () => {
+  try {
+    window.sessionStorage.removeItem(CHAVE_ESPERA);
+  } catch {
+    /* nada a fazer */
+  }
+};
+
 /* ---------- o tutorial da primeira vez ---------- */
 
 const CHAVE_VISTO = 'lynx:tutorial-pixie-visto';

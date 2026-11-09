@@ -4,11 +4,14 @@ import GuiaPixie from '@/components/tutorial/GuiaPixie';
 import MenuFlutuante from '@/components/desktop/MenuFlutuante';
 import { useAuth } from '@/lib/AuthContext';
 import { salvarPerfil } from '@/lib/perfilUsuario';
-import { assinarChamadoPixie, marcarTutorialPixieVisto } from '@/lib/pixie';
 import {
-  AGRADECIMENTO,
+  assinarChamadoPixie,
+  marcarPixieEmEspera,
+  marcarTutorialPixieVisto,
+} from '@/lib/pixie';
+import {
+  AGRADECER_E_DESPEDIR,
   CHAMADO_PARA_PERGUNTAR,
-  DESPEDIDA,
   SEM_TUTORIAL,
   alvoDoPonto,
   falaDoElemento,
@@ -84,7 +87,15 @@ export default function TutorialRoteiro() {
   /* Terminada a explicação, o balão sai (no clique ou sozinho) e ela fica só
      flutuando na tela, até alguém chamar pelo menu dela. */
   const [descansando, setDescansando] = useState(false);
-  const tour = useTourMesa({ aoTerminar: () => setDescansando(true) });
+  const tour = useTourMesa({
+    /* Terminada a primeira explicação, a pessoa cai no Início e ela fica
+       flutuando em silêncio até alguém chamar. */
+    aoTerminar: () => {
+      marcarTutorialPixieVisto();
+      marcarPixieEmEspera();
+      navegar(ROTA_DEPOIS, { replace: true });
+    },
+  });
   const [encerrado, setEncerrado] = useState(false);
   const campoRef = useRef(null);
 
@@ -235,8 +246,11 @@ export default function TutorialRoteiro() {
       },
     },
     { separador: true },
-    { id: 'agradecer', rotulo: 'Agradecer', acao: () => sair(AGRADECIMENTO) },
-    { id: 'despedir', rotulo: 'Se despedir', acao: () => sair(DESPEDIDA) },
+    {
+      id: 'despedir',
+      rotulo: 'Agradecer e se despedir',
+      acao: () => sair(AGRADECER_E_DESPEDIR),
+    },
   ];
 
   if (encerrado) return null;
