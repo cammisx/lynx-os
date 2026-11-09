@@ -317,6 +317,7 @@ export default function Window({ title, icon: Icon, onClose, children, width = 6
   return createPortal(
     <div
       data-janela="true"
+      data-pixie-alvo={janela.id ? `janela-${janela.id}` : undefined}
       onMouseDown={() => janela.onFocus && janela.onFocus()}
       style={{
         position: 'fixed',

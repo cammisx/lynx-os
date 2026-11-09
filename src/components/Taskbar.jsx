@@ -146,6 +146,7 @@ export default function Taskbar({
               aria-label={meta.titulo}
               aria-pressed={ativa}
               data-rotulo={meta.titulo}
+              data-pixie-alvo={`icone-${item.id}`}
               data-menu-own="true"
             >
               <Icone size={22} />
@@ -163,6 +164,7 @@ export default function Taskbar({
           type="button"
           className="taskbar-bell taskbar-chat"
           aria-label="Chat interno"
+          data-pixie-alvo="icone-chat"
           onClick={() => {
             chat.alternar();
             setBellOpen(false);
@@ -183,6 +185,7 @@ export default function Taskbar({
           type="button"
           className="taskbar-bell"
           aria-label="Notificações"
+          data-pixie-alvo="icone-notificacoes"
           onClick={toggleBell}
           style={{ position: 'relative' }}
         >
@@ -223,6 +226,7 @@ export default function Taskbar({
           role="button"
           tabIndex={0}
           aria-label="Abrir turnos"
+          data-pixie-alvo="icone-relogio"
           onClick={() => {
             if (!clockOpen) setCamadaRelogio(proximaCamada ? proximaCamada() : 0);
             setClockOpen((prev) => !prev);

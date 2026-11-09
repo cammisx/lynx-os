@@ -140,6 +140,7 @@ export default function DesenhoFixo({ desenho, onMover, onRedimensionar, onDesaf
     <>
       <div
         ref={caixaRef}
+        data-pixie-alvo="desenho-fixo"
         onPointerDown={(evento) => comecar(evento, 'mover')}
         onPointerMove={mover}
         onPointerUp={terminar}

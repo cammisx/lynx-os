@@ -52,6 +52,7 @@ export default function ChatSidebar() {
       <aside
         className="chat-painel"
         aria-label="Chat interno"
+        data-pixie-alvo="chat"
         style={{
           position: 'fixed',
           top: 10,

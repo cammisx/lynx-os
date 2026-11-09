@@ -358,7 +358,10 @@ export default function ClockPanel({
         }}
       />
 
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: '8px 8px 6px' }}>
+      <div
+        data-pixie-alvo="calendario"
+        style={{ flex: 1, minHeight: 0, overflow: 'hidden', padding: '8px 8px 6px' }}
+      >
         <div
           style={{
             height: '100%',

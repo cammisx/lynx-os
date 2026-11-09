@@ -26,8 +26,65 @@ export const AGRADECIMENTO =
   'Eu que agradeço! Qualquer coisa, é só me chamar com o botão direito.';
 export const DESPEDIDA = 'Até logo! Se precisar, é só me chamar com o botão direito!';
 
-/* Tutoriais por marcador (data-pixie-alvo). */
+/* Tutoriais por marcador (data-pixie-alvo): o que ela conta quando é chamada
+   em cima daquele pedaço da tela. Ícone ensina o atalho; janela ensina a
+   página. */
 const TUTORIAIS = {
+  /* --- ícones da barra de tarefas --- */
+  'icone-chatters':
+    'Aqui abre os Chatters: as pessoas, as fichas e os convites. O pontinho embaixo do ícone diz que a janela está aberta.',
+  'icone-modelos':
+    'Esse ícone abre as modelos. Cada uma tem os chatters vinculados e o ID dos centavos, que separa as vendas dela.',
+  'icone-turnos':
+    'Esse é o atalho da escala de turnos. Clique direito no ícone para fixar ele na barra ou tirar de lá.',
+  'icone-financeiro':
+    'Aqui abre o Financeiro, com as vendas e as comissões do período.',
+  'icone-playbook':
+    'O Playbook abre por esse ícone: os combinados por modelo e o da agência.',
+  'icone-estrategias':
+    'Aqui ficam as estratégias de venda, com as mensagens prontas de cada uma.',
+  'icone-conteudo': 'Esse ícone abre o Conteúdo: as pastas com as mídias e as tags.',
+  'icone-paint': 'Esse é o Paint, o editor de desenho. Clicar de novo minimiza a janela.',
+  'icone-jogos': 'Aqui abrem os jogos, para quando der uma pausa.',
+  'icone-config':
+    'As Configurações abrem por aqui: fonte, modo de cor, tema, fundo, pet e perfil.',
+  'icone-chat':
+    'O balãozinho abre o chat interno. O número em cima dele é quantas mensagens ainda não foram lidas.',
+  'icone-notificacoes':
+    'O sino abre os seus avisos, e a bolinha acende quando chega coisa nova.',
+  'icone-relogio':
+    'O relógio abre o seu dia: o ponto, a sua agenda e a semana de turnos.',
+
+  /* --- páginas das janelas --- */
+  'janela-chatters':
+    'Aqui estão os chatters: clique numa pessoa para abrir a ficha, os turnos e o acesso dela. "Convidar" cria o acesso por e-mail.',
+  'janela-modelos':
+    'Essa é a lista de modelos, com os chatters de cada uma e o ID dos centavos que separa as vendas.',
+  'janela-turnos':
+    'Essa é a escala: quem trabalha em cada horário da semana. Dá para cobrir horário vago e ver as turnos arquivadas.',
+  'janela-financeiro':
+    'O Financeiro junta as vendas, as comissões e o relatório do período. Também dá para importar o extrato.',
+  'janela-playbook':
+    'O Playbook tem duas abas: Modelo, com o combinado de cada uma, e Agência, com o da casa.',
+  'janela-estrategias':
+    'Aqui ficam as estratégias: nome, descrição, instruções e as mensagens de cada uma.',
+  'janela-conteudo':
+    'Aqui é o Conteúdo: as pastas com as mídias e as tags, que valem para todas as modelos.',
+  'janela-paint':
+    'O Paint é o editor de desenho: camadas, pincel, formas e borracha. Botão direito no desenho salva, limpa ou fixa na mesa.',
+  'janela-jogos': 'Nessa janela ficam os jogos, e alguns guardam recorde.',
+  'janela-config':
+    'As Configurações: Preferências (fonte, modo de cor, tema, fundo, linhas e pet), Perfil, Notificações e Chat.',
+
+  /* --- o resto da tela --- */
+  chat:
+    'Aqui é o chat interno: o canal geral, um canal por modelo, os privados e os grupos. O "+" começa uma conversa nova.',
+  calendario:
+    'Essa é a semana da agenda: os turnos dia por dia. Clique num dia para ver ou marcar horário.',
+  notificacoes:
+    'Esse é o painel de avisos: o que chegou e o que ainda não foi lido. Clicar num aviso abre ele.',
+  'desenho-fixo':
+    'Esse é um desenho fixado na mesa: arraste para mover e use o canto para redimensionar. Botão direito dá as outras opções.',
   pet: 'Esse é o pet: clique direito nele para trocar o bicho, a cor e até o nome.',
 };
 

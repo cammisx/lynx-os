@@ -32,6 +32,7 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose, 
   return createPortal(
     <div
       ref={panelRef}
+      data-pixie-alvo="notificacoes"
       style={{
         position: 'fixed',
         bottom: 'calc(100vh * 1.5 / 24)',
