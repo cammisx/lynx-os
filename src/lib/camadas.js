@@ -20,3 +20,6 @@ export const RELOGIO_CELULAR = 9500;
 
 /** Relógio no desktop quando o shell não informa uma camada. */
 export const RELOGIO_DESKTOP = 1200;
+
+/** Barra do chat no desktop quando o shell ainda não reservou uma camada. */
+export const CHAT_DESKTOP = 1050;

@@ -138,6 +138,7 @@ export default function NovoChatModal({ onClose }) {
 
   return createPortal(
     <div
+      data-chat-modal="true"
       style={{
         position: 'fixed',
         inset: 0,

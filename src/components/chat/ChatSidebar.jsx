@@ -5,18 +5,32 @@ import CanalLista from '@/components/chat/CanalLista';
 import ChatConversa from '@/components/chat/ChatConversa';
 import NovoChatModal from '@/components/chat/NovoChatModal';
 import { definirFocoDoChat } from '@/lib/sons';
+import { CHAT_DESKTOP } from '@/lib/camadas';
 import { abrirConfigNaAba } from '@/lib/configAba';
 import ChatIcon from '@/components/icons/ChatIcon';
 
 /** Barra fixa do lado direito do desktop. */
 export default function ChatSidebar() {
-  const { aberto, fechar, canalAtivo, fecharCanal, erro, totalNaoLidas, recarregar } = useChatPanel();
+  const { aberto, fechar, camada, canalAtivo, fecharCanal, erro, totalNaoLidas, recarregar } = useChatPanel();
   const [novo, setNovo] = useState(false);
 
   /* O som das mensagens só toca quando a pessoa não está vendo o canal. */
   useEffect(() => {
     definirFocoDoChat(aberto ? canalAtivo?.id || 'lista' : null);
   }, [aberto, canalAtivo]);
+
+  /* Como o relógio: não fecha ao clicar fora, só no Esc e no X. Se um seletor
+     de data/hora ou um modal estiver aberto por cima, o Esc fecha só ele. */
+  useEffect(() => {
+    if (!aberto) return undefined;
+    const tecla = (evento) => {
+      if (evento.key !== 'Escape') return;
+      if (document.querySelector('[data-dtp-panel], [data-chat-modal], [role="dialog"]')) return;
+      fechar();
+    };
+    document.addEventListener('keydown', tecla);
+    return () => document.removeEventListener('keydown', tecla);
+  }, [aberto, fechar]);
 
   if (!aberto) return null;
 
@@ -45,7 +59,7 @@ export default function ChatSidebar() {
           bottom: 'calc(100vh * 1.5 / 24 + 12px)',
           width: 410,
           maxWidth: '94vw',
-          zIndex: 1050,
+          zIndex: camada ? 8000 + camada : CHAT_DESKTOP,
           display: 'flex',
           flexDirection: 'column',
           borderRadius: 14,

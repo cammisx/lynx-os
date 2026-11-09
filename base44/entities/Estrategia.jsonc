@@ -1,0 +1,33 @@
+{
+  "name": "Estrategia",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome da estrategia. Obrigatorio."
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Uma linha explicando para que serve esta estrategia. Opcional."
+    },
+    "itens": {
+      "type": "array",
+      "description": "Mensagens da estrategia, na ordem em que aparecem. Cada uma tem o texto que se copia e, opcionalmente, instrucoes que nao sao copiadas.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "mensagem": {
+            "type": "string",
+            "description": "Bloco de texto que o chatter copia com um clique"
+          },
+          "instrucoes": {
+            "type": "string",
+            "description": "Explicacao de como usar a mensagem. Aparece separada e nao e copiada"
+          }
+        }
+      }
+    }
+  },
+  "required": ["nome"]
+}

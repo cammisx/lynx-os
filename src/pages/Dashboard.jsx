@@ -12,6 +12,7 @@ import FinanceiroWindow from '@/components/FinanceiroWindow';
 import ConfiguracoesWindow from '@/components/ConfiguracoesWindow';
 import PlaybookWindow from '@/components/PlaybookWindow';
 import ConteudoWindow from '@/components/ConteudoWindow';
+import EstrategiasWindow from '@/components/EstrategiasWindow';
 import PaintWindow from '@/components/PaintWindow';
 import JogosWindow from '@/components/JogosWindow';
 import { JanelaContext } from '@/components/desktop/JanelaContext';
@@ -41,6 +42,7 @@ const COMPONENTES = {
   financeiro: FinanceiroWindow,
   config: ConfiguracoesWindow,
   playbook: PlaybookWindow,
+  estrategias: EstrategiasWindow,
   conteudo: ConteudoWindow,
   paint: PaintWindow,
   jogos: JogosWindow,
@@ -181,7 +183,7 @@ export default function Dashboard() {
           onNomear={(valor) => salvarPerfil(user, { petNome: valor })}
         />
       )}
-      <ChatProvider>
+      <ChatProvider proximaCamada={janelas.proximaCamada}>
         {telaPequena ? (
           <MobileShell user={user} perfil={perfil} janelas={janelas} />
         ) : (

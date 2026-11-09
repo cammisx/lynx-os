@@ -13,6 +13,7 @@ import {
   GearIcon,
   PaletteIcon,
   GamepadIcon,
+  EstrategiaIcon,
 } from '@/components/icons';
 
 /*
@@ -27,6 +28,7 @@ export const JANELAS = {
   turnos: { titulo: 'Turnos', Icone: CalendarIcon, somenteAdmin: true, naGrade: true },
   financeiro: { titulo: 'Financeiro', Icone: MoneyIcon, somenteAdmin: true, naGrade: true },
   playbook: { titulo: 'Playbook', Icone: BookIcon, naGrade: false },
+  estrategias: { titulo: 'Estratégias', Icone: EstrategiaIcon, naGrade: true },
   conteudo: { titulo: 'Conteúdo', Icone: ImageIcon, naGrade: false },
   paint: { titulo: 'Paint', Icone: PaletteIcon, naGrade: true },
   jogos: { titulo: 'Jogos', Icone: GamepadIcon, naGrade: true },

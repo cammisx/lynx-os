@@ -12,6 +12,7 @@ import {
   StarIcon,
   PaletteIcon,
   GamepadIcon,
+  EstrategiaIcon,
 } from "@/components/icons";
 
 const ANIM_MS = 180;
@@ -43,6 +44,11 @@ const APPS = [
     title: "Playbook",
   },
   {
+    id: "estrategias",
+    Icon: EstrategiaIcon,
+    title: "Estratégias",
+  },
+  {
     id: "conteudo",
     Icon: ImageIcon,
     title: "Conteúdo",
@@ -65,6 +71,7 @@ const APPS = [
 const APPS_CHATTER = APPS.filter(
   (app) =>
     app.id === "playbook" ||
+    app.id === "estrategias" ||
     app.id === "conteudo" ||
     app.id === "jogos" ||
     app.id === "paint"

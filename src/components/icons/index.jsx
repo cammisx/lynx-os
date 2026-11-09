@@ -372,3 +372,15 @@ export function GamepadIcon({ size = 16, className }) {
     </Svg>
   );
 }
+
+/* Alvo: a estrategia e o caminho ate o resultado. */
+export function EstrategiaIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="4.2" />
+      <circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none" />
+      <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2" />
+    </Svg>
+  );
+}
