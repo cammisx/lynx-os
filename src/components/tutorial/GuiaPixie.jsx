@@ -44,11 +44,11 @@ const VIRADA_CADA = 8;
 const VIRADA_DURACAO = 0.8; // tem de casar com a animação do CSS
 
 /* Tamanho de um quadro na folha e o quanto ele cresce na tela. */
-const QUADRO_LARG = 104;
+const QUADRO_LARG = 120;
 const QUADRO_ALT = 96;
 const QUADROS = 6;
-/* 0,75 deixa o desenho no mesmo tamanho de antes na tela (78x72). */
-const ESCALA = 0.75;
+/* 0,72 deixa o desenho no mesmo tamanho de antes na tela. */
+const ESCALA = 0.72;
 const LARGURA = QUADRO_LARG * ESCALA;
 const ALTURA = QUADRO_ALT * ESCALA;
 
