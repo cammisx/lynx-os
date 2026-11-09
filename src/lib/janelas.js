@@ -12,6 +12,7 @@ import {
   ImageIcon,
   GearIcon,
   PaletteIcon,
+  GamepadIcon,
 } from '@/components/icons';
 
 /*
@@ -28,6 +29,7 @@ export const JANELAS = {
   playbook: { titulo: 'Playbook', Icone: BookIcon, naGrade: false },
   conteudo: { titulo: 'Conteúdo', Icone: ImageIcon, naGrade: false },
   paint: { titulo: 'Paint', Icone: PaletteIcon, somenteAdmin: true, naGrade: true },
+  jogos: { titulo: 'Jogos', Icone: GamepadIcon, naGrade: true },
   config: { titulo: 'Configurações', Icone: GearIcon, naGrade: false },
 };
 

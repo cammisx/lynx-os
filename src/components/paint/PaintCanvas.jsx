@@ -404,17 +404,21 @@ export default function PaintCanvas() {
       const arquivo = paraArquivo(blob, 'desenho.png');
       const resposta = await base44.integrations.Core.UploadFile({ file: arquivo });
       if (!resposta?.file_url) throw new Error('upload sem url');
-      const resultado = fixar({
+      const resultado = await fixar({
         url: resposta.file_url,
         largura: tamanho.largura,
         altura: tamanho.altura,
         nome: 'Desenho',
       });
-      if (!resultado.ok) {
-        avisar(resultado.erro);
+      if (!resultado?.ok) {
+        avisar(resultado?.erro || 'Não consegui fixar o desenho agora.');
         return;
       }
-      avisar('Desenho fixado na área de trabalho');
+      avisar(
+        pequeno
+          ? 'Desenho fixado na área de trabalho do computador'
+          : 'Desenho fixado na área de trabalho'
+      );
     } catch (falha) {
       console.warn('[Paint] fixar', falha);
       avisar('Não consegui fixar o desenho agora.');
@@ -427,7 +431,12 @@ export default function PaintCanvas() {
     { id: 'salvar', rotulo: 'Salvar (.jpg)', atalho: ocupado === 'salvando' ? '…' : '', acao: salvarJpg },
     { separador: true },
     { id: 'enviar', rotulo: 'Enviar para…', atalho: ocupado === 'enviando' ? '…' : '', acao: prepararEnvio },
-    { id: 'fixar', rotulo: 'Fixar na área de trabalho', atalho: ocupado === 'fixando' ? '…' : '', acao: fixarNaMesa },
+    {
+      id: 'fixar',
+      rotulo: pequeno ? 'Fixar na área de trabalho do computador' : 'Fixar na área de trabalho',
+      atalho: ocupado === 'fixando' ? '…' : '',
+      acao: fixarNaMesa,
+    },
     { separador: true },
     { id: 'limpar', rotulo: 'Limpar tudo', perigo: true, acao: () => setConfirmarLimpar(true) },
   ];

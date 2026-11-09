@@ -1,0 +1,31 @@
+{
+  "name": "DesenhoFixo",
+  "type": "object",
+  "properties": {
+    "usuario_id": {
+      "type": "string"
+    },
+    "desenho_url": {
+      "type": "string"
+    },
+    "nome": {
+      "type": "string"
+    },
+    "largura": {
+      "type": "number"
+    },
+    "altura": {
+      "type": "number"
+    },
+    "pos_x": {
+      "type": "number"
+    },
+    "pos_y": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "usuario_id",
+    "desenho_url"
+  ]
+}

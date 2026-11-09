@@ -11,6 +11,7 @@ import {
   ImageIcon,
   StarIcon,
   PaletteIcon,
+  GamepadIcon,
 } from "@/components/icons";
 
 const ANIM_MS = 180;
@@ -58,11 +59,19 @@ const APPS = [
     title: "Paint",
     desc: "Referência da API de plugins do Paint.NET",
   },
+  {
+    id: "jogos",
+    Icon: GamepadIcon,
+    title: "Jogos",
+    desc: "Xadrez do Lichess e quiz de Pokémon",
+  },
 ];
 
 /* Playbook e conteúdo são de todo mundo: o chatter vê o da empresa e o das
    modelos dele, e só o admin edita. */
-const APPS_CHATTER = APPS.filter((app) => app.id === "playbook" || app.id === "conteudo");
+const APPS_CHATTER = APPS.filter(
+  (app) => app.id === "playbook" || app.id === "conteudo" || app.id === "jogos"
+);
 
 export default function StartMenu({ open, onClose, onOpenApp, onOpenConfig }) {
   const { user, logout } = useAuth();

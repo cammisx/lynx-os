@@ -13,6 +13,7 @@ import ConfiguracoesWindow from '@/components/ConfiguracoesWindow';
 import PlaybookWindow from '@/components/PlaybookWindow';
 import ConteudoWindow from '@/components/ConteudoWindow';
 import PaintWindow from '@/components/PaintWindow';
+import JogosWindow from '@/components/JogosWindow';
 import { JanelaContext } from '@/components/desktop/JanelaContext';
 import ConfirmarFechar from '@/components/desktop/ConfirmarFechar';
 import { janelaPorId } from '@/lib/janelas';
@@ -42,6 +43,7 @@ const COMPONENTES = {
   playbook: PlaybookWindow,
   conteudo: ConteudoWindow,
   paint: PaintWindow,
+  jogos: JogosWindow,
 };
 
 export default function Dashboard() {
@@ -114,10 +116,12 @@ export default function Dashboard() {
         },
         { id: 'abrir-playbook', rotulo: 'Abrir Playbook', acao: () => janelas.abrir('playbook') },
         { id: 'abrir-conteudo', rotulo: 'Abrir Conteúdo', acao: () => janelas.abrir('conteudo') },
+        { id: 'abrir-jogos', rotulo: 'Abrir Jogos', acao: () => janelas.abrir('jogos') },
       ]
     : [
         { id: 'abrir-playbook', rotulo: 'Abrir Playbook', acao: () => janelas.abrir('playbook') },
         { id: 'abrir-conteudo', rotulo: 'Abrir Conteúdo', acao: () => janelas.abrir('conteudo') },
+        { id: 'abrir-jogos', rotulo: 'Abrir Jogos', acao: () => janelas.abrir('jogos') },
       ];
 
   itensDesktop.current = [

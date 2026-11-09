@@ -1,78 +1,78 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { novoId } from '@/lib/paint';
 
 /**
  * Desenhos fixados na área de trabalho.
  *
- * Ficam no navegador de quem fixou (uma mesa por aparelho), como ícone da
- * área de trabalho: não viram registro no banco. A imagem em si é enviada
- * para o armazenamento do app, então continua abrindo depois de recarregar.
+ * Ficam no banco (entidade DesenhoFixo), um por pessoa: o desenho fixado no
+ * celular aparece na mesa do computador e vice-versa. A mesa só existe no
+ * desktop, então é lá que eles são desenhados.
  */
 
 export const LIMITE_DESENHOS = 10;
 
-const chaveDe = (userId) => `lynx:desenhos-fixos:${userId || 'anon'}`;
+const asList = (resultado) => (Array.isArray(resultado) ? resultado : resultado?.items || []);
 
-const ler = (userId) => {
-  try {
-    const bruto = localStorage.getItem(chaveDe(userId));
-    if (!bruto) return [];
-    const lista = JSON.parse(bruto);
-    return Array.isArray(lista) ? lista.filter((item) => item?.url) : [];
-  } catch {
-    return [];
-  }
-};
-
+/* Fixar dentro do Paint precisa aparecer na mesa na hora: as duas telas usam
+   este hook e se avisam por evento, sem recarregar a página. */
 const EVENTO = 'lynx:desenhos';
 
-const gravar = (userId, lista) => {
+const avisarMudanca = () => {
   try {
-    localStorage.setItem(chaveDe(userId), JSON.stringify(lista));
-    /* Quem mais estiver ouvindo (a área de trabalho, por exemplo) se atualiza
-       na hora: fixar dentro do Paint precisa aparecer na mesa sem recarregar. */
-    window.dispatchEvent(new CustomEvent(EVENTO, { detail: { userId } }));
-  } catch (erro) {
-    console.warn('[Desenhos] não consegui guardar', erro);
+    window.dispatchEvent(new CustomEvent(EVENTO));
+  } catch {
+    /* navegador sem CustomEvent não deve derrubar o fixar */
   }
 };
+
+const posicaoInicial = (indice) => ({
+  pos_x: 64 + (indice % 5) * 36,
+  pos_y: 64 + (indice % 5) * 36,
+});
 
 export default function useDesenhosFixos() {
   const { user } = useAuth();
   const userId = user?.id;
-  const [desenhos, setDesenhos] = useState(() => (typeof window === 'undefined' ? [] : []));
+  const [desenhos, setDesenhos] = useState([]);
+  const [carregado, setCarregado] = useState(false);
 
   useEffect(() => {
-    setDesenhos(ler(userId));
+    if (!userId) return undefined;
+    let ativo = true;
 
-    const recarregar = (evento) => {
-      if (!evento?.detail?.userId || evento.detail.userId === userId) setDesenhos(ler(userId));
-    };
-    const deFora = (evento) => {
-      if (!evento?.key || evento.key === chaveDe(userId)) setDesenhos(ler(userId));
+    const recarregar = async () => {
+      try {
+        const lista = asList(await base44.entities.DesenhoFixo.filter({ usuario_id: userId }));
+        if (ativo) setDesenhos(lista);
+      } catch (erro) {
+        console.warn('[Desenhos] recarregar', erro?.message || erro);
+      }
     };
 
+    const carregar = async () => {
+      try {
+        const lista = asList(await base44.entities.DesenhoFixo.filter({ usuario_id: userId }));
+        if (ativo) setDesenhos(lista);
+      } catch (erro) {
+        console.warn('[Desenhos] não consegui carregar', erro?.message || erro);
+      } finally {
+        if (ativo) setCarregado(true);
+      }
+    };
+
+    carregar();
     window.addEventListener(EVENTO, recarregar);
-    window.addEventListener('storage', deFora);
     return () => {
+      ativo = false;
       window.removeEventListener(EVENTO, recarregar);
-      window.removeEventListener('storage', deFora);
     };
   }, [userId]);
 
-  const salvar = useCallback(
-    (lista) => {
-      setDesenhos(lista);
-      gravar(userId, lista);
-    },
-    [userId]
-  );
-
   const fixar = useCallback(
-    ({ url, largura, altura, nome = 'Desenho' }) => {
-      const atuais = ler(userId);
-      if (atuais.length >= LIMITE_DESENHOS) {
+    async ({ url, largura, altura, nome = 'Desenho' }) => {
+      if (!userId) return { ok: false, erro: 'Entre na sua conta para fixar desenhos.' };
+      if (desenhos.length >= LIMITE_DESENHOS) {
         return {
           ok: false,
           erro: `Limite de ${LIMITE_DESENHOS} desenhos fixados atingido. Desafixe um para fixar outro.`,
@@ -80,46 +80,56 @@ export default function useDesenhosFixos() {
       }
 
       const proporcao = largura && altura ? altura / largura : 0.75;
-      const indice = atuais.length;
-      const novo = {
-        id: novoId(),
-        url,
+      const posicao = posicaoInicial(desenhos.length);
+
+      const criado = await base44.entities.DesenhoFixo.create({
+        usuario_id: userId,
+        desenho_url: url,
         nome,
         largura: 320,
         altura: Math.round(Math.min(420, Math.max(160, 320 * proporcao))),
-        x: 64 + (indice % 5) * 36,
-        y: 64 + (indice % 5) * 36,
-      };
+        ...posicao,
+      });
 
-      salvar([...atuais, novo]);
-      return { ok: true, desenho: novo };
+      if (criado?.id) {
+        setDesenhos((atual) => [...atual, criado]);
+        avisarMudanca();
+      }
+      return { ok: true, desenho: criado };
     },
-    [salvar, userId]
+    [desenhos.length, userId]
   );
 
-  const mover = useCallback(
-    (id, x, y) => {
-      salvar(ler(userId).map((item) => (item.id === id ? { ...item, x, y } : item)));
-    },
-    [salvar, userId]
-  );
+  const mover = useCallback(async (id, pos_x, pos_y) => {
+    setDesenhos((atual) => atual.map((item) => (item.id === id ? { ...item, pos_x, pos_y } : item)));
+    try {
+      await base44.entities.DesenhoFixo.update(id, { pos_x, pos_y });
+    } catch (erro) {
+      console.warn('[Desenhos] mover', erro?.message || erro);
+    }
+  }, []);
 
-  const redimensionar = useCallback(
-    (id, largura, altura) => {
-      salvar(ler(userId).map((item) => (item.id === id ? { ...item, largura, altura } : item)));
-    },
-    [salvar, userId]
-  );
+  const redimensionar = useCallback(async (id, largura, altura) => {
+    setDesenhos((atual) => atual.map((item) => (item.id === id ? { ...item, largura, altura } : item)));
+    try {
+      await base44.entities.DesenhoFixo.update(id, { largura, altura });
+    } catch (erro) {
+      console.warn('[Desenhos] redimensionar', erro?.message || erro);
+    }
+  }, []);
 
-  const desafixar = useCallback(
-    (id) => {
-      salvar(ler(userId).filter((item) => item.id !== id));
-    },
-    [salvar, userId]
-  );
+  const desafixar = useCallback(async (id) => {
+    setDesenhos((atual) => atual.filter((item) => item.id !== id));
+    try {
+      await base44.entities.DesenhoFixo.delete(id);
+      avisarMudanca();
+    } catch (erro) {
+      console.warn('[Desenhos] desafixar', erro?.message || erro);
+    }
+  }, []);
 
   return useMemo(
-    () => ({ desenhos, fixar, mover, redimensionar, desafixar, limite: LIMITE_DESENHOS }),
-    [desenhos, fixar, mover, redimensionar, desafixar]
+    () => ({ desenhos, carregado, fixar, mover, redimensionar, desafixar, limite: LIMITE_DESENHOS }),
+    [desenhos, carregado, fixar, mover, redimensionar, desafixar]
   );
 }

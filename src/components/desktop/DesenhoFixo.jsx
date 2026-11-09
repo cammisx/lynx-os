@@ -63,8 +63,8 @@ export default function DesenhoFixo({ desenho, onMover, onRedimensionar, onDesaf
       alca,
       x: evento.clientX,
       y: evento.clientY,
-      esquerda: desenho.x,
-      topo: desenho.y,
+      esquerda: desenho.pos_x || 0,
+      topo: desenho.pos_y || 0,
       largura: desenho.largura,
       altura: desenho.altura,
     };
@@ -110,8 +110,8 @@ export default function DesenhoFixo({ desenho, onMover, onRedimensionar, onDesaf
     setArrastando(false);
     if (!dados || !caixa) return;
     const proximo = {
-      x: Number.parseFloat(caixa.style.left) || desenho.x,
-      y: Number.parseFloat(caixa.style.top) || desenho.y,
+      x: Number.parseFloat(caixa.style.left) || desenho.pos_x || 0,
+      y: Number.parseFloat(caixa.style.top) || desenho.pos_y || 0,
       largura: Number.parseFloat(caixa.style.width) || desenho.largura,
       altura: Number.parseFloat(caixa.style.height) || desenho.altura,
     };
@@ -144,8 +144,8 @@ export default function DesenhoFixo({ desenho, onMover, onRedimensionar, onDesaf
         }}
         style={{
           position: 'fixed',
-          left: desenho.x,
-          top: desenho.y,
+          left: desenho.pos_x || 0,
+          top: desenho.pos_y || 0,
           width: desenho.largura,
           height: desenho.altura,
           zIndex: 600,
