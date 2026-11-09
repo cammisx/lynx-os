@@ -49,6 +49,8 @@ export default function PixieAjuda() {
   const [sobre, setSobre] = useState(null);
   /* Falando a despedida, a caminho de sair da tela. */
   const [saindo, setSaindo] = useState(false);
+  /* Agradecimento: ela gira e solta corações antes de sair. */
+  const [comemorando, setComemorando] = useState(false);
 
   useEffect(
     () =>
@@ -97,6 +99,7 @@ export default function PixieAjuda() {
     const t = setTimeout(() => {
       setEstado(null);
       setSaindo(false);
+      setComemorando(false);
       setDescansando(false);
       limparPixieEmEspera();
     }, TEMPO_DA_DESPEDIDA);
@@ -168,6 +171,7 @@ export default function PixieAjuda() {
         setSobre(null);
         setDescansando(false);
         setEstado({ fala: AGRADECER_E_DESPEDIR, apontando: false });
+        setComemorando(true);
         setSaindo(true);
       },
     },
@@ -178,6 +182,7 @@ export default function PixieAjuda() {
       <GuiaPixie
         texto={fala}
         esconderBalao={!fala}
+        comemorando={comemorando}
         capturarClique={sobre !== null || (Boolean(estado?.apontando) && !saindo)}
         aoClique={(evento, naPixie) => {
           const x = evento?.clientX ?? 0;

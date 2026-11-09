@@ -7,11 +7,12 @@ import { salvarPerfil } from '@/lib/perfilUsuario';
 import {
   assinarChamadoPixie,
   marcarPixieEmEspera,
-  marcarTutorialPixieVisto,
+  salvarTutorialPixieVisto,
 } from '@/lib/pixie';
 import {
   AGRADECER_E_DESPEDIR,
   CHAMADO_PARA_PERGUNTAR,
+  SOBRE_PIXIE,
   SEM_TUTORIAL,
   alvoDoPonto,
   falaDoElemento,
@@ -91,12 +92,16 @@ export default function TutorialRoteiro() {
     /* Terminada a primeira explicação, a pessoa cai no Início e ela fica
        flutuando em silêncio até alguém chamar. */
     aoTerminar: () => {
-      marcarTutorialPixieVisto();
+      salvarTutorialPixieVisto();
       marcarPixieEmEspera();
       navegar(ROTA_DEPOIS, { replace: true });
     },
   });
   const [encerrado, setEncerrado] = useState(false);
+  /* Quando a pessoa clica nela em vez de apontar um lugar: ela se explica. */
+  const [sobre, setSobre] = useState(null);
+  /* Agradecimento: ela gira e solta corações antes de sair. */
+  const [comemorando, setComemorando] = useState(false);
   const campoRef = useRef(null);
 
   /* O campo do nome ganha o foco sozinho quando aparece. */
@@ -142,14 +147,15 @@ export default function TutorialRoteiro() {
     if (saida) return saida;
     if (descansando) return null;
     if (tour.emTour) return tour.fala || FALAS[passo];
+    if (sobre !== null) return SOBRE_PIXIE[sobre];
     if (resposta) return resposta;
     if (apontando) return CHAMADO_PARA_PERGUNTAR;
     return FALAS[passo];
-  }, [saida, descansando, tour, resposta, apontando, passo]);
+  }, [saida, descansando, tour, sobre, resposta, apontando, passo]);
 
   /* O clique na tela: aponta o lugar, fecha uma resposta antiga ou segue o
      roteiro. O menu aberto não deixa o clique vazar para cá. */
-  const aoCliqueNaTela = (evento) => {
+  const aoCliqueNaTela = (evento, naPixie = false) => {
     if (saida) return;
     /* Flutuando em silêncio: só o clique nela reage, abrindo o menu dela. */
     if (descansando) {
@@ -159,6 +165,28 @@ export default function TutorialRoteiro() {
 
     const x = evento?.clientX ?? 0;
     const y = evento?.clientY ?? 0;
+
+    /* Ela falando dela mesma: o clique nela passa a fala, o clique na tela
+       explica o lugar que a pessoa apontou. */
+    if (sobre !== null) {
+      if (naPixie) {
+        if (sobre + 1 < SOBRE_PIXIE.length) {
+          setSobre(sobre + 1);
+          return;
+        }
+        setSobre(null);
+        setApontando(true);
+        return;
+      }
+      setSobre(null);
+      if (lugarDoElemento(alvoDoPonto(x, y)) === 'mesa') {
+        setResposta(null);
+        tour.iniciar();
+        return;
+      }
+      setResposta(falaDoPonto(x, y) || SEM_TUTORIAL);
+      return;
+    }
 
     /* No passeio da mesa o clique é o "continua". */
     if (tour.emTour) {
@@ -184,6 +212,12 @@ export default function TutorialRoteiro() {
        vira "me conta o que é isso aqui" em vez de não fazer nada. Na área de
        trabalho, o clique começa o passeio (ela abre menu e janela junto). */
     if (passo === 'atalho') {
+      /* Clicou nela: ela fala dela mesma (o menu continua no botão direito). */
+      if (naPixie) {
+        setResposta(null);
+        setSobre(0);
+        return;
+      }
       if (lugarDoElemento(alvoDoPonto(x, y)) === 'mesa') {
         setResposta(null);
         setApontando(false);
@@ -204,6 +238,7 @@ export default function TutorialRoteiro() {
     !menu &&
     (apontando ||
       tour.emTour ||
+      sobre !== null ||
       Boolean(resposta) ||
       passo === 'atalho' ||
       SAI_NO_CLIQUE.includes(passo));
@@ -230,8 +265,9 @@ export default function TutorialRoteiro() {
     setDescansando(false);
     setApontando(false);
     setResposta(null);
+    setSobre(null);
     tour.parar();
-    marcarTutorialPixieVisto();
+    salvarTutorialPixieVisto();
     setSaida(fala);
   };
 
@@ -249,7 +285,11 @@ export default function TutorialRoteiro() {
     {
       id: 'despedir',
       rotulo: 'Agradecer e se despedir',
-      acao: () => sair(AGRADECER_E_DESPEDIR),
+      acao: () => {
+        /* Agradecida, ela gira e solta corações antes de sair. */
+        setComemorando(true);
+        sair(AGRADECER_E_DESPEDIR);
+      },
     },
   ];
 
@@ -261,6 +301,7 @@ export default function TutorialRoteiro() {
         texto={fala}
         esconderBalao={!fala}
         capturarClique={capturarClique}
+        comemorando={comemorando}
         aoClique={aoCliqueNaTela}
         aoMenu={({ x, y }) => setMenu({ x, y })}
       >

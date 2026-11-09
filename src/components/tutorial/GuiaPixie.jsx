@@ -107,6 +107,20 @@ const ESTILOS = `
   from { opacity: 0; }
   to { opacity: 1; }
 }
+@keyframes pixie-feliz {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(90deg) scale(1.07); }
+  50% { transform: rotate(180deg) scale(1); }
+  75% { transform: rotate(270deg) scale(1.07); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+@keyframes pixie-coracao {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+  20% { opacity: 1; transform: translate(calc(var(--dx) * 0.3), -18px) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx), -78px) scale(1.05); }
+}
+.pixie-feliz { animation: pixie-feliz 1.1s ease-in-out 2; }
+.pixie-coracao { animation: pixie-coracao 1.5s ease-out both; }
 .pixie-frente, .pixie-virar {
   position: absolute;
   background-repeat: no-repeat;
@@ -128,6 +142,8 @@ const ESTILOS = `
 @media (prefers-reduced-motion: reduce) {
   .pixie-frente, .pixie-virar { animation: none !important; }
   .pixie-pisca { animation: none !important; opacity: 0.5; }
+  .pixie-feliz { animation: none !important; }
+  .pixie-coracao { animation: none !important; opacity: 0.85; }
 }
 `;
 
@@ -150,6 +166,42 @@ const Estrela = ({ tamanho, atraso, x, y, duracao }) => (
   />
 );
 
+/* Cada coração: para que lado voa, tamanho e quando sai. */
+const CORACOES = [
+  { dx: -28, tamanho: 12, atraso: 0 },
+  { dx: -12, tamanho: 9, atraso: 0.16 },
+  { dx: 4, tamanho: 13, atraso: 0.34 },
+  { dx: 22, tamanho: 10, atraso: 0.52 },
+  { dx: -20, tamanho: 8, atraso: 0.74 },
+  { dx: 14, tamanho: 11, atraso: 0.96 },
+  { dx: 0, tamanho: 9, atraso: 1.18 },
+];
+
+/** Coraçãozinho que sobe quando ela agradece. */
+const Coracao = ({ tamanho, atraso, dx }) => (
+  <span
+    className="pixie-coracao"
+    style={{
+      position: 'absolute',
+      left: -tamanho / 2,
+      top: -ALTURA * 0.72,
+      width: tamanho,
+      height: tamanho,
+      '--dx': `${dx}px`,
+      animationDelay: `${atraso}s`,
+    }}
+  >
+    <svg viewBox="0 0 24 24" width={tamanho} height={tamanho} aria-hidden="true">
+      <path
+        d="M12 21s-7.6-4.8-9.5-9.1A5.5 5.5 0 0 1 12 6.1a5.5 5.5 0 0 1 9.5 5.8C19.6 16.2 12 21 12 21Z"
+        fill="#f2789c"
+        stroke="rgba(255, 220, 235, 0.8)"
+        strokeWidth="0.8"
+      />
+    </svg>
+  </span>
+);
+
 const limitar = (valor, minimo, maximo) => Math.min(Math.max(valor, minimo), Math.max(minimo, maximo));
 
 export default function GuiaPixie({
@@ -160,6 +212,8 @@ export default function GuiaPixie({
   aoMenu = null,
   /* Sem balão ela só flutua (fim do tutorial, esperando o botão direito). */
   esconderBalao = false,
+  /* Agradecimento: ela fica feliz, gira e solta corações. */
+  comemorando = false,
 }) {
   const grupoRef = useRef(null);
   const corpoRef = useRef(null);
@@ -317,8 +371,14 @@ export default function GuiaPixie({
             willChange: 'transform',
           }}
         >
-          <div ref={asaRef} className="pixie-frente" />
+          <div
+            ref={asaRef}
+            className={comemorando ? 'pixie-frente pixie-feliz' : 'pixie-frente'}
+          />
           <div ref={virarRef} className="pixie-virar" style={{ display: 'none' }} />
+
+          {/* Agradecimento: os corações saem dela enquanto ela gira. */}
+          {comemorando ? CORACOES.map((coracao) => <Coracao key={coracao.atraso} {...coracao} />) : null}
 
           {/* A área do clique direito: um pouco maior que o desenho, senão é
               difícil acertar num bicho que mexe. O menu é dela mesma, então o

@@ -112,6 +112,10 @@
       "type": "string",
       "description": "Janelas fixadas na barra de tarefas, separadas por virgula"
     },
+    "tutorial_pixie_desktop_visto": {
+      "type": "boolean",
+      "description": "Se a pessoa já viu o tutorial da Pixie no desktop (vale na conta, em qualquer aparelho)"
+    },
     "jogos_config": {
       "type": "string",
       "description": "Regras e recordes dos jogos do LynxOS em JSON (vale no desktop e no celular)"

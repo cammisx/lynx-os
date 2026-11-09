@@ -19,7 +19,7 @@ import JogosWindow from '@/components/JogosWindow';
 import { JanelaContext } from '@/components/desktop/JanelaContext';
 import ConfirmarFechar from '@/components/desktop/ConfirmarFechar';
 import { janelaPorId } from '@/lib/janelas';
-import { tutorialPixieVisto } from '@/lib/pixie';
+import { tutorialPixieDesktopVisto } from '@/lib/pixie';
 import { SEPARADOR, useMenuContexto } from '@/components/desktop/MenuContexto';
 import { abrirConfigNaAba, registrarAbridorConfig } from '@/lib/configAba';
 import useJanelas from '@/hooks/useJanelas';
@@ -66,12 +66,13 @@ export default function Dashboard({ tutorial = false }) {
   useAplicarConvite(user);
 
   /* Quem ainda não passou pelo tutorial cai nele no primeiro acesso e, depois
-     de se despedir dela, não volta mais (a marca fica neste navegador).
+     de terminar, não volta mais (a marca fica na conta, então vale em
+     qualquer aparelho; o navegador guarda uma cópia de reserva).
      No celular não: lá não tem botão direito nem a Pixie na tela. */
   useEffect(() => {
     if (tutorial || telaPequena !== false) return;
-    if (!tutorialPixieVisto()) navegar('/tutorial', { replace: true });
-  }, [tutorial, telaPequena, navegar]);
+    if (!tutorialPixieDesktopVisto(user)) navegar('/tutorial', { replace: true });
+  }, [tutorial, telaPequena, navegar, user]);
 
   /* Ordem dos ícones da barra: entra pelo perfil e volta para ele quando muda. */
   const salvarBarra = useCallback(

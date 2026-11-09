@@ -5,14 +5,10 @@
  * publicação toda: o roteiro do primeiro acesso usa este fio, e a ajuda da
  * Pixie (menu de clique direito da mesa) usa o mesmo. Cada passo pode ter uma
  * ação (abrir o menu da mesa, abrir a janela de Configurações) e sai no
- * clique ou sozinho depois de um tempo, para ninguém ficar preso.
+ * clique, no ritmo de quem está lendo.
  */
 import { useEffect, useRef, useState } from 'react';
 import { TOUR_MESA, executarAcaoDoTour } from '@/lib/pixieTourMesa';
-
-export const ESPERA_DO_PASSO = 8000;
-/* A última fala sai sozinha mais cedo: no fim, quem conduz é a pessoa. */
-export const ESPERA_DO_ULTIMO = 4000;
 
 export default function useTourMesa({ aoTerminar } = {}) {
   const [passo, setPasso] = useState(null);
@@ -32,11 +28,10 @@ export default function useTourMesa({ aoTerminar } = {}) {
       return undefined;
     }
 
+    /* Nada de relógio: cada passo sai no clique, para dar tempo de ler. */
     const fala = TOUR_MESA[passo];
     if (fala?.acao) executarAcaoDoTour(fala.acao);
-    const espera = passo === TOUR_MESA.length - 1 ? ESPERA_DO_ULTIMO : ESPERA_DO_PASSO;
-    const t = setTimeout(() => setPasso((atual) => atual + 1), espera);
-    return () => clearTimeout(t);
+    return undefined;
   }, [passo]);
 
   return {

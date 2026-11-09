@@ -1,3 +1,5 @@
+import { base44 } from '@/api/base44Client';
+
 /**
  * A chamada da Pixie pelo menu do botão direito.
  *
@@ -70,6 +72,24 @@ export const tutorialPixieVisto = () => {
   try {
     return window.localStorage.getItem(CHAVE_VISTO) === '1';
   } catch {
+    return false;
+  }
+};
+
+/* Se a pessoa já passou pelo tutorial: vale o que está na conta (qualquer
+   aparelho) ou o que ficou guardado neste navegador. */
+export const tutorialPixieDesktopVisto = (user) =>
+  Boolean(user?.tutorial_pixie_desktop_visto) || tutorialPixieVisto();
+
+/* Grava a marca no User, que é o que vale entre aparelhos. O navegador fica
+   como reserva, para o tutorial não repetir se a rede falhar. */
+export const salvarTutorialPixieVisto = async () => {
+  marcarTutorialPixieVisto();
+  try {
+    await base44.auth.updateMe({ tutorial_pixie_desktop_visto: true });
+    return true;
+  } catch (erro) {
+    console.warn('[Pixie] o User recusou a marca do tutorial:', erro?.message || erro);
     return false;
   }
 };
