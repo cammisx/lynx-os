@@ -47,6 +47,9 @@ import {
    registro. Acima disso a imagem sobe para o armazenamento e vai como link. */
 const TETO_MINIATURA_EMBUTIDA = 12000;
 
+/* Lado do quadradinho de cor na barra de ferramentas. */
+const TOMADA = 14;
+
 const BOTAO = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -846,28 +849,61 @@ export default function PaintCanvas() {
             />
           ) : null}
 
-          {CORES.map((tom) => {
-            const atual =
-              (alvo === 'preenchimento' ? corFundo : cor).toLowerCase() === tom.toLowerCase();
-            return (
-              <button
-                key={tom}
-                type="button"
-                onClick={() => definirCor(tom)}
-                aria-label={`Cor ${tom}`}
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 5,
-                  cursor: 'pointer',
-                  background: tom,
-                  border: atual
-                    ? '2px solid var(--c1)'
-                    : '1px solid color-mix(in srgb, var(--ink-hex) 25%, transparent)',
-                }}
-              />
-            );
-          })}
+          {/* Duas fileiras na barra: em cima as dez padrão, embaixo as salvas. */}
+          <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 3 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              {CORES.map((tom) => {
+                const atual =
+                  (alvo === 'preenchimento' ? corFundo : cor).toLowerCase() === tom.toLowerCase();
+                return (
+                  <button
+                    key={tom}
+                    type="button"
+                    onClick={() => definirCor(tom)}
+                    aria-label={`Cor ${tom}`}
+                    style={{
+                      width: TOMADA,
+                      height: TOMADA,
+                      borderRadius: 4,
+                      cursor: 'pointer',
+                      background: tom,
+                      border: atual
+                        ? '2px solid var(--c1)'
+                        : '1px solid color-mix(in srgb, var(--ink-hex) 25%, transparent)',
+                    }}
+                  />
+                );
+              })}
+            </span>
+
+            {coresCustom.length ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                {coresCustom.map((tom) => {
+                  const atual =
+                    (alvo === 'preenchimento' ? corFundo : cor).toLowerCase() === tom.toLowerCase();
+                  return (
+                    <button
+                      key={`barra-${tom}`}
+                      type="button"
+                      onClick={() => definirCor(tom)}
+                      aria-label={`Cor salva ${tom}`}
+                      title={`Cor salva ${tom.toUpperCase()}`}
+                      style={{
+                        width: TOMADA,
+                        height: TOMADA,
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        background: tom,
+                        border: atual
+                          ? '2px solid var(--c1)'
+                          : '1px solid color-mix(in srgb, var(--ink-hex) 25%, transparent)',
+                      }}
+                    />
+                  );
+                })}
+              </span>
+            ) : null}
+          </span>
 
           <button
             type="button"
