@@ -110,6 +110,38 @@ export const tagsDosItens = (itens = []) => {
   return juntarTags(todas);
 };
 
+/** Quantos itens e quantas modelos usam cada tag, para o gerenciador. */
+export const usoDasTags = (conteudos = []) => {
+  const mapa = new Map();
+  (conteudos || []).forEach((conteudo) => {
+    const { itens } = conteudoNormalizado(conteudo);
+    itens.forEach((item) => {
+      juntarTags(item.tags).forEach((tag) => {
+        const atual = mapa.get(tag) || { tag, itens: 0, modelos: new Set() };
+        atual.itens += 1;
+        atual.modelos.add(conteudo.modelo_id || conteudo.id);
+        mapa.set(tag, atual);
+      });
+    });
+  });
+  return [...mapa.values()]
+    .map((linha) => ({ tag: linha.tag, itens: linha.itens, modelos: linha.modelos.size }))
+    .sort((a, b) => a.tag.localeCompare(b.tag, 'pt-BR'));
+};
+
+/**
+ * Troca (ou tira, quando `para` vem vazio) uma tag das tags de um item.
+ * Devolve o próprio item quando ele não usava a tag, para não gravar à toa.
+ */
+export const trocarTagNoItem = (item, de, para = '') => {
+  const origem = tagNormalizada(de);
+  const destino = tagNormalizada(para);
+  const atuais = juntarTags(item?.tags);
+  if (!origem || !atuais.includes(origem)) return item;
+  const restantes = atuais.filter((tag) => tag !== origem);
+  return { ...item, tags: destino ? juntarTags([...restantes, destino]) : restantes };
+};
+
 /** Todas as tags já usadas nos conteúdos que a pessoa pode ver. */
 export const tagsDeConteudos = (conteudos = []) => {
   const todas = [];

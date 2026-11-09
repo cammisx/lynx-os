@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -16,12 +16,16 @@ import {
   nomesDasPastas,
   novaPastaConteudo,
   pastaPorId,
-  tagsDosItens,
+  tagNormalizada,
+  tagsDeConteudos,
+  trocarTagNoItem,
+  usoDasTags,
 } from '@/lib/conteudoPastas';
 import ModalTabelaPrecos from '@/components/conteudo/ModalTabelaPrecos';
 import ModalItem from '@/components/conteudo/ModalItem';
 import CardItem from '@/components/conteudo/CardItem';
 import SeletorTags from '@/components/conteudo/SeletorTags';
+import ModalTags from '@/components/conteudo/ModalTags';
 
 const escuro = (valor) => `color-mix(in srgb, var(--c2) ${valor}%, transparent)`;
 const dourado = (valor) => `color-mix(in srgb, var(--c1) ${valor}%, transparent)`;
@@ -86,7 +90,14 @@ export default function ConteudoWindow({ onClose }) {
   const [verConteudo, setVerConteudo] = useState(false);
   const { user } = useAuth();
   const { conteudos, carregando, erro, admin, recarregar } = useConteudos();
-  const { tags: tagsRegistradas, carregado: tagsCarregadas, registrar } = useTagsConteudo();
+  const {
+    tags: tagsRegistradas,
+    carregado: tagsCarregadas,
+    registrar,
+    renomear: renomearTag,
+    excluir: excluirTag,
+    recarregar: recarregarTags,
+  } = useTagsConteudo();
   const [ativoId, setAtivoId] = useState(null);
   const [tabelaAberta, setTabelaAberta] = useState(false);
   const [pastaAbertaId, setPastaAbertaId] = useState(null);
@@ -97,13 +108,17 @@ export default function ConteudoWindow({ onClose }) {
   const [tagsFiltro, setTagsFiltro] = useState([]);
   const [aviso, setAviso] = useState('');
   const [salvando, setSalvando] = useState(false);
+  const [tagsAbertas, setTagsAbertas] = useState(false);
+  const [mexendoTags, setMexendoTags] = useState(false);
 
   const ativo = conteudos.find((item) => item.id === ativoId) || conteudos[0] || null;
   const { pastas, itens } = estado;
   const pastaAberta = pastaPorId(pastas, pastaAbertaId);
   const autor = user?.full_name || user?.email || '';
 
-  const sugestoes = juntarTags([...tagsRegistradas, ...tagsDosItens(itens)]);
+  /* A tag é geral: somam-se o cadastro e as tags de TODOS os conteúdos, não só
+     as do modelo que está aberto. */
+  const sugestoes = juntarTags([...tagsRegistradas, ...tagsDeConteudos(conteudos)]);
   const filtrando = Boolean(busca.trim()) || tagsFiltro.length > 0;
   const resultados = filtrarItens(itens, { busca, tags: tagsFiltro });
 
@@ -118,10 +133,26 @@ export default function ConteudoWindow({ onClose }) {
   /* Rede de segurança: tag que já estava num item salvo antes de existir o
      cadastro entra nele na primeira vez que a modelo é aberta. */
   useEffect(() => {
-    if (!admin || !tagsCarregadas || !itens.length) return;
-    const usadas = tagsDosItens(itens);
+    /* Enquanto uma tag está sendo renomeada ou apagada, a lista de conteúdos
+       ainda é a de antes: registrar agora traria a tag de volta. */
+    if (!admin || !tagsCarregadas || mexendoTags || !conteudos.length) return;
+    const usadas = tagsDeConteudos(conteudos);
     if (usadas.length) registrar(usadas, autor);
-  }, [admin, tagsCarregadas, itens, registrar, autor]);
+  }, [admin, tagsCarregadas, mexendoTags, conteudos, registrar, autor]);
+
+  /* O que está na tela vale mais que o banco: o modelo aberto entra com o
+     estado vivo (com o que acabou de ser salvo). */
+  const conteudosAoVivo = useMemo(
+    () =>
+      (conteudos || []).map((registro) =>
+        registro.id === ativo?.id
+          ? { ...registro, pastas: estado.pastas, itens: estado.itens }
+          : registro
+      ),
+    [conteudos, ativo?.id, estado]
+  );
+
+  const uso = useMemo(() => usoDasTags(conteudosAoVivo), [conteudosAoVivo]);
 
   /* Toda mexida em pasta ou item é salva na hora; se o banco recusar, a tela
      volta para o que estava antes e a pessoa é avisada. */
@@ -211,6 +242,53 @@ export default function ConteudoWindow({ onClose }) {
       { ...estado, itens: itens.filter((linha) => linha.id !== itemId) },
       'Não consegui remover o item agora.'
     );
+  };
+
+  /* Alterar e apagar tag vale para todas as modelos: percorre todos os
+     conteúdos, troca nos itens e só depois mexe no cadastro. */
+  const aplicarNaTag = async (de, para) => {
+    const origem = tagNormalizada(de);
+    if (!origem) return { ok: true };
+
+    setMexendoTags(true);
+    setAviso('');
+    try {
+      const alterados = [];
+      const atualizados = conteudosAoVivo.map((registro) => {
+        const lista = Array.isArray(registro.itens) ? registro.itens : [];
+        let mudou = false;
+        const novos = lista.map((item) => {
+          const novo = trocarTagNoItem(item, origem, para);
+          if (novo !== item) mudou = true;
+          return novo;
+        });
+        if (!mudou) return registro;
+        alterados.push({ id: registro.id, itens: novos });
+        return { ...registro, itens: novos };
+      });
+
+      await Promise.all(
+        alterados.map(({ id, itens: novosItens }) =>
+          base44.entities.Conteudo.update(id, { itens: novosItens })
+        )
+      );
+
+      const ativoNovo = atualizados.find((registro) => registro.id === ativo?.id);
+      if (ativoNovo) {
+        setEstado({ pastas: ativoNovo.pastas || [], itens: ativoNovo.itens || [] });
+      }
+
+      if (para) await renomearTag(origem, para);
+      else await excluirTag(origem);
+
+      await Promise.all([recarregar(), recarregarTags()]);
+      return { ok: true, itens: alterados.length };
+    } catch (falha) {
+      console.warn('[Tags] alterar', falha);
+      return { ok: false, erro: 'Não consegui salvar a alteração da tag agora.' };
+    } finally {
+      setMexendoTags(false);
+    }
   };
 
   const cartaoDoItem = (item) => (
@@ -334,6 +412,15 @@ export default function ConteudoWindow({ onClose }) {
                       + Nova pasta
                     </button>
                   )}
+                  {admin && (
+                    <button
+                      type="button"
+                      onClick={() => setTagsAbertas(true)}
+                      style={{ ...botaoAcao, background: 'transparent' }}
+                    >
+                      Tags
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setTabelaAberta(true)}
@@ -438,8 +525,8 @@ export default function ConteudoWindow({ onClose }) {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-                    gap: 8,
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(212px, 1fr))',
+                    gap: 12,
                   }}
                 >
                   {pastas.map((pasta) => (
@@ -448,9 +535,10 @@ export default function ConteudoWindow({ onClose }) {
                       style={{
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 6,
-                        padding: '9px 10px',
-                        borderRadius: 10,
+                        gap: 9,
+                        minHeight: 142,
+                        padding: '14px 14px 13px',
+                        borderRadius: 12,
                         border: `1px solid ${escuro(14)}`,
                         background: 'color-mix(in srgb, var(--c8) 45%, transparent)',
                       }}
@@ -460,8 +548,8 @@ export default function ConteudoWindow({ onClose }) {
                         style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer' }}
                       >
                         <svg
-                          width="18"
-                          height="18"
+                          width="26"
+                          height="26"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
@@ -489,7 +577,7 @@ export default function ConteudoWindow({ onClose }) {
                               background: 'transparent',
                               color: 'var(--c3)',
                               fontFamily: 'var(--font-main)',
-                              fontSize: 11,
+                              fontSize: 12.5,
                               fontWeight: 700,
                               outline: 'none',
                               padding: 0,
@@ -500,7 +588,7 @@ export default function ConteudoWindow({ onClose }) {
                             style={{
                               flex: 1,
                               minWidth: 0,
-                              fontSize: 11,
+                              fontSize: 12.5,
                               fontWeight: 700,
                               color: 'var(--c3)',
                               overflow: 'hidden',
@@ -513,7 +601,7 @@ export default function ConteudoWindow({ onClose }) {
                         )}
                       </div>
 
-                      <span style={{ fontSize: 9.5, color: 'var(--c2)' }}>
+                      <span style={{ fontSize: 10.5, color: 'var(--c2)' }}>
                         {contarItens(itens, pasta.id)} item(ns)
                       </span>
 
@@ -521,7 +609,7 @@ export default function ConteudoWindow({ onClose }) {
                         <button
                           type="button"
                           onClick={() => setPastaAbertaId(pasta.id)}
-                          style={{ ...botaoDiscreto, flex: 1, padding: '4px 6px', fontSize: 9.5 }}
+                          style={{ ...botaoDiscreto, flex: 1, padding: '7px 10px', fontSize: 11 }}
                         >
                           Abrir
                         </button>
@@ -533,8 +621,8 @@ export default function ConteudoWindow({ onClose }) {
                                 onClick={() => removerPasta(pasta.id)}
                                 style={{
                                   ...botaoDiscreto,
-                                  padding: '4px 6px',
-                                  fontSize: 9.5,
+                                  padding: '7px 10px',
+                                  fontSize: 11,
                                   color: 'var(--erro)',
                                   border: '1px solid color-mix(in srgb, var(--erro) 35%, transparent)',
                                 }}
@@ -544,7 +632,7 @@ export default function ConteudoWindow({ onClose }) {
                               <button
                                 type="button"
                                 onClick={() => setConfirmarPasta(null)}
-                                style={{ ...botaoDiscreto, padding: '4px 6px', fontSize: 9.5 }}
+                                style={{ ...botaoDiscreto, padding: '7px 10px', fontSize: 11 }}
                               >
                                 Não
                               </button>
@@ -556,8 +644,8 @@ export default function ConteudoWindow({ onClose }) {
                               aria-label="Remover pasta"
                               style={{
                                 ...botaoDiscreto,
-                                padding: '4px 7px',
-                                fontSize: 9.5,
+                                padding: '7px 11px',
+                                fontSize: 11,
                                 color: 'var(--erro)',
                                 border: '1px solid color-mix(in srgb, var(--erro) 28%, transparent)',
                               }}
@@ -628,6 +716,16 @@ export default function ConteudoWindow({ onClose }) {
           admin={admin}
           onFechar={() => setTabelaAberta(false)}
           onSalvo={recarregar}
+        />
+      ) : null}
+
+      {tagsAbertas ? (
+        <ModalTags
+          uso={uso}
+          ocupado={mexendoTags}
+          onRenomear={(de, para) => aplicarNaTag(de, para)}
+          onExcluir={(tag) => aplicarNaTag(tag, '')}
+          onFechar={() => setTagsAbertas(false)}
         />
       ) : null}
 

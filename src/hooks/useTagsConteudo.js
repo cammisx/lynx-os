@@ -61,5 +61,48 @@ export default function useTagsConteudo() {
     return novas.filter((tag) => !falharam.includes(tag));
   }, []);
 
-  return { tags, carregado, registrar, recarregar: carregar };
+  /* Renomeia no cadastro. Se o nome novo já existir, o registro antigo sai e
+     as duas viram uma tag só (é o que junta "NATAL" e "Natal"). */
+  const renomear = useCallback(
+    async (de, para) => {
+      const origem = tagNormalizada(de);
+      const destino = tagNormalizada(para);
+      if (!origem || !destino || origem === destino) return;
+
+      const registros = asList(await base44.entities.TagConteudo.list('tag', 500, 0));
+      const doOrigem = registros.filter((registro) => tagNormalizada(registro?.tag) === origem);
+      const jaExiste = registros.some((registro) => tagNormalizada(registro?.tag) === destino);
+
+      if (!doOrigem.length) {
+        await registrar([destino]);
+        return;
+      }
+
+      await Promise.all(
+        doOrigem.map((registro) =>
+          jaExiste
+            ? base44.entities.TagConteudo.delete(registro.id)
+            : base44.entities.TagConteudo.update(registro.id, { tag: destino })
+        )
+      );
+      await carregar();
+    },
+    [carregar, registrar]
+  );
+
+  /* Tira a tag do cadastro (os itens são limpos por quem chama). */
+  const excluir = useCallback(
+    async (tag) => {
+      const alvo = tagNormalizada(tag);
+      if (!alvo) return;
+      const registros = asList(await base44.entities.TagConteudo.list('tag', 500, 0));
+      const doAlvo = registros.filter((registro) => tagNormalizada(registro?.tag) === alvo);
+      if (!doAlvo.length) return;
+      await Promise.all(doAlvo.map((registro) => base44.entities.TagConteudo.delete(registro.id)));
+      await carregar();
+    },
+    [carregar]
+  );
+
+  return { tags, carregado, registrar, renomear, excluir, recarregar: carregar };
 }
