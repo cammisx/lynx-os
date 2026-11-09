@@ -26,7 +26,7 @@ import {
  * A cobra e um penis: o corpo e o tronco, a cabeca e a glande e as bolas ficam
  * atras do rabo, so de enfeite (nao entram na hitbox). Comer os itens enche a
  * conta: berinjela, foto, video, estrela, telefone e moedas de valor sorteado.
- * Bater na borda ou em si mesma e "gozar": a tela leva um splash branco.
+ * Bater na borda ou em si mesma: o tabuleiro escurece e o placar aparece com a frase da faixa.
  *
  * O desenho e todo em canvas com cores fixas (canvas nao entende var(--cor)
  * nem color-mix, era por isso que a versao antiga aparecia preta).
@@ -113,18 +113,21 @@ export default function JogoSolicitacaoMidia({
   const [painel, setPainel] = useState(false);
   const [flutuantes, setFlutuantes] = useState([]);
   const [largura, setLargura] = useState(400);
-  /* O splash branco vem primeiro; o placar entra logo depois, por cima. */
-  const [placarVisivel, setPlacarVisivel] = useState(false);
-  const relogioPlacar = useRef(null);
+  const [alturaLivre, setAlturaLivre] = useState(520);
 
   const canvas = useRef(null);
   const area = useRef(null);
+  const peDirecional = useRef(null);
   const jogo = useRef(criarPartida(grade));
   const recordeRef = useRef(recorde);
   recordeRef.current = recorde;
   const pontosRef = useRef(0);
 
-  const passo = Math.max(8, Math.floor(Math.min(largura, 460) / grade));
+  /* O tabuleiro ocupa o maior quadrado que cabe na janela: toda a largura que
+     existe e a altura que sobra abaixo do topo (deixando espaco pro direcional).
+     So o passo e inteiro, entao `lado` e sempre multiplo da grade. */
+  const alvo = Math.max(180, Math.min(largura, alturaLivre));
+  const passo = Math.max(8, Math.floor(alvo / grade));
   const lado = passo * grade;
 
   const desenhar = useCallback(
@@ -167,8 +170,6 @@ export default function JogoSolicitacaoMidia({
     pontosRef.current = 0;
     setPontos(0);
     setFlutuantes([]);
-    setPlacarVisivel(false);
-    if (relogioPlacar.current) clearTimeout(relogioPlacar.current);
     setEstado('pronto');
     desenhar();
   }, [desenhar, grade]);
@@ -181,11 +182,17 @@ export default function JogoSolicitacaoMidia({
     desenhar();
   }, [desenhar, estado, largura]);
 
-  /* O tabuleiro acompanha a largura que existe de verdade (janela ou celular). */
+  /* O tabuleiro acompanha o espaco que existe de verdade (janela ou celular). */
   useEffect(() => {
     const elemento = area.current;
     if (!elemento) return undefined;
-    const medir = () => setLargura(elemento.clientWidth || 400);
+    const medir = () => {
+      setLargura(elemento.clientWidth || 400);
+      const topo = elemento.getBoundingClientRect().top;
+      /* Reserva so o que o direcional ocupa de verdade embaixo do tabuleiro. */
+      const alturaDirecional = peDirecional.current?.getBoundingClientRect().height || 0;
+      setAlturaLivre(Math.max(200, window.innerHeight - topo - alturaDirecional - 28));
+    };
     medir();
     const observador = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(medir) : null;
     observador?.observe(elemento);
@@ -212,9 +219,6 @@ export default function JogoSolicitacaoMidia({
     if (estadoJogo.parado) return;
     estadoJogo.parado = true;
     setEstado('fim');
-    setPlacarVisivel(false);
-    if (relogioPlacar.current) clearTimeout(relogioPlacar.current);
-    relogioPlacar.current = window.setTimeout(() => setPlacarVisivel(true), 750);
     aoRecorde?.(estadoJogo.pontos);
   }, [aoRecorde]);
 
@@ -438,42 +442,45 @@ export default function JogoSolicitacaoMidia({
           ref={area}
           style={{ position: 'relative', display: 'flex', justifyContent: 'center', touchAction: 'none' }}
         >
-          <canvas
-            ref={canvas}
-            style={{
-              width: lado,
-              height: lado,
-              maxWidth: '100%',
-              borderRadius: 12,
-              border: `1px solid ${BORDA}`,
-              background: FUNDO,
-              display: 'block',
-            }}
-          />
-
-          {flutuantes.map((flutuante) => (
-            <span
-              key={flutuante.id}
+          {/* Quadrado do tabuleiro: canvas e tudo que flutua nele vivem aqui dentro,
+              entao a posicao em % bate com a celula e nada vaza pros lados. */}
+          <div style={{ position: 'relative', width: lado, height: lado, maxWidth: '100%' }}>
+            <canvas
+              ref={canvas}
               style={{
-                position: 'absolute',
-                left: `${((flutuante.x + 0.5) / grade) * 100}%`,
-                top: `${((flutuante.y + 0.2) / grade) * 100}%`,
-                transform: 'translate(-50%, -50%)',
-                pointerEvents: 'none',
-                fontFamily: 'var(--font-main)',
-                fontSize: 10,
-                fontWeight: 800,
-                color: '#ffe08a',
-                textShadow: '0 1px 4px rgba(0,0,0,0.75)',
-                animation: 'sobePonto 1s ease-out forwards',
-                whiteSpace: 'nowrap',
+                width: lado,
+                height: lado,
+                borderRadius: 12,
+                border: `1px solid ${BORDA}`,
+                background: FUNDO,
+                display: 'block',
               }}
-            >
-              {flutuante.texto}
-            </span>
-          ))}
+            />
 
-          {estado === 'fim' ? (
+            {flutuantes.map((flutuante) => (
+              <span
+                key={flutuante.id}
+                style={{
+                  position: 'absolute',
+                  left: `${((flutuante.x + 0.5) / grade) * 100}%`,
+                  top: `${(flutuante.y / grade) * 100}%`,
+                  transform: 'translate(-50%, -100%)',
+                  pointerEvents: 'none',
+                  fontFamily: 'var(--font-main)',
+                  fontSize: Math.max(9, Math.round(passo * 0.4)),
+                  fontWeight: 800,
+                  color: '#ffe08a',
+                  textShadow: '0 1px 4px rgba(0,0,0,0.75)',
+                  animation: 'sobePonto 1s ease-out forwards',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {flutuante.texto}
+              </span>
+            ))}
+
+            {estado === 'fim' ? (
+              /* Sem splash: o tabuleiro so escurece e o placar entra por cima. */
             <div
               aria-hidden="true"
               style={{
@@ -482,18 +489,8 @@ export default function JogoSolicitacaoMidia({
                 borderRadius: 12,
                 pointerEvents: 'none',
                 zIndex: 3,
-                opacity: 0.96,
-                filter: 'blur(1px)',
-                background:
-                  'radial-gradient(ellipse 42% 38% at 50% 46%, rgba(255,255,255,1) 0 55%, rgba(255,255,255,0.75) 72%, rgba(255,255,255,0) 100%),' +
-                  'radial-gradient(circle at 24% 24%, rgba(255,255,255,0.95) 0 12%, rgba(255,255,255,0) 30%),' +
-                  'radial-gradient(circle at 78% 30%, rgba(255,255,255,0.92) 0 10%, rgba(255,255,255,0) 27%),' +
-                  'radial-gradient(circle at 36% 78%, rgba(255,255,255,0.94) 0 14%, rgba(255,255,255,0) 33%),' +
-                  'radial-gradient(circle at 72% 76%, rgba(255,255,255,0.86) 0 10%, rgba(255,255,255,0) 26%),' +
-                  'radial-gradient(ellipse 6% 26% at 16% 52%, rgba(255,255,255,0.8) 0 70%, rgba(255,255,255,0) 100%),' +
-                  'radial-gradient(ellipse 26% 5% at 62% 90%, rgba(255,255,255,0.7) 0 70%, rgba(255,255,255,0) 100%),' +
-                  'radial-gradient(ellipse 5% 22% at 88% 60%, rgba(255,255,255,0.65) 0 70%, rgba(255,255,255,0) 100%)',
-                animation: 'splashGozo 520ms ease-out both',
+                background: 'color-mix(in srgb, #06040b 62%, transparent)',
+                animation: 'entraPlacar 180ms ease-out both',
               }}
             />
           ) : null}
@@ -521,9 +518,7 @@ export default function JogoSolicitacaoMidia({
             />
           ) : null}
 
-          {estado === 'fim' && placarVisivel ? (
-            /* O splash branco fica embaixo (zIndex 3); o cartao do placar vem
-               por cima com fundo escuro, senao o branco engole o texto. */
+          {estado === 'fim' ? (
             <div
               style={{
                 position: 'absolute',
@@ -568,10 +563,11 @@ export default function JogoSolicitacaoMidia({
               </div>
             </div>
           ) : null}
+          </div>
         </div>
 
         {geral.direcional ? (
-          <div style={{ marginTop: 'auto' }}>
+          <div ref={peDirecional} style={{ marginTop: 'auto' }}>
             <DpadVidro
               aoDirecao={virar}
               aoAcao={alternarPausa}
@@ -584,18 +580,13 @@ export default function JogoSolicitacaoMidia({
 
       <style>{`
         @keyframes sobePonto {
-          0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.9); }
-          18%  { opacity: 1; transform: translate(-50%, -60%) scale(1); }
-          100% { opacity: 0; transform: translate(-50%, -190%) scale(1); }
+          0%   { opacity: 0; transform: translate(-50%, -70%) scale(0.9); }
+          18%  { opacity: 1; transform: translate(-50%, -115%) scale(1); }
+          100% { opacity: 0; transform: translate(-50%, -260%) scale(1); }
         }
         @keyframes entraPlacar {
           from { opacity: 0; transform: translateY(10px) scale(0.96); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes splashGozo {
-          0%   { opacity: 0; transform: scale(0.55); }
-          45%  { opacity: 1; transform: scale(1); }
-          100% { opacity: 0.88; transform: scale(1.04); }
         }
       `}</style>
     </MolduraJogo>
