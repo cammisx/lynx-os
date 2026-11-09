@@ -341,6 +341,13 @@ export default function JogoCampoMinado({
               border: `1px solid ${escuro(12)}`,
               background: 'color-mix(in srgb, var(--c8) 42%, transparent)',
               width: 'fit-content',
+              /* No celular o toque longo servia para marcar a midia, mas o
+                 navegador selecionava o emoji da casa e abria o menu de copiar.
+                 Sem selecao, sem callout e sem arrastar: o dedo so marca. */
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
+              WebkitTouchCallout: 'none',
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
             {casas.map((casa, indice) => {
@@ -385,7 +392,12 @@ export default function JogoCampoMinado({
                     padding: 0,
                     touchAction: 'manipulation',
                     lineHeight: 1,
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    WebkitTouchCallout: 'none',
+                    WebkitTapHighlightColor: 'transparent',
                   }}
+                  draggable={false}
                 >
                   {casa.bandeira && fechada
                     ? MIDIAS[casa.midia || 'foto']

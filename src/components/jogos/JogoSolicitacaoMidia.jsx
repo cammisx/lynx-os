@@ -246,11 +246,14 @@ export default function JogoSolicitacaoMidia({
 
     const indice = estadoJogo.itens.findIndex((item) => item.x === x && item.y === y);
     const comeu = indice >= 0;
-    const corpoSemRabo = comeu ? estadoJogo.corpo : estadoJogo.corpo.slice(0, -1);
-    if (corpoSemRabo.some((parte) => parte.x === x && parte.y === y)) {
+    /* Encostar em qualquer parte do corpo mata, inclusive no rabo: a cabeca nao
+       entra na casa que o rabo esta deixando. Vale tambem depois do salto da
+       borda, porque a posicao ja esta normalizada dentro do tabuleiro. */
+    if (estadoJogo.corpo.some((parte) => parte.x === x && parte.y === y)) {
       parar();
       return;
     }
+    const corpoSemRabo = comeu ? estadoJogo.corpo : estadoJogo.corpo.slice(0, -1);
 
     estadoJogo.corpo = [{ x, y }, ...corpoSemRabo];
 

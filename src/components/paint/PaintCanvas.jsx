@@ -66,7 +66,35 @@ const BOTAO = {
   fontSize: 11,
   cursor: 'pointer',
   whiteSpace: 'nowrap',
+  /* Sem isso, numa linha rolavel o navegador espremia o botao em vez de deixar
+     a barra rolar: o texto vazava por cima do botao vizinho. */
+  flexShrink: 0,
 };
+
+/* Faixa da barra de ferramentas. No computador tudo divide a mesma linha e
+   quebra quando falta espaco; no celular cada faixa vira uma linha propria que
+   rola na horizontal, com os botoes no tamanho natural para o texto ser
+   legivel (era isso que deixava "Selecionar", "Retangulo" e "Abrir imagem"
+   cortados ou escritos por cima uns dos outros). */
+function FaixaBarra({ pequeno, children, style }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        minWidth: 0,
+        flexWrap: pequeno ? 'nowrap' : 'wrap',
+        ...(pequeno
+          ? { overflowX: 'auto', overflowY: 'hidden', width: '100%', scrollbarWidth: 'none', paddingBottom: 2 }
+          : null),
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 const camadaNova = (nome, comFundo, largura, altura) => {
   const canvas = criarCanvas(largura, altura);
@@ -775,124 +803,101 @@ export default function PaintCanvas() {
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
-          gap: 6,
+          flexDirection: pequeno ? 'column' : 'row',
+          alignItems: pequeno ? 'stretch' : 'center',
           flexWrap: pequeno ? 'nowrap' : 'wrap',
-          overflowX: pequeno ? 'auto' : 'visible',
-          padding: '8px 10px',
+          gap: pequeno ? 4 : 6,
+          padding: pequeno ? '6px 8px' : '8px 10px',
           borderBottom: '1px solid color-mix(in srgb, var(--c2) 12%, transparent)',
           flexShrink: 0,
         }}
       >
-        {FERRAMENTAS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setFerramenta(item.id)}
-            title={item.rotulo}
-            style={{
-              ...BOTAO,
-              color: ferramenta === item.id ? 'var(--c1)' : 'var(--c3)',
-              borderColor:
-                ferramenta === item.id
-                  ? 'color-mix(in srgb, var(--c1) 45%, transparent)'
-                  : 'color-mix(in srgb, var(--c2) 16%, transparent)',
-              background:
-                ferramenta === item.id ? 'color-mix(in srgb, var(--c1) 16%, transparent)' : BOTAO.background,
-            }}
-          >
-            {item.rotulo}
-          </button>
-        ))}
+        <FaixaBarra pequeno={pequeno}>
+          {FERRAMENTAS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setFerramenta(item.id)}
+              title={item.rotulo}
+              style={{
+                ...BOTAO,
+                color: ferramenta === item.id ? 'var(--c1)' : 'var(--c3)',
+                borderColor:
+                  ferramenta === item.id
+                    ? 'color-mix(in srgb, var(--c1) 45%, transparent)'
+                    : 'color-mix(in srgb, var(--c2) 16%, transparent)',
+                background:
+                  ferramenta === item.id ? 'color-mix(in srgb, var(--c1) 16%, transparent)' : BOTAO.background,
+              }}
+            >
+              {item.rotulo}
+            </button>
+          ))}
+        </FaixaBarra>
 
-        <span style={{ width: 1, height: 20, background: 'color-mix(in srgb, var(--c2) 18%, transparent)' }} />
-
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-          <button
-            type="button"
-            onClick={() => setAlvo('traco')}
-            title="Cor do traço"
-            aria-label="Cor do traço"
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: 7,
-              cursor: 'pointer',
-              background: cor,
-              border:
-                alvo === 'traco'
-                  ? '2px solid var(--c1)'
-                  : '1px solid color-mix(in srgb, var(--ink-hex) 25%, transparent)',
-            }}
-          />
-
-          {COM_PREENCHIMENTO.includes(ferramenta) ? (
+        <FaixaBarra pequeno={pequeno}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
             <button
               type="button"
-              onClick={() => setAlvo('preenchimento')}
-              title="Preenchimento da forma"
-              aria-label="Preenchimento da forma"
+              onClick={() => setAlvo('traco')}
+              title="Cor do traço"
+              aria-label="Cor do traço"
               style={{
                 width: 24,
                 height: 24,
                 borderRadius: 7,
                 cursor: 'pointer',
-                background:
-                  corFundo === TRANSPARENTE
-                    ? 'repeating-conic-gradient(rgba(255,255,255,0.35) 0% 25%, rgba(0,0,0,0.35) 0% 50%) 50% / 8px 8px'
-                    : corFundo,
+                flexShrink: 0,
+                background: cor,
                 border:
-                  alvo === 'preenchimento'
+                  alvo === 'traco'
                     ? '2px solid var(--c1)'
                     : '1px solid color-mix(in srgb, var(--ink-hex) 25%, transparent)',
               }}
             />
-          ) : null}
 
-          {/* Duas fileiras na barra: em cima as dez padrão, embaixo as salvas. */}
-          <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 3 }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-              {CORES.map((tom) => {
-                const atual =
-                  (alvo === 'preenchimento' ? corFundo : cor).toLowerCase() === tom.toLowerCase();
-                return (
-                  <button
-                    key={tom}
-                    type="button"
-                    onClick={() => definirCor(tom)}
-                    aria-label={`Cor ${tom}`}
-                    style={{
-                      width: TOMADA,
-                      height: TOMADA,
-                      borderRadius: 4,
-                      cursor: 'pointer',
-                      background: tom,
-                      border: atual
-                        ? '2px solid var(--c1)'
-                        : '1px solid color-mix(in srgb, var(--ink-hex) 25%, transparent)',
-                    }}
-                  />
-                );
-              })}
-            </span>
+            {COM_PREENCHIMENTO.includes(ferramenta) ? (
+              <button
+                type="button"
+                onClick={() => setAlvo('preenchimento')}
+                title="Preenchimento da forma"
+                aria-label="Preenchimento da forma"
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 7,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  background:
+                    corFundo === TRANSPARENTE
+                      ? 'repeating-conic-gradient(rgba(255,255,255,0.35) 0% 25%, rgba(0,0,0,0.35) 0% 50%) 50% / 8px 8px'
+                      : corFundo,
+                  border:
+                    alvo === 'preenchimento'
+                      ? '2px solid var(--c1)'
+                      : '1px solid color-mix(in srgb, var(--ink-hex) 25%, transparent)',
+                }}
+              />
+            ) : null}
 
-            {coresCustom.length ? (
+            {/* Duas fileiras na barra: em cima as dez padrão, embaixo as salvas. */}
+            <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 3, flexShrink: 0 }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                {coresCustom.map((tom) => {
+                {CORES.map((tom) => {
                   const atual =
                     (alvo === 'preenchimento' ? corFundo : cor).toLowerCase() === tom.toLowerCase();
                   return (
                     <button
-                      key={`barra-${tom}`}
+                      key={tom}
                       type="button"
                       onClick={() => definirCor(tom)}
-                      aria-label={`Cor salva ${tom}`}
-                      title={`Cor salva ${tom.toUpperCase()}`}
+                      aria-label={`Cor ${tom}`}
                       style={{
                         width: TOMADA,
                         height: TOMADA,
                         borderRadius: 4,
                         cursor: 'pointer',
+                        flexShrink: 0,
                         background: tom,
                         border: atual
                           ? '2px solid var(--c1)'
@@ -902,119 +907,176 @@ export default function PaintCanvas() {
                   );
                 })}
               </span>
+
+              {coresCustom.length ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                  {coresCustom.map((tom) => {
+                    const atual =
+                      (alvo === 'preenchimento' ? corFundo : cor).toLowerCase() === tom.toLowerCase();
+                    return (
+                      <button
+                        key={`barra-${tom}`}
+                        type="button"
+                        onClick={() => definirCor(tom)}
+                        aria-label={`Cor salva ${tom}`}
+                        title={`Cor salva ${tom.toUpperCase()}`}
+                        style={{
+                          width: TOMADA,
+                          height: TOMADA,
+                          borderRadius: 4,
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                          background: tom,
+                          border: atual
+                            ? '2px solid var(--c1)'
+                            : '1px solid color-mix(in srgb, var(--ink-hex) 25%, transparent)',
+                        }}
+                      />
+                    );
+                  })}
+                </span>
+              ) : null}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setPainelCor((valor) => !valor)}
+              style={{
+                ...BOTAO,
+                color: painelCor ? 'var(--c1)' : 'var(--c3)',
+                borderColor: painelCor
+                  ? 'color-mix(in srgb, var(--c1) 45%, transparent)'
+                  : BOTAO.borderColor,
+              }}
+            >
+              Cores
+            </button>
+
+            {alvo === 'preenchimento' ? (
+              <button
+                type="button"
+                onClick={() => setCorFundo(TRANSPARENTE)}
+                style={{
+                  ...BOTAO,
+                  color: corFundo === TRANSPARENTE ? 'var(--c1)' : 'var(--c3)',
+                }}
+              >
+                Sem cor
+              </button>
             ) : null}
           </span>
 
-          <button
-            type="button"
-            onClick={() => setPainelCor((valor) => !valor)}
+          <label
             style={{
-              ...BOTAO,
-              color: painelCor ? 'var(--c1)' : 'var(--c3)',
-              borderColor: painelCor
-                ? 'color-mix(in srgb, var(--c1) 45%, transparent)'
-                : BOTAO.borderColor,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
+              fontSize: 10.5,
+              color: 'var(--c2)',
             }}
           >
-            Cores
+            Traço
+            <input
+              type="range"
+              min="1"
+              max="80"
+              value={espessura}
+              onChange={(evento) => setEspessura(Number(evento.target.value))}
+              style={{ width: 74 }}
+            />
+          </label>
+
+          <label
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
+              fontSize: 10.5,
+              color: 'var(--c2)',
+            }}
+          >
+            Opacidade
+            <input
+              type="range"
+              min="5"
+              max="100"
+              value={Math.round(opacidade * 100)}
+              onChange={(evento) => setOpacidade(Number(evento.target.value) / 100)}
+              style={{ width: 74 }}
+            />
+          </label>
+        </FaixaBarra>
+
+        <FaixaBarra pequeno={pequeno}>
+          <button type="button" onClick={() => setZoom((z) => zoomSeguro(z - 0.25))} style={BOTAO} aria-label="Diminuir zoom">
+            −
+          </button>
+          <span
+            style={{
+              fontSize: 10.5,
+              color: 'var(--c2)',
+              minWidth: 38,
+              textAlign: 'center',
+              flexShrink: 0,
+            }}
+          >
+            {Math.round(zoom * 100)}%
+          </span>
+          <button type="button" onClick={() => setZoom((z) => zoomSeguro(z + 0.25))} style={BOTAO} aria-label="Aumentar zoom">
+            +
+          </button>
+          <button type="button" onClick={() => setZoom(selectZoomAjuste(tamanho, areaRef))} style={BOTAO}>
+            Ajustar
           </button>
 
-          {alvo === 'preenchimento' ? (
-            <button
-              type="button"
-              onClick={() => setCorFundo(TRANSPARENTE)}
-              style={{
-                ...BOTAO,
-                color: corFundo === TRANSPARENTE ? 'var(--c1)' : 'var(--c3)',
-              }}
-            >
-              Sem cor
-            </button>
-          ) : null}
-        </span>
+          <span style={{ width: 1, height: 20, flexShrink: 0, background: 'color-mix(in srgb, var(--c2) 18%, transparent)' }} />
 
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--c2)' }}>
-          Traço
-          <input
-            type="range"
-            min="1"
-            max="80"
-            value={espessura}
-            onChange={(evento) => setEspessura(Number(evento.target.value))}
-            style={{ width: 74 }}
-          />
-        </label>
+          <button
+            type="button"
+            onClick={desfazer}
+            disabled={historia.current.indice < 0}
+            style={{ ...BOTAO, opacity: historia.current.indice < 0 ? 0.45 : 1 }}
+          >
+            Desfazer
+          </button>
+          <button
+            type="button"
+            onClick={refazer}
+            disabled={historia.current.indice >= historia.current.passos.length - 1}
+            style={{
+              ...BOTAO,
+              opacity: historia.current.indice >= historia.current.passos.length - 1 ? 0.45 : 1,
+            }}
+          >
+            Refazer
+          </button>
 
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--c2)' }}>
-          Opacidade
-          <input
-            type="range"
-            min="5"
-            max="100"
-            value={Math.round(opacidade * 100)}
-            onChange={(evento) => setOpacidade(Number(evento.target.value) / 100)}
-            style={{ width: 74 }}
-          />
-        </label>
+          <button type="button" onClick={() => setPainelCamadas((v) => !v)} style={BOTAO}>
+            Camadas ({camadas.length})
+          </button>
+          <button type="button" onClick={() => entradaArquivo.current?.click()} style={BOTAO}>
+            Abrir imagem
+          </button>
+          <button type="button" onClick={() => setNovoAberto(true)} style={BOTAO}>
+            Novo
+          </button>
 
-        <span style={{ width: 1, height: 20, background: 'color-mix(in srgb, var(--c2) 18%, transparent)' }} />
-
-        <button type="button" onClick={() => setZoom((z) => zoomSeguro(z - 0.25))} style={BOTAO} aria-label="Diminuir zoom">
-          −
-        </button>
-        <span style={{ fontSize: 10.5, color: 'var(--c2)', minWidth: 38, textAlign: 'center' }}>
-          {Math.round(zoom * 100)}%
-        </span>
-        <button type="button" onClick={() => setZoom((z) => zoomSeguro(z + 0.25))} style={BOTAO} aria-label="Aumentar zoom">
-          +
-        </button>
-        <button type="button" onClick={() => setZoom(selectZoomAjuste(tamanho, areaRef))} style={BOTAO}>
-          Ajustar
-        </button>
-
-        <span style={{ width: 1, height: 20, background: 'color-mix(in srgb, var(--c2) 18%, transparent)' }} />
-
-        <button
-          type="button"
-          onClick={desfazer}
-          disabled={historia.current.indice < 0}
-          style={{ ...BOTAO, opacity: historia.current.indice < 0 ? 0.45 : 1 }}
-        >
-          Desfazer
-        </button>
-        <button
-          type="button"
-          onClick={refazer}
-          disabled={historia.current.indice >= historia.current.passos.length - 1}
-          style={{
-            ...BOTAO,
-            opacity: historia.current.indice >= historia.current.passos.length - 1 ? 0.45 : 1,
-          }}
-        >
-          Refazer
-        </button>
-
-        <button type="button" onClick={() => setPainelCamadas((v) => !v)} style={BOTAO}>
-          Camadas ({camadas.length})
-        </button>
-        <button type="button" onClick={() => entradaArquivo.current?.click()} style={BOTAO}>
-          Abrir imagem
-        </button>
-        <button type="button" onClick={() => setNovoAberto(true)} style={BOTAO}>
-          Novo
-        </button>
-
-        <button
-          type="button"
-          onClick={(evento) => {
-            const caixa = evento.currentTarget.getBoundingClientRect();
-            setMenu({ x: caixa.right, y: caixa.bottom + 4 });
-          }}
-          style={{ ...BOTAO, marginLeft: 'auto' }}
-          aria-label="Mais opções"
-        >
-          ⋮
-        </button>
+          <button
+            type="button"
+            onClick={(evento) => {
+              const caixa = evento.currentTarget.getBoundingClientRect();
+              setMenu({ x: caixa.right, y: caixa.bottom + 4 });
+            }}
+            style={{ ...BOTAO, marginLeft: pequeno ? 0 : 'auto' }}
+            aria-label="Mais opções"
+          >
+            ⋮
+          </button>
+        </FaixaBarra>
       </div>
 
       {painelCor ? (
