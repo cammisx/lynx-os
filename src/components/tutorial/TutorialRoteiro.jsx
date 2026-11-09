@@ -39,6 +39,11 @@ import useTourMesa from '@/lib/useTourMesa';
  * Preferências em destaque, abre a janela de Configurações e conta o que dá
  * para personalizar. Cada passo sai com um clique ou sozinho depois de um
  * tempo, para ninguém ficar preso.
+ *
+ * Terminado o passeio, a última fala some no clique ou sozinha em 4s e ela
+ * fica só flutuando, sem balão e sem pegar o clique (a mesa volta a ser da
+ * pessoa). A conversa só volta pelo menu dela: "Perguntar" pede um lugar novo
+ * para explicar, "Agradecer" e "Se despedir" a levam embora.
  */
 
 const FALAS = {
@@ -78,7 +83,15 @@ export default function TutorialRoteiro() {
   /* O passeio da mesa (mesmo fio da ajuda do sistema) e a marca de já ter
      passado por ele inteiro: depois disso, clicar na mesa não repete. */
   const [tourVisto, setTourVisto] = useState(false);
-  const tour = useTourMesa({ aoTerminar: () => setTourVisto(true) });
+  /* Terminada a explicação, o balão sai (no clique ou sozinho) e ela fica só
+     flutuando na tela, até alguém chamar pelo menu dela. */
+  const [descansando, setDescansando] = useState(false);
+  const tour = useTourMesa({
+    aoTerminar: () => {
+      setTourVisto(true);
+      setDescansando(true);
+    },
+  });
   const [encerrado, setEncerrado] = useState(false);
   const campoRef = useRef(null);
 
@@ -95,6 +108,7 @@ export default function TutorialRoteiro() {
     () =>
       assinarChamadoPixie(({ x, y, alvo }) => {
         const conhecida = alvo ? falaDoElemento(alvo) : falaDoPonto(x, y);
+        setDescansando(false);
         setApontando(!conhecida);
         setResposta(conhecida || null);
       }),
@@ -113,16 +127,19 @@ export default function TutorialRoteiro() {
 
   const fala = useMemo(() => {
     if (saida) return saida;
+    if (descansando) return null;
     if (tour.emTour) return tour.fala || FALAS[passo];
     if (resposta) return resposta;
     if (apontando) return CHAMADO_PARA_PERGUNTAR;
     return FALAS[passo];
-  }, [saida, tour, resposta, apontando, passo]);
+  }, [saida, descansando, tour, resposta, apontando, passo]);
 
   /* O clique na tela: aponta o lugar, fecha uma resposta antiga ou segue o
      roteiro. O menu aberto não deixa o clique vazar para cá. */
   const aoCliqueNaTela = (evento) => {
     if (saida) return;
+    /* Flutuando em silêncio: o clique nela não reabre a conversa. */
+    if (descansando) return;
 
     const x = evento?.clientX ?? 0;
     const y = evento?.clientY ?? 0;
@@ -162,6 +179,7 @@ export default function TutorialRoteiro() {
   const capturarClique =
     !encerrado &&
     !saida &&
+    !descansando &&
     !menu &&
     (apontando ||
       tour.emTour ||
@@ -188,6 +206,7 @@ export default function TutorialRoteiro() {
   /* Ela sai da tela: fala a frase, some e a pessoa fica na mesa. */
   const sair = (fala) => {
     setMenu(null);
+    setDescansando(false);
     setApontando(false);
     setResposta(null);
     tour.parar();
@@ -200,6 +219,7 @@ export default function TutorialRoteiro() {
       id: 'perguntar',
       rotulo: 'Perguntar',
       acao: () => {
+        setDescansando(false);
         setResposta(null);
         setApontando(true);
       },
@@ -215,6 +235,7 @@ export default function TutorialRoteiro() {
     <>
       <GuiaPixie
         texto={fala}
+        esconderBalao={!fala}
         capturarClique={capturarClique}
         aoClique={aoCliqueNaTela}
         aoMenu={({ x, y }) => setMenu({ x, y })}

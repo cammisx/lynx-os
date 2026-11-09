@@ -158,6 +158,8 @@ export default function GuiaPixie({
   capturarClique = false,
   aoClique = null,
   aoMenu = null,
+  /* Sem balão ela só flutua (fim do tutorial, esperando o botão direito). */
+  esconderBalao = false,
 }) {
   const grupoRef = useRef(null);
   const corpoRef = useRef(null);
@@ -171,7 +173,11 @@ export default function GuiaPixie({
      fonte carrega e quando a janela muda. */
   useEffect(() => {
     const balao = balaoRef.current;
-    if (!balao) return undefined;
+    if (!balao) {
+      /* Sem balão na tela ela pode subir mais: a medida antiga não vale. */
+      medidaRef.current = { largura: 0, altura: 0 };
+      return undefined;
+    }
 
     const medir = () => {
       const caixa = balao.getBoundingClientRect();
@@ -188,7 +194,7 @@ export default function GuiaPixie({
       window.removeEventListener('resize', medir);
       observador?.disconnect();
     };
-  }, []);
+  }, [esconderBalao]);
 
   useEffect(() => {
     const grupo = grupoRef.current;
@@ -339,6 +345,7 @@ export default function GuiaPixie({
         </div>
 
         {/* balão de fala: acima do desenho e dentro da tela */}
+        {esconderBalao ? null : (
         <div
           ref={balaoRef}
           style={{
@@ -381,6 +388,7 @@ export default function GuiaPixie({
             }}
           />
         </div>
+        )}
       </div>
     </div>
   );
