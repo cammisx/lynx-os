@@ -5,17 +5,25 @@ import { CloseIcon } from '@/components/icons';
 import { MODAL_CAIXA } from '@/lib/modalStyles';
 import useAviso from '@/components/ui/Aviso';
 import useDesenhosFixos from '@/hooks/useDesenhosFixos';
+import { useAuth } from '@/lib/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import EnviarDesenhoModal from '@/components/paint/EnviarDesenhoModal';
+import RodaCromatica from '@/components/paint/RodaCromatica';
 import {
   CORES,
+  COM_PREENCHIMENTO,
   FERRAMENTAS,
+  LIMITE_CORES,
   LIMITE_HISTORICO,
+  TRANSPARENTE,
   baixarJpg,
   canvasParaBlob,
   compor,
+  contraste,
   corDoPixel,
   criarCanvas,
+  hexParaHsv,
+  hsvParaHex,
   novoId,
   paraArquivo,
   preencherArea,
@@ -50,18 +58,6 @@ const BOTAO = {
   whiteSpace: 'nowrap',
 };
 
-const CAMPO = {
-  height: 26,
-  padding: '0 7px',
-  borderRadius: 7,
-  border: '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
-  background: 'color-mix(in srgb, var(--c8) 50%, transparent)',
-  color: 'var(--c3)',
-  fontFamily: 'var(--font-main)',
-  fontSize: 11,
-  outline: 'none',
-};
-
 const camadaNova = (nome, comFundo, largura, altura) => {
   const canvas = criarCanvas(largura, altura);
   if (comFundo) {
@@ -74,14 +70,21 @@ const camadaNova = (nome, comFundo, largura, altura) => {
 
 export default function PaintCanvas() {
   const pequeno = useIsMobile();
+  const { user } = useAuth();
   const { avisar, Aviso } = useAviso();
   const { fixar } = useDesenhosFixos();
+  const chaveCores = `lynx:paint:cores:${user?.id || 'anon'}`;
 
   const [tamanho, setTamanho] = useState({ largura: 900, altura: 620 });
   const [camadas, setCamadas] = useState(() => [camadaNova('Fundo', '#ffffff', 900, 620)]);
   const [ativaId, setAtivaId] = useState(() => '');
   const [ferramenta, setFerramenta] = useState('pincel');
   const [cor, setCor] = useState('#111111');
+  const [corFundo, setCorFundo] = useState(TRANSPARENTE);
+  const [alvo, setAlvo] = useState('traco');
+  const [coresCustom, setCoresCustom] = useState([]);
+  const [painelCor, setPainelCor] = useState(false);
+  const [brilho, setBrilho] = useState(1);
   const [espessura, setEspessura] = useState(8);
   const [opacidade, setOpacidade] = useState(1);
   const [zoom, setZoom] = useState(1);
@@ -97,7 +100,7 @@ export default function PaintCanvas() {
   const previewRef = useRef(null);
   const areaRef = useRef(null);
   const entradaArquivo = useRef(null);
-  const desenho = useRef({ ativo: false, inicio: null, anterior: null, antes: null, pan: null });
+  const desenho = useRef({ ativo: false, inicio: null, anterior: null, antes: null });
   const historia = useRef({ passos: [], indice: -1 });
 
   const camadaAtiva = camadas.find((item) => item.id === ativaId) || camadas[camadas.length - 1] || null;
@@ -131,6 +134,21 @@ export default function PaintCanvas() {
   useEffect(() => {
     recompor();
   }, [recompor, camadas, tamanho]);
+
+  /* As cores que a pessoa salva ficam guardadas no aparelho dela. */
+  useEffect(() => {
+    try {
+      const bruto = localStorage.getItem(chaveCores);
+      const lista = bruto ? JSON.parse(bruto) : [];
+      setCoresCustom(
+        Array.isArray(lista)
+          ? lista.filter((tom) => /^#[0-9a-f]{6}$/i.test(tom)).slice(-LIMITE_CORES)
+          : []
+      );
+    } catch {
+      setCoresCustom([]);
+    }
+  }, [chaveCores]);
 
   /* No celular a tela é estreita: abre já com o desenho inteiro à vista. */
   useEffect(() => {
@@ -199,7 +217,7 @@ export default function PaintCanvas() {
     ctx.save();
     ctx.globalAlpha = opacidade;
     ctx.globalCompositeOperation = apagar ? 'destination-out' : 'source-over';
-    ctx.strokeStyle = cor;
+    ctx.strokeStyle = apagar ? '#000000' : cor;
     ctx.lineWidth = espessura;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -213,7 +231,6 @@ export default function PaintCanvas() {
   const desenharForma = (ctx, inicio, fim) => {
     ctx.save();
     ctx.globalAlpha = opacidade;
-    ctx.strokeStyle = cor;
     ctx.lineWidth = espessura;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -234,7 +251,14 @@ export default function PaintCanvas() {
         Math.PI * 2
       );
     }
-    ctx.stroke();
+    if (COM_PREENCHIMENTO.includes(ferramenta) && corFundo !== TRANSPARENTE) {
+      ctx.fillStyle = corFundo;
+      ctx.fill();
+    }
+    if (ferramenta === 'linha' || espessura > 0) {
+      ctx.strokeStyle = cor;
+      ctx.stroke();
+    }
     ctx.restore();
   };
 
@@ -246,19 +270,6 @@ export default function PaintCanvas() {
     tela.setPointerCapture?.(evento.pointerId);
 
     const pos = ponto(evento);
-
-    if (ferramenta === 'mao') {
-      desenho.current = {
-        ativo: true,
-        pan: {
-          x: evento.clientX,
-          y: evento.clientY,
-          esquerda: areaRef.current?.scrollLeft || 0,
-          topo: areaRef.current?.scrollTop || 0,
-        },
-      };
-      return;
-    }
 
     if (ferramenta === 'conta-gotas') {
       const composta = compor(mapa(), tamanho.largura, tamanho.altura);
@@ -298,17 +309,11 @@ export default function PaintCanvas() {
   const aoMover = (evento) => {
     const estado = desenho.current;
     if (!estado.ativo) return;
-    if (estado.pan) {
-      const area = areaRef.current;
-      if (!area) return;
-      area.scrollLeft = estado.pan.esquerda - (evento.clientX - estado.pan.x);
-      area.scrollTop = estado.pan.topo - (evento.clientY - estado.pan.y);
-      return;
-    }
     if (!camadaAtiva) return;
     const pos = ponto(evento);
 
     if (['linha', 'retangulo', 'elipse'].includes(ferramenta)) {
+      desenho.current.anterior = pos;
       const preview = previewRef.current;
       if (!preview) return;
       const ctx = preview.getContext('2d');
@@ -326,8 +331,8 @@ export default function PaintCanvas() {
   const aoSoltar = () => {
     const estado = desenho.current;
     if (!estado.ativo) return;
-    desenho.current = { ativo: false, inicio: null, anterior: null, antes: null, pan: null };
-    if (estado.pan || !camadaAtiva) {
+    desenho.current = { ativo: false, inicio: null, anterior: null, antes: null };
+    if (!camadaAtiva) {
       recompor();
       return;
     }
@@ -350,6 +355,39 @@ export default function PaintCanvas() {
       );
       recompor();
     }
+  };
+
+  /* ---------- cores ---------- */
+
+  const corAtiva = alvo === 'preenchimento' && corFundo !== TRANSPARENTE ? corFundo : cor;
+
+  const definirCor = (hex) => {
+    const tom = String(hex || '').toLowerCase();
+    if (!/^#[0-9a-f]{6}$/.test(tom)) return;
+    if (alvo === 'preenchimento') setCorFundo(tom);
+    else setCor(tom);
+  };
+
+  const salvarCorCustom = (hex) => {
+    const tom = String(hex || '').toLowerCase();
+    if (!/^#[0-9a-f]{6}$/.test(tom)) return;
+    setCoresCustom((atual) => {
+      /* Passou de dez, a mais antiga sai sozinha. */
+      const lista = [...atual.filter((item) => item !== tom), tom].slice(-LIMITE_CORES);
+      try {
+        localStorage.setItem(chaveCores, JSON.stringify(lista));
+      } catch {
+        /* sem espaço no aparelho: a cor vale só nesta sessão */
+      }
+      return lista;
+    });
+    avisar(`Cor ${tom.toUpperCase()} salva`);
+  };
+
+  const mudarBrilho = (valor) => {
+    setBrilho(valor);
+    const { h, s } = hexParaHsv(corAtiva);
+    definirCor(hsvParaHex(h, s, valor));
   };
 
   /* ---------- menu do botão direito ---------- */
@@ -421,7 +459,13 @@ export default function PaintCanvas() {
       );
     } catch (falha) {
       console.warn('[Paint] fixar', falha);
-      avisar('Não consegui fixar o desenho agora.');
+      const texto = String(falha?.message || falha || '');
+      const semCadastro = /DesenhoFixo|não foi publicado/.test(texto);
+      avisar(
+        semCadastro
+          ? 'Para fixar desenhos falta publicar a entidade DesenhoFixo no Builder.'
+          : 'Não consegui fixar o desenho agora.'
+      );
     } finally {
       setOcupado('');
     }
@@ -547,33 +591,97 @@ export default function PaintCanvas() {
 
         <span style={{ width: 1, height: 20, background: 'color-mix(in srgb, var(--c2) 18%, transparent)' }} />
 
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-          {CORES.map((tom) => (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <button
+            type="button"
+            onClick={() => setAlvo('traco')}
+            title="Cor do traço"
+            aria-label="Cor do traço"
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 7,
+              cursor: 'pointer',
+              background: cor,
+              border:
+                alvo === 'traco'
+                  ? '2px solid var(--c1)'
+                  : '1px solid color-mix(in srgb, var(--ink-hex) 25%, transparent)',
+            }}
+          />
+
+          {COM_PREENCHIMENTO.includes(ferramenta) ? (
             <button
-              key={tom}
               type="button"
-              onClick={() => setCor(tom)}
-              aria-label={`Cor ${tom}`}
+              onClick={() => setAlvo('preenchimento')}
+              title="Preenchimento da forma"
+              aria-label="Preenchimento da forma"
               style={{
-                width: 18,
-                height: 18,
-                borderRadius: 5,
+                width: 24,
+                height: 24,
+                borderRadius: 7,
                 cursor: 'pointer',
-                background: tom,
+                background:
+                  corFundo === TRANSPARENTE
+                    ? 'repeating-conic-gradient(rgba(255,255,255,0.35) 0% 25%, rgba(0,0,0,0.35) 0% 50%) 50% / 8px 8px'
+                    : corFundo,
                 border:
-                  cor.toLowerCase() === tom.toLowerCase()
+                  alvo === 'preenchimento'
                     ? '2px solid var(--c1)'
                     : '1px solid color-mix(in srgb, var(--ink-hex) 25%, transparent)',
               }}
             />
-          ))}
-          <input
-            type="color"
-            value={cor}
-            onChange={(evento) => setCor(evento.target.value)}
-            aria-label="Escolher cor"
-            style={{ ...CAMPO, width: 30, padding: 2, height: 24, cursor: 'pointer' }}
-          />
+          ) : null}
+
+          {CORES.map((tom) => {
+            const atual =
+              (alvo === 'preenchimento' ? corFundo : cor).toLowerCase() === tom.toLowerCase();
+            return (
+              <button
+                key={tom}
+                type="button"
+                onClick={() => definirCor(tom)}
+                aria-label={`Cor ${tom}`}
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 5,
+                  cursor: 'pointer',
+                  background: tom,
+                  border: atual
+                    ? '2px solid var(--c1)'
+                    : '1px solid color-mix(in srgb, var(--ink-hex) 25%, transparent)',
+                }}
+              />
+            );
+          })}
+
+          <button
+            type="button"
+            onClick={() => setPainelCor((valor) => !valor)}
+            style={{
+              ...BOTAO,
+              color: painelCor ? 'var(--c1)' : 'var(--c3)',
+              borderColor: painelCor
+                ? 'color-mix(in srgb, var(--c1) 45%, transparent)'
+                : BOTAO.borderColor,
+            }}
+          >
+            Cores
+          </button>
+
+          {alvo === 'preenchimento' ? (
+            <button
+              type="button"
+              onClick={() => setCorFundo(TRANSPARENTE)}
+              style={{
+                ...BOTAO,
+                color: corFundo === TRANSPARENTE ? 'var(--c1)' : 'var(--c3)',
+              }}
+            >
+              Sem cor
+            </button>
+          ) : null}
         </span>
 
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--c2)' }}>
@@ -660,6 +768,144 @@ export default function PaintCanvas() {
         </button>
       </div>
 
+      {painelCor ? (
+        <>
+          <div
+            onMouseDown={() => setPainelCor(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 24 }}
+            aria-hidden="true"
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: 62,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 25,
+              display: 'flex',
+              gap: 14,
+              padding: 12,
+              borderRadius: 12,
+              border: '1px solid color-mix(in srgb, var(--c1) 28%, transparent)',
+              background: 'color-mix(in srgb, var(--c8) 90%, transparent)',
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+              boxShadow: '0 18px 44px rgba(0,0,0,0.55)',
+              fontFamily: 'var(--font-main)',
+              maxWidth: 'calc(100vw - 24px)',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <RodaCromatica cor={corAtiva} brilho={brilho} onChange={definirCor} />
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: 10,
+                  color: 'var(--c2)',
+                }}
+              >
+                Brilho
+                <input
+                  type="range"
+                  min="15"
+                  max="100"
+                  value={Math.round(brilho * 100)}
+                  onChange={(evento) => mudarBrilho(Number(evento.target.value) / 100)}
+                  style={{ width: 110 }}
+                />
+              </label>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                width: 158,
+                minWidth: 0,
+                paddingTop: 2,
+              }}
+            >
+              <span style={{ fontSize: 9, letterSpacing: '0.09em', color: 'var(--c2)' }}>
+                {alvo === 'preenchimento' ? 'PREENCHIMENTO' : 'TRAÇO'}
+              </span>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  padding: '6px 8px',
+                  borderRadius: 8,
+                  background: 'color-mix(in srgb, var(--c8) 60%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
+                }}
+              >
+                <span
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 6,
+                    background: corAtiva,
+                    border: '1px solid rgba(0,0,0,0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 7,
+                    color: contraste(corAtiva),
+                  }}
+                />
+                <span style={{ fontSize: 10.5, color: 'var(--c3)' }}>
+                  {corAtiva.toUpperCase()}
+                </span>
+              </div>
+
+              <button type="button" onClick={() => salvarCorCustom(corAtiva)} style={BOTAO}>
+                Salvar cor
+              </button>
+
+              <span style={{ fontSize: 9, lineHeight: 1.4, color: 'var(--c2)', opacity: 0.85 }}>
+                Até {LIMITE_CORES} cores salvas. Passando disso, a mais antiga sai.
+              </span>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                {coresCustom.map((tom) => (
+                  <button
+                    key={tom}
+                    type="button"
+                    onClick={() => definirCor(tom)}
+                    aria-label={`Cor salva ${tom}`}
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 5,
+                      cursor: 'pointer',
+                      background: tom,
+                      border: '1px solid rgba(0,0,0,0.25)',
+                    }}
+                  />
+                ))}
+                {!coresCustom.length ? (
+                  <span style={{ fontSize: 9.5, color: 'var(--c2)' }}>Nenhuma cor salva ainda.</span>
+                ) : null}
+              </div>
+
+              {alvo === 'preenchimento' ? (
+                <button
+                  type="button"
+                  onClick={() => setCorFundo(TRANSPARENTE)}
+                  style={BOTAO}
+                >
+                  Sem preenchimento
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </>
+      ) : null}
+
       {/* área do desenho */}
       <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex' }}>
         <div
@@ -683,7 +929,7 @@ export default function PaintCanvas() {
               flexShrink: 0,
               boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
               background:
-                'repeating-conic-gradient(rgba(255,255,255,0.06) 0% 25%, rgba(0,0,0,0.10) 0% 50%) 50% / 18px 18px',
+                'repeating-conic-gradient(#3b3b46 0% 25%, #2b2b33 0% 50%) 50% / 18px 18px',
             }}
           >
             <canvas

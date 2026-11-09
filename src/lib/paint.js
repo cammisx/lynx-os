@@ -20,17 +20,23 @@ export const CORES = [
 
 export const FERRAMENTAS = [
   { id: 'pincel', rotulo: 'Pincel' },
-  { id: 'lapis', rotulo: 'Lápis' },
   { id: 'borracha', rotulo: 'Borracha' },
   { id: 'balde', rotulo: 'Balde' },
   { id: 'conta-gotas', rotulo: 'Conta-gotas' },
   { id: 'linha', rotulo: 'Linha' },
   { id: 'retangulo', rotulo: 'Retângulo' },
   { id: 'elipse', rotulo: 'Elipse' },
-  { id: 'mao', rotulo: 'Mover' },
 ];
 
 export const ZOOMS = [0.25, 0.5, 1, 2, 4];
+
+/** Ferramentas que desenham forma fechada e por isso aceitam preenchimento. */
+export const COM_PREENCHIMENTO = ['retangulo', 'elipse'];
+
+export const TRANSPARENTE = 'transparente';
+
+/** Quantas cores personalizadas cabem na paleta de cada pessoa. */
+export const LIMITE_CORES = 10;
 
 /** Quantos passos de desfazer ficam guardados. */
 export const LIMITE_HISTORICO = 15;
@@ -192,4 +198,62 @@ export const urlParaBlob = async (url) => {
   const resposta = await fetch(url, { mode: 'cors' });
   if (!resposta.ok) throw new Error('não consegui baixar a imagem');
   return resposta.blob();
+};
+
+/* ---------- cores ---------- */
+
+export const hexParaRgb = (hex) => {
+  const limpo = String(hex || '').replace('#', '').trim();
+  if (limpo.length !== 6) return { r: 0, g: 0, b: 0 };
+  const valor = parseInt(limpo, 16);
+  return { r: (valor >> 16) & 255, g: (valor >> 8) & 255, b: valor & 255 };
+};
+
+export const rgbParaHex = (r, g, b) => {
+  const um = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+  return `#${um(r)}${um(g)}${um(b)}`;
+};
+
+/** HSV (h 0–360, s e v 0–1) para hexadecimal. */
+export const hsvParaHex = (h, s, v) => {
+  const c = v * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = v - c;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  return rgbParaHex((r + m) * 255, (g + m) * 255, (b + m) * 255);
+};
+
+/** Hexadecimal para HSV. */
+export const hexParaHsv = (hex) => {
+  const { r, g, b } = hexParaRgb(hex);
+  const rr = r / 255;
+  const gg = g / 255;
+  const bb = b / 255;
+  const max = Math.max(rr, gg, bb);
+  const min = Math.min(rr, gg, bb);
+  const d = max - min;
+  let h = 0;
+  if (d !== 0) {
+    if (max === rr) h = ((gg - bb) / d) % 6;
+    else if (max === gg) h = (bb - rr) / d + 2;
+    else h = (rr - gg) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  return { h, s: max === 0 ? 0 : d / max, v: max };
+};
+
+/** Branco no rótulo, preto no rótulo: usado para texto sobre a cor. */
+export const contraste = (hex) => {
+  const { r, g, b } = hexParaRgb(hex);
+  const luz = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luz > 0.62 ? '#111111' : '#ffffff';
 };

@@ -26,6 +26,14 @@ const avisarMudanca = () => {
   }
 };
 
+/* O cadastro precisa existir no app (entidade publicada no Builder). Quando
+   não existe, o chamador recebe um erro claro em vez de um "undefined". */
+const cadastro = () => {
+  const entidade = base44?.entities?.DesenhoFixo;
+  if (!entidade) throw new Error('O cadastro DesenhoFixo ainda não foi publicado no Builder.');
+  return entidade;
+};
+
 const posicaoInicial = (indice) => ({
   pos_x: 64 + (indice % 5) * 36,
   pos_y: 64 + (indice % 5) * 36,
@@ -43,7 +51,7 @@ export default function useDesenhosFixos() {
 
     const recarregar = async () => {
       try {
-        const lista = asList(await base44.entities.DesenhoFixo.filter({ usuario_id: userId }));
+        const lista = asList(await cadastro().filter({ usuario_id: userId }));
         if (ativo) setDesenhos(lista);
       } catch (erro) {
         console.warn('[Desenhos] recarregar', erro?.message || erro);
@@ -52,7 +60,7 @@ export default function useDesenhosFixos() {
 
     const carregar = async () => {
       try {
-        const lista = asList(await base44.entities.DesenhoFixo.filter({ usuario_id: userId }));
+        const lista = asList(await cadastro().filter({ usuario_id: userId }));
         if (ativo) setDesenhos(lista);
       } catch (erro) {
         console.warn('[Desenhos] não consegui carregar', erro?.message || erro);
@@ -82,7 +90,7 @@ export default function useDesenhosFixos() {
       const proporcao = largura && altura ? altura / largura : 0.75;
       const posicao = posicaoInicial(desenhos.length);
 
-      const criado = await base44.entities.DesenhoFixo.create({
+      const criado = await cadastro().create({
         usuario_id: userId,
         desenho_url: url,
         nome,
@@ -103,7 +111,7 @@ export default function useDesenhosFixos() {
   const mover = useCallback(async (id, pos_x, pos_y) => {
     setDesenhos((atual) => atual.map((item) => (item.id === id ? { ...item, pos_x, pos_y } : item)));
     try {
-      await base44.entities.DesenhoFixo.update(id, { pos_x, pos_y });
+      await cadastro().update(id, { pos_x, pos_y });
     } catch (erro) {
       console.warn('[Desenhos] mover', erro?.message || erro);
     }
@@ -112,7 +120,7 @@ export default function useDesenhosFixos() {
   const redimensionar = useCallback(async (id, largura, altura) => {
     setDesenhos((atual) => atual.map((item) => (item.id === id ? { ...item, largura, altura } : item)));
     try {
-      await base44.entities.DesenhoFixo.update(id, { largura, altura });
+      await cadastro().update(id, { largura, altura });
     } catch (erro) {
       console.warn('[Desenhos] redimensionar', erro?.message || erro);
     }
@@ -121,7 +129,7 @@ export default function useDesenhosFixos() {
   const desafixar = useCallback(async (id) => {
     setDesenhos((atual) => atual.filter((item) => item.id !== id));
     try {
-      await base44.entities.DesenhoFixo.delete(id);
+      await cadastro().delete(id);
       avisarMudanca();
     } catch (erro) {
       console.warn('[Desenhos] desafixar', erro?.message || erro);
