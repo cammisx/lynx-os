@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
 import { CloseIcon, PencilIcon, PlusIcon, TrashIcon, UsersIcon } from '@/components/icons';
@@ -8,9 +8,8 @@ import FichaChatterModal from '@/components/chatters/FichaChatterModal';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/lib/AuthContext';
 import { ehAdmin } from '@/lib/chat';
-import { guardarNomePendente, nomePendente, normalizarEmail, tirarNomePendente } from '@/lib/convites';
+import { guardarNomePendente, nomePendente, normalizarEmail } from '@/lib/convites';
 import {
-  aplicarConvitesPendentes,
   cancelarConvite,
   criarConvite,
   enviarConviteBase44,
@@ -96,7 +95,6 @@ export default function ChattersWindow({ onClose }) {
   const [fichaAberta, setFichaAberta] = useState(null);
   const [excluindo, setExcluindo] = useState(null);
   const [aviso, setAviso] = useState('');
-  const jaAplicou = useRef(false);
 
   /* Nome digitado num convite anterior, esperando a pessoa aparecer no app. */
   const aplicarNomesPendentes = async (listaUsuarios) => {
@@ -150,23 +148,6 @@ export default function ChattersWindow({ onClose }) {
     carregar();
   }, [carregar]);
 
-  /* Convite pendente + conta já criada? A função aplica cargo, modelos e turnos. */
-  useEffect(() => {
-    if (!admin || jaAplicou.current || carregando || !convites.length) return;
-    jaAplicou.current = true;
-    aplicarConvitesPendentes()
-      .then(async (resultado) => {
-        if (!resultado?.aplicados) return;
-        emitChattersChanged();
-        emitModelsChanged();
-        setAviso(
-          `${resultado.aplicados} convite(s) aplicados agora: cargo, modelos e turnos de quem já criou a conta.`
-        );
-        await carregar();
-      })
-      .catch((falha) => console.warn('[Chatters] aplicar convites', falha));
-  }, [admin, carregando, convites, carregar]);
-
   /**
    * Convite: o Base44 manda o e-mail com o cargo certo e o convite completo
    * fica guardado para nascer junto com a conta.
@@ -198,28 +179,11 @@ export default function ChattersWindow({ onClose }) {
       };
     }
 
-    /* Pessoa que já tem conta: aplica na hora em vez de esperar o próximo login. */
-    let aplicado = false;
-    try {
-      const achados = asList(await base44.entities.User.filter({ email: alvo }));
-      const alvoUser = achados[0];
-      if (alvoUser?.id) {
-        if (nome) await base44.entities.User.update(alvoUser.id, { nome_exibicao: nome });
-        tirarNomePendente(alvo);
-        const resultado = await aplicarConvitesPendentes();
-        aplicado = Boolean(resultado?.aplicados);
-      } else {
-        guardarNomePendente(alvo, nome);
-      }
-    } catch (falha) {
-      console.warn('[Chatters] aplicação imediata', falha);
-      guardarNomePendente(alvo, nome);
-    }
+    /* O nome digitado espera a pessoa entrar: quem aplica o convite é a sessão dela. */
+    if (nome) guardarNomePendente(alvo, nome);
 
     setAviso(
-      aplicado
-        ? `Convite enviado para ${nome} (${alvo}) e já aplicado: a pessoa tem conta.`
-        : `Convite enviado para ${nome} (${alvo}). Modelos e turnos entram quando ela criar a conta.`
+      `Convite enviado para ${nome} (${alvo}). Modelos, turnos e a notificação para aprovar entram no primeiro acesso dela.`
     );
     await carregar();
     return { ok: true };

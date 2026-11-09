@@ -2,9 +2,9 @@ import { base44 } from '@/api/base44Client';
 
 /**
  * Convites de chatter com tudo dentro: cargo, modelos com os IDs de centavos
- * e os turnos. O convite fica guardado até a pessoa criar a conta; nesse
- * momento a função `aplicarConvitesPendentes` cria o chatter, os vínculos nas
- * modelos e os turnos de verdade.
+ * e os turnos. O convite fica guardado até a pessoa entrar; a sessão dela é
+ * quem aplica, criando o chatter, os vínculos nas modelos, os turnos como
+ * pedido de aprovação e a notificação de cada turno.
  */
 
 const asList = (resultado) => (Array.isArray(resultado) ? resultado : resultado?.items || []);
@@ -54,15 +54,14 @@ export const cancelarConvite = async (id, motivo = '') => {
   });
 };
 
-/** Varre todos os convites pendentes (uso do admin ao abrir a janela). */
-export const aplicarConvitesPendentes = async () => {
-  const resposta = await base44.functions.invoke('aplicarConvitesPendentes', {});
-  return resposta?.data || { ok: false, aplicados: 0 };
-};
-
-/** Aplica só o convite de quem está logado (primeiro acesso). */
+/**
+ * Aplica só o convite de quem está logado, no primeiro acesso.
+ *
+ * Não existe varredura de admin de propósito: os turnos do convite nascem como
+ * pedido de aprovação na sessão da própria pessoa, junto com a notificação.
+ */
 export const aplicarMeuConvite = async () => {
-  const resposta = await base44.functions.invoke('aplicarConvitesPendentes', { todos: false });
+  const resposta = await base44.functions.invoke('aplicarConvitesPendentes', {});
   return resposta?.data || { ok: false, aplicados: 0 };
 };
 

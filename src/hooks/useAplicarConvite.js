@@ -1,11 +1,17 @@
 import { useEffect, useRef } from 'react';
 import { aplicarMeuConvite } from '@/lib/convitesChatter';
-import { emitChattersChanged, emitModelsChanged, emitShiftsChanged } from '@/lib/desktopEvents';
+import {
+  emitChattersChanged,
+  emitModelsChanged,
+  emitNotificationsChanged,
+  emitShiftsChanged,
+} from '@/lib/desktopEvents';
 import { useAuth } from '@/lib/AuthContext';
 
 /**
- * Primeiro acesso de quem foi convidado: aplica o convite (cargo, modelos com
- * os IDs e turnos) sem ninguém precisar apertar nada. Roda uma vez por sessão.
+ * Primeiro acesso de quem foi convidado: aplica o convite (cargo, vínculos nas
+ * modelos e os turnos como pedido de aprovação) sem ninguém precisar apertar
+ * nada, e acende a notificação de cada turno. Roda uma vez por sessão.
  */
 export default function useAplicarConvite(user) {
   const { checkUserAuth } = useAuth();
@@ -29,6 +35,7 @@ export default function useAplicarConvite(user) {
         emitChattersChanged();
         emitModelsChanged();
         emitShiftsChanged();
+        emitNotificationsChanged();
         // Convite de admin muda o cargo da pessoa: recarrega o usuário.
         await checkUserAuth?.();
       })
