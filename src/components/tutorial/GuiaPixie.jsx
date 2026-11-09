@@ -51,15 +51,21 @@ const PIRUETA_SALTO = 9; // px que ela sobe no meio do giro
 const QUADRO_LARG = 26;
 const QUADRO_ALT = 24;
 const QUADROS = 3;
-const QUADROS_GIRO = 4;
 const ESCALA = 3;
 const LARGURA = QUADRO_LARG * ESCALA;
 const ALTURA = QUADRO_ALT * ESCALA;
 
+/* A pirueta usa um quadro maior (34x28), com folga para a pose inteira. */
+const GIRO_QUADROS = 4;
+const GIRO_LARG = 34;
+const GIRO_ALT = 28;
+const GIRO_LARGURA = GIRO_LARG * ESCALA;
+const GIRO_ALTURA = GIRO_ALT * ESCALA;
+
 /* Onde o desenho dela começa e termina em relação ao ponto do caminho.
    TOPO_VISUAL já desconta o quanto ela cresce ao inclinar e ao girar. */
 const CORPO_TOPO = -ALTURA + 6;
-const TOPO_VISUAL = CORPO_TOPO - 12;
+const TOPO_VISUAL = CORPO_TOPO - 18;
 const FOLGA_DO_BALAO = 8;
 const MARGEM_DA_TELA = 8;
 
@@ -84,7 +90,7 @@ const ESTILOS = `
 }
 @keyframes pixie-giro {
   from { background-position-x: 0; }
-  to { background-position-x: -${QUADRO_LARG * QUADROS_GIRO * ESCALA}px; }
+  to { background-position-x: -${GIRO_LARGURA * GIRO_QUADROS}px; }
 }
 @keyframes pixie-pisca {
   0%, 100% { opacity: 0; transform: scale(0.4); }
@@ -96,19 +102,23 @@ const ESTILOS = `
 }
 .pixie-corpo, .pixie-giro {
   position: absolute;
-  inset: 0;
   background-repeat: no-repeat;
-  background-size: ${LARGURA * QUADROS}px ${ALTURA}px;
   filter: drop-shadow(0 0 7px rgba(240, 148, 58, 0.6)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
 }
 .pixie-corpo {
+  inset: 0;
   background-image: url(/tutorial/pixie-dourada.png);
+  background-size: ${LARGURA * QUADROS}px ${ALTURA}px;
   animation: pixie-quadros 0.42s steps(${QUADROS}) infinite;
 }
 .pixie-giro {
+  left: ${(LARGURA - GIRO_LARGURA) / 2}px;
+  top: ${(ALTURA - GIRO_ALTURA) / 2}px;
+  width: ${GIRO_LARGURA}px;
+  height: ${GIRO_ALTURA}px;
   background-image: url(/tutorial/pixie-giro-dourada.png);
-  background-size: ${LARGURA * QUADROS_GIRO}px ${ALTURA}px;
-  animation: pixie-giro ${PIRUETA_DURACAO}s steps(${QUADROS_GIRO}) 1;
+  background-size: ${GIRO_LARGURA * GIRO_QUADROS}px ${GIRO_ALTURA}px;
+  animation: pixie-giro ${PIRUETA_DURACAO}s steps(${GIRO_QUADROS}) 1;
 }
 .pixie-pisca { animation: pixie-pisca 2.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
