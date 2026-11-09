@@ -4,6 +4,7 @@ import '@/theme.css';
 import DesktopBackground from '@/components/DesktopBackground';
 import DesktopPet from '@/components/desktop/DesktopPet';
 import DesktopWidgets from '@/components/desktop/DesktopWidgets';
+import DestaquePreferencias from '@/components/tutorial/DestaquePreferencias';
 import DesenhosFixados from '@/components/desktop/DesenhosFixados';
 import Taskbar from '@/components/Taskbar';
 import ChattersWindow from '@/components/ChattersWindow';
@@ -216,6 +217,8 @@ export default function Dashboard({ tutorial = false }) {
           <>
             <DesenhosFixados />
             <DesktopWidgets />
+            {/* A moldura que a Pixie usa no passeio das Preferências. */}
+            <DestaquePreferencias />
             <Taskbar
               onOpenApp={janelas.abrir}
               proximaCamada={janelas.proximaCamada}

@@ -877,7 +877,7 @@ export default function ConfiguracoesWindow({ onClose }) {
             >
               {pequeno ? 'Ajustes do celular' : 'Ajustes do computador'}
             </span>
-            <span style={{ ...labelStyle, marginTop: 2 }}>Tamanho da fonte</span>
+            <span data-pref-area="fontes" style={{ ...labelStyle, marginTop: 2 }}>Tamanho da fonte</span>
             <span style={dicaStyle}>
               Vale para o sistema inteiro: chat, janelas, painéis e menus. O Normal é como sempre foi.
             </span>
@@ -994,7 +994,7 @@ export default function ConfiguracoesWindow({ onClose }) {
               })}
             </div>
 
-            <span style={{ ...labelStyle, marginTop: 6 }}>Modo de cor</span>
+            <span data-pref-area="modo" style={{ ...labelStyle, marginTop: 6 }}>Modo de cor</span>
             <span style={dicaStyle}>
               Diurno e noturno usam a mesma paleta do tema, uma clara e uma escura. No automático, o
               sistema decide junto com o Windows.
@@ -1040,7 +1040,7 @@ export default function ConfiguracoesWindow({ onClose }) {
               })}
             </div>
 
-            <span style={{ ...labelStyle, marginTop: 6 }}>Tema do sistema</span>
+            <span data-pref-area="tema" style={{ ...labelStyle, marginTop: 6 }}>Tema do sistema</span>
             <span style={dicaStyle}>
               Cada perfil veste o sistema inteiro: ícones, vidro, desktop e barras. Escolhe o seu.
             </span>
@@ -1107,7 +1107,7 @@ export default function ConfiguracoesWindow({ onClose }) {
               })}
             </div>
 
-            <span style={{ ...labelStyle, marginTop: 6 }}>Fundo do desktop</span>
+            <span data-pref-area="fundo" style={{ ...labelStyle, marginTop: 6 }}>Fundo do desktop</span>
             <span style={dicaStyle}>
               Sua imagem entra no lugar do fundo liso. Ela é reduzida antes de subir, então não pesa
               no carregamento.
@@ -1169,7 +1169,7 @@ export default function ConfiguracoesWindow({ onClose }) {
               />
             </div>
 
-            <span style={{ ...labelStyle, marginTop: 6 }}>Linhas do fundo</span>
+            <span data-pref-area="linhas" style={{ ...labelStyle, marginTop: 6 }}>Linhas do fundo</span>
             <span style={dicaStyle}>
               A seda em movimento é bonita, mas gasta CPU. Parada, o fundo fica congelado no mesmo
               desenho. Sem linhas, sobra só a cor do tema: a opção mais leve.
@@ -1212,7 +1212,7 @@ export default function ConfiguracoesWindow({ onClose }) {
             {/* Cada aparelho escolhe o seu bicho: o pet_celular não mexe no pet do desktop. */}
             {(
               <>
-            <span style={{ ...labelStyle, marginTop: 6 }}>
+            <span data-pref-area="pet" style={{ ...labelStyle, marginTop: 6 }}>
               {pequeno ? 'Pet do celular' : 'Pet do desktop'}
             </span>
             <span style={dicaStyle}>

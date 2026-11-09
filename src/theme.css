@@ -1029,3 +1029,25 @@ body {
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--c1) 26%, transparent);
   }
 }
+
+/* Pixie: a moldura da área das Preferências que ela está explicando. */
+.pref-destaque {
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--c1) 68%, transparent);
+  background: color-mix(in srgb, var(--c1) 7%, transparent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--c1) 16%, transparent),
+    0 0 24px color-mix(in srgb, var(--c1) 22%, transparent);
+  transition:
+    top 0.2s ease,
+    left 0.2s ease,
+    width 0.2s ease,
+    height 0.2s ease,
+    border-color 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pref-destaque {
+    transition: none;
+  }
+}

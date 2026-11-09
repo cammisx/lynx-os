@@ -5,7 +5,9 @@
  * Preferências em destaque, abre a janela de Configurações na aba
  * Preferências e conta o que dá para personalizar por ali.
  *
- * Cada passo é { fala, acao }: a ação acontece quando o passo começa.
+ * Cada passo é { fala, acao, area }: a ação acontece quando o passo começa e
+ * `area` é o bloco das Preferências que ela destaca e para do lado enquanto
+ * explica (o roteiro rola a janela até ele e mede a moldura).
  */
 import { abrirConfigNaAba } from '@/lib/configAba';
 import {
@@ -44,21 +46,29 @@ export const TOUR_MESA = [
     acao: 'menu',
   },
   {
-    fala: 'Aqui em cima ficam o tamanho da fonte e a fonte do sistema: o texto do sistema todo muda junto.',
+    fala: 'Começando por aqui: o tamanho da fonte e a fonte do sistema mudam o texto do sistema inteiro.',
     acao: 'preferencias',
+    area: 'fontes',
   },
   {
-    fala: 'Modo de cor é Diurno, Noturno ou Sistema, que segue o que o computador já está usando.',
+    fala: 'Aqui é o modo de cor: Diurno, Noturno ou Automático, que segue o que o computador já está usando.',
+    area: 'modo',
   },
   {
-    fala: 'Tema do sistema troca as cores da casa: Seda Cósmica, Maré de Vidro, Vampira Corporativa e mais uma porção.',
-  },
-  { fala: 'Fundo do desktop aceita uma imagem sua ou um dos fundos prontos.' },
-  {
-    fala: 'Linhas do fundo controla a seda em movimento: animada, parada ou sem linhas. Sem linhas é a mais leve.',
+    fala: 'Este é o tema do sistema, que troca as cores da casa: Seda Cósmica, Maré de Vidro, Vampira Corporativa e mais uma porção.',
+    area: 'tema',
   },
   {
-    fala: 'E o pet do desktop fica aqui: você escolhe o bicho e a cor. O nome você dá clicando nele com o botão direito.',
+    fala: 'Aqui entra o fundo: uma imagem sua, que é reduzida antes de subir, no lugar do fundo liso.',
+    area: 'fundo',
+  },
+  {
+    fala: 'As linhas do fundo controlam a seda em movimento: animada, parada ou sem linhas. Sem linhas é a mais leve.',
+    area: 'linhas',
+  },
+  {
+    fala: 'E aqui embaixo o pet do desktop: você escolhe o bicho e a cor, e o nome você dá clicando nele com o botão direito.',
+    area: 'pet',
   },
   {
     fala: 'As outras abas guardam Perfil, Notificações e Chat. Quando terminar, é só fechar a janela.',

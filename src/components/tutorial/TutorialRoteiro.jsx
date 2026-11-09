@@ -20,6 +20,7 @@ import {
   lugarDoElemento,
 } from '@/lib/pixieTutoriais';
 import useTourMesa from '@/lib/useTourMesa';
+import { posicaoAoRedorDaArea } from '@/lib/destaquePreferencias';
 
 /**
  * O roteiro do tutorial da rota /tutorial.
@@ -302,6 +303,8 @@ export default function TutorialRoteiro() {
         esconderBalao={!fala}
         capturarClique={capturarClique}
         comemorando={comemorando}
+        /* No passeio das Preferências ela vai para o lado do bloco em destaque. */
+        ancora={tour.destaque ? posicaoAoRedorDaArea(tour.destaque.caixa) : null}
         aoClique={aoCliqueNaTela}
         aoMenu={({ x, y }) => setMenu({ x, y })}
       >
