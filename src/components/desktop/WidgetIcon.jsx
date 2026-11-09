@@ -167,6 +167,8 @@ export default function WidgetIcon({ label, Icon = TurnoIcon, position, onOpen, 
       role="button"
       tabIndex={0}
       aria-label={label}
+      /* Para a Pixie achar o ícone e brilhar ele no passeio do widget. */
+      data-widget={label.toLowerCase()}
       onMouseDown={startDrag}
       onClick={() => setSelecionado(true)}
       onKeyDown={(event) => {

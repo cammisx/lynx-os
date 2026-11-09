@@ -33,12 +33,21 @@ import tiraVirar from '@/assets/pixie/tiras/pixie-virar.png';
  */
 
 /* O vaivém: ela flutua de um lado para o outro e sobe e desce. */
-const BASE_X = 0.68; // ela fica do meio para a direita
+const BASE_X = 0.68; // na rota do tutorial ela fica do meio para a direita
 const AMPLITUDE_X = 0.075; // ela quase não anda de lado: dá para acertar o clique
 const FREQ_X = Math.PI / 16; // rad/s: bem devagar
 const AMPLITUDE_X2 = 0.02; // segunda senoide, para o caminho não ser robótico
 const FREQ_X2 = Math.PI / 24;
 const FASE_X2 = 1.2;
+
+/* Fora do tutorial (em espera, ou passeando por um widget) ela pode andar
+   pela tela toda: mesma velocidade, caminho maior. */
+const LIVRE_X = 0.5;
+const LIVRE_AMPLITUDE_X = 0.36;
+const LIVRE_AMPLITUDE_X2 = 0.07;
+const LIVRE_Y = 0.55;
+const LIVRE_AMPLITUDE_Y = 0.16;
+const LIVRE_AMPLITUDE_Y2 = 0.04;
 
 const BASE_Y = 0.62;
 const AMPLITUDE_Y = 0.028; // quanto sobe e desce, em fração da altura da tela
@@ -214,6 +223,10 @@ export default function GuiaPixie({
   esconderBalao = false,
   /* Agradecimento: ela fica feliz, gira e solta corações. */
   comemorando = false,
+  /* Fora do tutorial ela pode passear pela tela toda. */
+  livre = false,
+  /* Um ponto da tela para ela ficar perto (o ícone e o painel do widget). */
+  ancora = null,
 }) {
   const grupoRef = useRef(null);
   const corpoRef = useRef(null);
@@ -222,6 +235,17 @@ export default function GuiaPixie({
   const balaoRef = useRef(null);
   const pontaRef = useRef(null);
   const medidaRef = useRef({ largura: 0, altura: 0 });
+  const livreRef = useRef(livre);
+  const ancoraRef = useRef(ancora);
+  const posicaoRef = useRef(null);
+
+  useEffect(() => {
+    livreRef.current = livre;
+  }, [livre]);
+
+  useEffect(() => {
+    ancoraRef.current = ancora;
+  }, [ancora]);
 
   /* O balão muda de tamanho com a fonte do sistema: mede ao montar, quando a
      fonte carrega e quando a janela muda. */
@@ -265,12 +289,20 @@ export default function GuiaPixie({
       const larguraTela = window.innerWidth;
       const alturaTela = window.innerHeight;
 
+      const solto = livreRef.current;
+      const baseX = solto ? LIVRE_X : BASE_X;
+      const amplitudeX = solto ? LIVRE_AMPLITUDE_X : AMPLITUDE_X;
+      const amplitudeX2 = solto ? LIVRE_AMPLITUDE_X2 : AMPLITUDE_X2;
+      const baseY = solto ? LIVRE_Y : BASE_Y;
+      const amplitudeY = solto ? LIVRE_AMPLITUDE_Y : AMPLITUDE_Y;
+      const amplitudeY2 = solto ? LIVRE_AMPLITUDE_Y2 : AMPLITUDE_Y2;
+
       const fracaoX = semMovimento
-        ? BASE_X
-        : BASE_X + AMPLITUDE_X * Math.sin(t * FREQ_X) + AMPLITUDE_X2 * Math.sin(t * FREQ_X2 + FASE_X2);
+        ? baseX
+        : baseX + amplitudeX * Math.sin(t * FREQ_X) + amplitudeX2 * Math.sin(t * FREQ_X2 + FASE_X2);
       const fracaoY = semMovimento
-        ? BASE_Y
-        : BASE_Y + AMPLITUDE_Y * Math.sin(t * FREQ_Y) + AMPLITUDE_Y2 * Math.sin(t * FREQ_Y2);
+        ? baseY
+        : baseY + amplitudeY * Math.sin(t * FREQ_Y) + amplitudeY2 * Math.sin(t * FREQ_Y2);
 
       /* Para que lado ela está indo agora: decide a ordem da virada. */
       const velocidadeX =
@@ -287,8 +319,25 @@ export default function GuiaPixie({
       /* Ela nunca sobe tanto que o balão saia por cima, nem desce para fora. */
       const alturaNecessaria = FOLGA_DO_BALAO - TOPO_VISUAL + alturaBalao + MARGEM_DA_TELA;
       const limiteBaixo = alturaTela - MARGEM_DA_TELA - ALTURA / 2;
-      const x = fracaoX * larguraTela;
-      const y = limitar(fracaoY * alturaTela, alturaNecessaria, limiteBaixo);
+      let x = fracaoX * larguraTela;
+      let y = limitar(fracaoY * alturaTela, alturaNecessaria, limiteBaixo);
+
+      /* Perto de um alvo (o ícone, o painel do widget) ela vai até ele e fica,
+         com um respiro leve; ao soltar, volta para o caminho de sempre. */
+      const alvo = ancoraRef.current;
+      const atual = posicaoRef.current;
+      if (alvo) {
+        const inicio = atual || { x, y };
+        const passoX = (alvo.x - inicio.x) * 0.08;
+        const passoY = (alvo.y - inicio.y) * 0.08;
+        x = inicio.x + passoX;
+        y = limitar(inicio.y + passoY + Math.sin(t * 1.6) * 0.6, alturaNecessaria, limiteBaixo);
+      } else if (atual) {
+        /* Solta do alvo, ela volta ao caminho sem dar um pulo. */
+        x = atual.x + (x - atual.x) * 0.06;
+        y = atual.y + (y - atual.y) * 0.06;
+      }
+      posicaoRef.current = { x, y };
 
       grupo.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
 

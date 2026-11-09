@@ -1005,3 +1005,27 @@ body {
   0%, 100% { box-shadow: 0 0 8px color-mix(in srgb, var(--c1) 35%, transparent); }
   50% { box-shadow: 0 0 16px color-mix(in srgb, var(--c1) 70%, transparent); }
 }
+
+/* Pixie: o brilho no ícone ou no pedaço da tela que ela está mandando olhar. */
+@keyframes pixie-brilho {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--c1) 60%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--c1) 20%, transparent);
+  }
+}
+
+.pixie-brilho {
+  border-radius: 14px;
+  outline: 1px solid color-mix(in srgb, var(--c1) 65%, transparent);
+  outline-offset: 2px;
+  animation: pixie-brilho 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pixie-brilho {
+    animation: none;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--c1) 26%, transparent);
+  }
+}

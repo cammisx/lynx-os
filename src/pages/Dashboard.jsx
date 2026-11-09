@@ -56,7 +56,7 @@ const COMPONENTES = {
 /* `tutorial` liga a rota /tutorial: o mesmo desktop de sempre, com a pixie
    passeando por cima para guiar quem está entrando agora. */
 export default function Dashboard({ tutorial = false }) {
-  const { user } = useAuth();
+  const { user, isLoadingAuth } = useAuth();
   /* Abaixo de 768px o sistema vira o modo celular: uma tela por vez. */
   const telaPequena = useIsMobile();
   const navegar = useNavigate();
@@ -71,8 +71,11 @@ export default function Dashboard({ tutorial = false }) {
      No celular não: lá não tem botão direito nem a Pixie na tela. */
   useEffect(() => {
     if (tutorial || telaPequena !== false) return;
+    /* Enquanto a conta não chegou, o campo do User ainda não pode responder:
+       decidir agora mandaria de volta quem já viu o tutorial. */
+    if (isLoadingAuth || !user) return;
     if (!tutorialPixieDesktopVisto(user)) navegar('/tutorial', { replace: true });
-  }, [tutorial, telaPequena, navegar, user]);
+  }, [tutorial, telaPequena, navegar, user, isLoadingAuth]);
 
   /* Ordem dos ícones da barra: entra pelo perfil e volta para ele quando muda. */
   const salvarBarra = useCallback(
