@@ -19,8 +19,7 @@ import {
   destacarArea,
   destacarSeletor,
   limparDestaque,
-  medirArea,
-  medirSeletor,
+  seguirAlvo,
 } from '@/lib/destaquePreferencias';
 
 const INTERVALO = 240;
@@ -78,13 +77,11 @@ export default function useTourAvisos({ aoTerminar, aoPrepararAviso } = {}) {
     else if (alvo) destacarSeletor(alvo);
     else limparDestaque();
 
-    let vivo = true;
-    const medir = () => {
-      if (!vivo) return;
-      const box = atual.area ? medirArea(atual.area) : alvo ? medirSeletor(alvo) : null;
+    /* A caixa dela acompanha o alvo o tempo todo: sino, painel, linha do aviso
+       ou bloco das Configurações, mesmo com o painel abrindo animando. */
+    const pararDeSeguir = seguirAlvo({ area: atual.area, seletor: alvo }, (box) => {
       if (box) setCaixa(box);
-    };
-    const medidas = [0, 260, 620].map((ms) => setTimeout(medir, ms));
+    });
 
     /* Passo de espera: sai quando o elemento aparece (ou quando o tempo do
        passo acaba, no aviso que não abre janela). */
@@ -109,8 +106,7 @@ export default function useTourAvisos({ aoTerminar, aoPrepararAviso } = {}) {
     }
 
     return () => {
-      vivo = false;
-      medidas.forEach(clearTimeout);
+      pararDeSeguir();
       if (relogio) clearInterval(relogio);
     };
   }, [passo]);

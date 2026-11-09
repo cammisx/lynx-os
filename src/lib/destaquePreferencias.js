@@ -100,6 +100,52 @@ export const medirSeletor = (seletor) => {
   };
 };
 
+/**
+ * Segue um alvo de perto e avisa sempre que ele muda de lugar.
+ *
+ * Medir em instantes marcados (ao abrir, 240 ms depois) é o que deixava a
+ * moldura no lugar errado: a janela de Configurações abre animando, a imagem
+ * do fundo carrega depois, a pessoa rola, arrasta a janela ou o conteúdo
+ * reflui. Aqui a medida é conferida a cada quadro enquanto houver alvo, e o
+ * aviso só sai quando a caixa muda de verdade.
+ */
+const IGUAL = 0.5;
+
+const mesmaCaixa = (a, b) => {
+  if (!a || !b) return a === b;
+  return (
+    Math.abs(a.left - b.left) < IGUAL &&
+    Math.abs(a.top - b.top) < IGUAL &&
+    Math.abs(a.width - b.width) < IGUAL &&
+    Math.abs(a.height - b.height) < IGUAL
+  );
+};
+
+export const seguirAlvo = (alvo, aoMudar) => {
+  if (typeof window === 'undefined' || typeof aoMudar !== 'function') return () => {};
+  const doAlvo = typeof alvo === 'function' ? alvo : () => alvo;
+  let vivo = true;
+  let ultima;
+  let primeira = true;
+
+  const quadro = () => {
+    if (!vivo) return;
+    const { area, seletor } = doAlvo() || {};
+    const caixa = area ? medirArea(area) : seletor ? medirSeletor(seletor) : null;
+    if (primeira || !mesmaCaixa(caixa, ultima)) {
+      primeira = false;
+      ultima = caixa;
+      aoMudar(caixa || null);
+    }
+    requestAnimationFrame(quadro);
+  };
+
+  requestAnimationFrame(quadro);
+  return () => {
+    vivo = false;
+  };
+};
+
 /* Acende a moldura num elemento solto (sino, painel, linha de aviso). */
 export const destacarSeletor = (seletor) => {
   if (typeof window === 'undefined') return null;

@@ -9,7 +9,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { TOUR_MESA, executarAcaoDoTour } from '@/lib/pixieTourMesa';
-import { destacarArea, limparDestaque, medirArea } from '@/lib/destaquePreferencias';
+import { destacarArea, limparDestaque, seguirAlvo } from '@/lib/destaquePreferencias';
 
 export default function useTourMesa({ aoTerminar } = {}) {
   const [passo, setPasso] = useState(null);
@@ -42,22 +42,13 @@ export default function useTourMesa({ aoTerminar } = {}) {
       return undefined;
     }
 
-    /* Passo com área: rola a janela até o bloco e mede mais de uma vez, porque
-       a janela pode estar abrindo e a rolagem ainda acontecendo. */
+    /* Passo com área: rola a janela até o bloco e passa a acompanhar a caixa.
+       Ela fica do lado do bloco mesmo se a janela abrir animando, se a imagem
+       do fundo carregar depois ou se a pessoa rolar e arrastar a janela. */
     destacarArea(fala.area);
-    let vivo = true;
-    const esperas = [0, 240, 520].map((atraso) =>
-      setTimeout(() => {
-        if (!vivo) return;
-        const caixa = medirArea(fala.area);
-        if (caixa) setDestaque({ area: fala.area, caixa });
-      }, atraso)
-    );
-
-    return () => {
-      vivo = false;
-      esperas.forEach(clearTimeout);
-    };
+    return seguirAlvo({ area: fala.area }, (caixa) => {
+      if (caixa) setDestaque({ area: fala.area, caixa });
+    });
   }, [passo]);
 
   /* Saindo do passeio (ou da tela), o destaque sai junto. */
