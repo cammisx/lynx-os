@@ -11,6 +11,7 @@ import {
   BookIcon,
   ImageIcon,
   GearIcon,
+  PaletteIcon,
 } from '@/components/icons';
 
 /*
@@ -26,6 +27,7 @@ export const JANELAS = {
   financeiro: { titulo: 'Financeiro', Icone: MoneyIcon, somenteAdmin: true, naGrade: true },
   playbook: { titulo: 'Playbook', Icone: BookIcon, naGrade: false },
   conteudo: { titulo: 'Conteúdo', Icone: ImageIcon, naGrade: false },
+  paints: { titulo: 'Paints', Icone: PaletteIcon, somenteAdmin: true, naGrade: true },
   config: { titulo: 'Configurações', Icone: GearIcon, naGrade: false },
 };
 

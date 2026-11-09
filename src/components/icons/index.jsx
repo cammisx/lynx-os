@@ -347,3 +347,15 @@ export function RestoreIcon({ size = 16, className }) {
     </Svg>
   );
 }
+
+/* Paleta: o app Paints, onde a documentação de plugins fica embutida. */
+export function PaletteIcon({ size = 16, className }) {
+  return (
+    <Svg size={size} className={className}>
+      <path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.9-.8 1.9-1.8 0-.5-.2-.9-.5-1.2-.3-.4-.5-.8-.5-1.3 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4c0-4.4-4-7.9-9-7.9z" />
+      <circle cx="7.6" cy="11.6" r="1.1" />
+      <circle cx="10.4" cy="7.6" r="1.1" />
+      <circle cx="15.2" cy="8.4" r="1.1" />
+    </Svg>
+  );
+}

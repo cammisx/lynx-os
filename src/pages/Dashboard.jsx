@@ -11,6 +11,7 @@ import FinanceiroWindow from '@/components/FinanceiroWindow';
 import ConfiguracoesWindow from '@/components/ConfiguracoesWindow';
 import PlaybookWindow from '@/components/PlaybookWindow';
 import ConteudoWindow from '@/components/ConteudoWindow';
+import PaintsWindow from '@/components/PaintsWindow';
 import { JanelaContext } from '@/components/desktop/JanelaContext';
 import ConfirmarFechar from '@/components/desktop/ConfirmarFechar';
 import { janelaPorId } from '@/lib/janelas';
@@ -39,6 +40,7 @@ const COMPONENTES = {
   config: ConfiguracoesWindow,
   playbook: PlaybookWindow,
   conteudo: ConteudoWindow,
+  paints: PaintsWindow,
 };
 
 export default function Dashboard() {

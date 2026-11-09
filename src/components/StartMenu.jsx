@@ -10,6 +10,7 @@ import {
   BookIcon,
   ImageIcon,
   StarIcon,
+  PaletteIcon,
 } from "@/components/icons";
 
 const ANIM_MS = 180;
@@ -50,6 +51,12 @@ const APPS = [
     Icon: ImageIcon,
     title: "Conteúdo",
     desc: "Conteúdos das modelos",
+  },
+  {
+    id: "paints",
+    Icon: PaletteIcon,
+    title: "Paints",
+    desc: "Documentação de plugins do Paint.NET",
   },
 ];
 
