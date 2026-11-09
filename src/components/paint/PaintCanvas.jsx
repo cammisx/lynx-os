@@ -1,0 +1,1024 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import MenuFlutuante from '@/components/desktop/MenuFlutuante';
+import { CloseIcon } from '@/components/icons';
+import { MODAL_CAIXA } from '@/lib/modalStyles';
+import useAviso from '@/components/ui/Aviso';
+import useDesenhosFixos from '@/hooks/useDesenhosFixos';
+import { useIsMobile } from '@/hooks/use-mobile';
+import EnviarDesenhoModal from '@/components/paint/EnviarDesenhoModal';
+import {
+  CORES,
+  FERRAMENTAS,
+  LIMITE_HISTORICO,
+  baixarJpg,
+  canvasParaBlob,
+  compor,
+  corDoPixel,
+  criarCanvas,
+  novoId,
+  paraArquivo,
+  preencherArea,
+} from '@/lib/paint';
+
+/**
+ * Editor de pintura do app Paint.
+ *
+ * O desenho é feito de camadas, cada uma um canvas fora da tela. Na tela
+ * existe um canvas só, que recebe a composição das camadas visíveis: assim
+ * esconder camada, mudar opacidade ou desfazer é só recompor.
+ *
+ * O menu do botão direito é o mesmo da área de trabalho: salvar, limpar,
+ * enviar para o chat e fixar na mesa. No celular ele abre pelo botão "⋮".
+ */
+
+const BOTAO = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 5,
+  height: 28,
+  minWidth: 28,
+  padding: '0 9px',
+  borderRadius: 8,
+  border: '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+  background: 'color-mix(in srgb, var(--c8) 45%, transparent)',
+  color: 'var(--c3)',
+  fontFamily: 'var(--font-main)',
+  fontSize: 11,
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+};
+
+const CAMPO = {
+  height: 26,
+  padding: '0 7px',
+  borderRadius: 7,
+  border: '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+  background: 'color-mix(in srgb, var(--c8) 50%, transparent)',
+  color: 'var(--c3)',
+  fontFamily: 'var(--font-main)',
+  fontSize: 11,
+  outline: 'none',
+};
+
+const camadaNova = (nome, comFundo, largura, altura) => {
+  const canvas = criarCanvas(largura, altura);
+  if (comFundo) {
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = comFundo;
+    ctx.fillRect(0, 0, largura, altura);
+  }
+  return { id: novoId(), nome, visivel: true, opacidade: 1, canvas };
+};
+
+export default function PaintCanvas() {
+  const pequeno = useIsMobile();
+  const { avisar, Aviso } = useAviso();
+  const { fixar } = useDesenhosFixos();
+
+  const [tamanho, setTamanho] = useState({ largura: 900, altura: 620 });
+  const [camadas, setCamadas] = useState(() => [camadaNova('Fundo', '#ffffff', 900, 620)]);
+  const [ativaId, setAtivaId] = useState(() => '');
+  const [ferramenta, setFerramenta] = useState('pincel');
+  const [cor, setCor] = useState('#111111');
+  const [espessura, setEspessura] = useState(8);
+  const [opacidade, setOpacidade] = useState(1);
+  const [zoom, setZoom] = useState(1);
+  const [menu, setMenu] = useState(null);
+  const [painelCamadas, setPainelCamadas] = useState(false);
+  const [confirmarLimpar, setConfirmarLimpar] = useState(false);
+  const [novoAberto, setNovoAberto] = useState(false);
+  const [envio, setEnvio] = useState(null);
+  const [ocupado, setOcupado] = useState('');
+  const [, setVersao] = useState(0);
+
+  const telaRef = useRef(null);
+  const previewRef = useRef(null);
+  const areaRef = useRef(null);
+  const entradaArquivo = useRef(null);
+  const desenho = useRef({ ativo: false, inicio: null, anterior: null, antes: null, pan: null });
+  const historia = useRef({ passos: [], indice: -1 });
+
+  const camadaAtiva = camadas.find((item) => item.id === ativaId) || camadas[camadas.length - 1] || null;
+
+  /* Garante uma camada ativa válida sem depender de efeito. */
+  useEffect(() => {
+    if (!ativaId && camadas.length) setAtivaId(camadas[camadas.length - 1].id);
+  }, [ativaId, camadas]);
+
+  const mapa = useCallback(
+    () =>
+      camadas.map((camada) => ({
+        id: camada.id,
+        visivel: camada.visivel,
+        opacidade: camada.opacidade,
+        canvas: camada.canvas,
+      })),
+    [camadas]
+  );
+
+  const recompor = useCallback(() => {
+    const tela = telaRef.current;
+    if (!tela) return;
+    const ctx = tela.getContext('2d');
+    ctx.clearRect(0, 0, tela.width, tela.height);
+    const desenhoFinal = compor(mapa(), tela.width, tela.height);
+    ctx.drawImage(desenhoFinal, 0, 0);
+    setVersao((n) => n + 1);
+  }, [mapa]);
+
+  useEffect(() => {
+    recompor();
+  }, [recompor, camadas, tamanho]);
+
+  /* No celular a tela é estreita: abre já com o desenho inteiro à vista. */
+  useEffect(() => {
+    if (!pequeno) return undefined;
+    const id = requestAnimationFrame(() => setZoom(selectZoomAjuste(tamanho, areaRef)));
+    return () => cancelAnimationFrame(id);
+  }, [pequeno, tamanho]);
+
+  /* Cada traço guarda o antes e o depois da camada mexida. */
+  const guardarPasso = (camadaId, antes, depois) => {
+    const pilha = historia.current;
+    pilha.passos = pilha.passos.slice(0, pilha.indice + 1);
+    pilha.passos.push({ camadaId, antes, depois });
+    if (pilha.passos.length > LIMITE_HISTORICO) pilha.passos.shift();
+    pilha.indice = pilha.passos.length - 1;
+    setVersao((n) => n + 1);
+  };
+
+  const aplicarPasso = (passo, lado) => {
+    const camada = camadas.find((item) => item.id === passo.camadaId);
+    if (!camada) return;
+    const ctx = camada.canvas.getContext('2d');
+    const dados = passo[lado];
+    if (dados) ctx.putImageData(dados, 0, 0);
+    recompor();
+  };
+
+  const desfazer = () => {
+    const pilha = historia.current;
+    if (pilha.indice < 0) return;
+    aplicarPasso(pilha.passos[pilha.indice], 'antes');
+    pilha.indice -= 1;
+    setVersao((n) => n + 1);
+  };
+
+  const refazer = () => {
+    const pilha = historia.current;
+    if (pilha.indice >= pilha.passos.length - 1) return;
+    pilha.indice += 1;
+    aplicarPasso(pilha.passos[pilha.indice], 'depois');
+    setVersao((n) => n + 1);
+  };
+
+  const reiniciar = (largura, altura, comFundo = '#ffffff') => {
+    const base = camadaNova('Fundo', comFundo, largura, altura);
+    historia.current = { passos: [], indice: -1 };
+    setTamanho({ largura, altura });
+    setCamadas([base]);
+    setAtivaId(base.id);
+    setZoom(1);
+    setVersao((n) => n + 1);
+  };
+
+  /* ---------- desenho ---------- */
+
+  const ponto = (evento) => {
+    const tela = telaRef.current;
+    const caixa = tela.getBoundingClientRect();
+    return {
+      x: ((evento.clientX - caixa.left) / caixa.width) * tela.width,
+      y: ((evento.clientY - caixa.top) / caixa.height) * tela.height,
+    };
+  };
+
+  const pincelar = (ctx, de, para, apagar = false) => {
+    ctx.save();
+    ctx.globalAlpha = opacidade;
+    ctx.globalCompositeOperation = apagar ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = cor;
+    ctx.lineWidth = espessura;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(de.x, de.y);
+    ctx.lineTo(para.x, para.y);
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  const desenharForma = (ctx, inicio, fim) => {
+    ctx.save();
+    ctx.globalAlpha = opacidade;
+    ctx.strokeStyle = cor;
+    ctx.lineWidth = espessura;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    if (ferramenta === 'linha') {
+      ctx.moveTo(inicio.x, inicio.y);
+      ctx.lineTo(fim.x, fim.y);
+    } else if (ferramenta === 'retangulo') {
+      ctx.rect(inicio.x, inicio.y, fim.x - inicio.x, fim.y - inicio.y);
+    } else {
+      ctx.ellipse(
+        (inicio.x + fim.x) / 2,
+        (inicio.y + fim.y) / 2,
+        Math.abs(fim.x - inicio.x) / 2,
+        Math.abs(fim.y - inicio.y) / 2,
+        0,
+        0,
+        Math.PI * 2
+      );
+    }
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  const aoPressionar = (evento) => {
+    if (evento.button === 2) return;
+    const tela = telaRef.current;
+    if (!tela || !camadaAtiva) return;
+    evento.preventDefault();
+    tela.setPointerCapture?.(evento.pointerId);
+
+    const pos = ponto(evento);
+
+    if (ferramenta === 'mao') {
+      desenho.current = {
+        ativo: true,
+        pan: {
+          x: evento.clientX,
+          y: evento.clientY,
+          esquerda: areaRef.current?.scrollLeft || 0,
+          topo: areaRef.current?.scrollTop || 0,
+        },
+      };
+      return;
+    }
+
+    if (ferramenta === 'conta-gotas') {
+      const composta = compor(mapa(), tamanho.largura, tamanho.altura);
+      const amostra = corDoPixel(composta, pos.x, pos.y);
+      if (amostra) {
+        setCor(amostra);
+        avisar(`Cor ${amostra} escolhida`);
+      }
+      return;
+    }
+
+    const ctx = camadaAtiva.canvas.getContext('2d');
+    const antes = ctx.getImageData(0, 0, camadaAtiva.canvas.width, camadaAtiva.canvas.height);
+
+    if (ferramenta === 'balde') {
+      const pintou = preencherArea(ctx, tamanho.largura, tamanho.altura, pos.x, pos.y, cor);
+      if (pintou) {
+        guardarPasso(
+          camadaAtiva.id,
+          antes,
+          ctx.getImageData(0, 0, camadaAtiva.canvas.width, camadaAtiva.canvas.height)
+        );
+        recompor();
+      }
+      return;
+    }
+
+    desenho.current = { ativo: true, inicio: pos, anterior: pos, antes };
+
+    if (['linha', 'retangulo', 'elipse'].includes(ferramenta)) return;
+
+    /* Um ponto também pinta: um clique sem arrastar deixa a marca. */
+    pincelar(ctx, pos, { x: pos.x + 0.01, y: pos.y + 0.01 }, ferramenta === 'borracha');
+    recompor();
+  };
+
+  const aoMover = (evento) => {
+    const estado = desenho.current;
+    if (!estado.ativo) return;
+    if (estado.pan) {
+      const area = areaRef.current;
+      if (!area) return;
+      area.scrollLeft = estado.pan.esquerda - (evento.clientX - estado.pan.x);
+      area.scrollTop = estado.pan.topo - (evento.clientY - estado.pan.y);
+      return;
+    }
+    if (!camadaAtiva) return;
+    const pos = ponto(evento);
+
+    if (['linha', 'retangulo', 'elipse'].includes(ferramenta)) {
+      const preview = previewRef.current;
+      if (!preview) return;
+      const ctx = preview.getContext('2d');
+      ctx.clearRect(0, 0, preview.width, preview.height);
+      desenharForma(ctx, estado.inicio, pos);
+      return;
+    }
+
+    const ctx = camadaAtiva.canvas.getContext('2d');
+    pincelar(ctx, estado.anterior, pos, ferramenta === 'borracha');
+    desenho.current.anterior = pos;
+    recompor();
+  };
+
+  const aoSoltar = () => {
+    const estado = desenho.current;
+    if (!estado.ativo) return;
+    desenho.current = { ativo: false, inicio: null, anterior: null, antes: null, pan: null };
+    if (estado.pan || !camadaAtiva) {
+      recompor();
+      return;
+    }
+
+    const preview = previewRef.current;
+    if (preview) preview.getContext('2d').clearRect(0, 0, preview.width, preview.height);
+
+    if (['linha', 'retangulo', 'elipse'].includes(ferramenta) && estado.inicio) {
+      const ctx = camadaAtiva.canvas.getContext('2d');
+      desenharForma(ctx, estado.inicio, estado.anterior || estado.inicio);
+      recompor();
+    }
+
+    if (estado.antes) {
+      const ctx = camadaAtiva.canvas.getContext('2d');
+      guardarPasso(
+        camadaAtiva.id,
+        estado.antes,
+        ctx.getImageData(0, 0, camadaAtiva.canvas.width, camadaAtiva.canvas.height)
+      );
+      recompor();
+    }
+  };
+
+  /* ---------- menu do botão direito ---------- */
+
+  const abrirMenu = (evento) => {
+    evento.preventDefault();
+    evento.stopPropagation();
+    setMenu({ x: evento.clientX, y: evento.clientY });
+  };
+
+  const desenhoComposto = () => compor(mapa(), tamanho.largura, tamanho.altura);
+
+  const salvarJpg = async () => {
+    setOcupado('salvando');
+    try {
+      await baixarJpg(desenhoComposto(), 'paint');
+      avisar('Desenho salvo em .jpg');
+    } catch (falha) {
+      console.warn('[Paint] salvar', falha);
+      avisar('Não consegui salvar o desenho agora.');
+    } finally {
+      setOcupado('');
+    }
+  };
+
+  const limparTudo = () => {
+    const base = camadaNova('Fundo', '#ffffff', tamanho.largura, tamanho.altura);
+    historia.current = { passos: [], indice: -1 };
+    setCamadas([base]);
+    setAtivaId(base.id);
+    setConfirmarLimpar(false);
+    setVersao((n) => n + 1);
+  };
+
+  const prepararEnvio = async () => {
+    setOcupado('enviando');
+    try {
+      const blob = await canvasParaBlob(desenhoComposto());
+      setEnvio({ blob });
+    } catch (falha) {
+      console.warn('[Paint] preparar envio', falha);
+      avisar('Não consegui preparar o desenho.');
+    } finally {
+      setOcupado('');
+    }
+  };
+
+  const fixarNaMesa = async () => {
+    setOcupado('fixando');
+    try {
+      const blob = await canvasParaBlob(desenhoComposto());
+      const arquivo = paraArquivo(blob, 'desenho.png');
+      const resposta = await base44.integrations.Core.UploadFile({ file: arquivo });
+      if (!resposta?.file_url) throw new Error('upload sem url');
+      const resultado = fixar({
+        url: resposta.file_url,
+        largura: tamanho.largura,
+        altura: tamanho.altura,
+        nome: 'Desenho',
+      });
+      if (!resultado.ok) {
+        avisar(resultado.erro);
+        return;
+      }
+      avisar('Desenho fixado na área de trabalho');
+    } catch (falha) {
+      console.warn('[Paint] fixar', falha);
+      avisar('Não consegui fixar o desenho agora.');
+    } finally {
+      setOcupado('');
+    }
+  };
+
+  const itensMenu = [
+    { id: 'salvar', rotulo: 'Salvar (.jpg)', atalho: ocupado === 'salvando' ? '…' : '', acao: salvarJpg },
+    { separador: true },
+    { id: 'enviar', rotulo: 'Enviar para…', atalho: ocupado === 'enviando' ? '…' : '', acao: prepararEnvio },
+    { id: 'fixar', rotulo: 'Fixar na área de trabalho', atalho: ocupado === 'fixando' ? '…' : '', acao: fixarNaMesa },
+    { separador: true },
+    { id: 'limpar', rotulo: 'Limpar tudo', perigo: true, acao: () => setConfirmarLimpar(true) },
+  ];
+
+  /* ---------- abrir imagem ---------- */
+
+  const abrirImagem = (arquivo) => {
+    if (!arquivo) return;
+    const leitor = new FileReader();
+    leitor.onload = () => {
+      const imagem = new Image();
+      imagem.onload = () => {
+        const largura = imagem.naturalWidth;
+        const altura = imagem.naturalHeight;
+        const base = camadaNova('Imagem', null, largura, altura);
+        base.canvas.getContext('2d').drawImage(imagem, 0, 0);
+        historia.current = { passos: [], indice: -1 };
+        setTamanho({ largura, altura });
+        setCamadas([base]);
+        setAtivaId(base.id);
+        setZoom(1);
+        setVersao((n) => n + 1);
+        avisar('Imagem aberta no editor');
+      };
+      imagem.onerror = () => avisar('Não consegui abrir essa imagem.');
+      imagem.src = String(leitor.result);
+    };
+    leitor.readAsDataURL(arquivo);
+  };
+
+  /* ---------- camadas ---------- */
+
+  const adicionarCamada = () => {
+    const nova = camadaNova(`Camada ${camadas.length}`, null, tamanho.largura, tamanho.altura);
+    setCamadas((atual) => [...atual, nova]);
+    setAtivaId(nova.id);
+  };
+
+  const duplicarCamada = () => {
+    if (!camadaAtiva) return;
+    const copia = camadaNova(`${camadaAtiva.nome} cópia`, null, tamanho.largura, tamanho.altura);
+    copia.canvas.getContext('2d').drawImage(camadaAtiva.canvas, 0, 0);
+    setCamadas((atual) => [...atual, copia]);
+    setAtivaId(copia.id);
+  };
+
+  const removerCamada = (id) => {
+    if (camadas.length <= 1) {
+      avisar('O desenho precisa de pelo menos uma camada.');
+      return;
+    }
+    setCamadas((atual) => atual.filter((camada) => camada.id !== id));
+    if (ativaId === id) {
+      const restante = camadas.filter((camada) => camada.id !== id);
+      setAtivaId(restante[restante.length - 1]?.id || '');
+    }
+  };
+
+  const alternarVisivel = (id) => {
+    setCamadas((atual) =>
+      atual.map((camada) => (camada.id === id ? { ...camada, visivel: !camada.visivel } : camada))
+    );
+  };
+
+  const mudarOpacidadeCamada = (id, valor) => {
+    setCamadas((atual) =>
+      atual.map((camada) => (camada.id === id ? { ...camada, opacidade: valor } : camada))
+    );
+  };
+
+  const zoomSeguro = (valor) => Math.min(4, Math.max(0.25, Number(valor.toFixed(2))));
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      {/* barra de ferramentas */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          flexWrap: pequeno ? 'nowrap' : 'wrap',
+          overflowX: pequeno ? 'auto' : 'visible',
+          padding: '8px 10px',
+          borderBottom: '1px solid color-mix(in srgb, var(--c2) 12%, transparent)',
+          flexShrink: 0,
+        }}
+      >
+        {FERRAMENTAS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setFerramenta(item.id)}
+            title={item.rotulo}
+            style={{
+              ...BOTAO,
+              color: ferramenta === item.id ? 'var(--c1)' : 'var(--c3)',
+              borderColor:
+                ferramenta === item.id
+                  ? 'color-mix(in srgb, var(--c1) 45%, transparent)'
+                  : 'color-mix(in srgb, var(--c2) 16%, transparent)',
+              background:
+                ferramenta === item.id ? 'color-mix(in srgb, var(--c1) 16%, transparent)' : BOTAO.background,
+            }}
+          >
+            {item.rotulo}
+          </button>
+        ))}
+
+        <span style={{ width: 1, height: 20, background: 'color-mix(in srgb, var(--c2) 18%, transparent)' }} />
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          {CORES.map((tom) => (
+            <button
+              key={tom}
+              type="button"
+              onClick={() => setCor(tom)}
+              aria-label={`Cor ${tom}`}
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: 5,
+                cursor: 'pointer',
+                background: tom,
+                border:
+                  cor.toLowerCase() === tom.toLowerCase()
+                    ? '2px solid var(--c1)'
+                    : '1px solid color-mix(in srgb, var(--ink-hex) 25%, transparent)',
+              }}
+            />
+          ))}
+          <input
+            type="color"
+            value={cor}
+            onChange={(evento) => setCor(evento.target.value)}
+            aria-label="Escolher cor"
+            style={{ ...CAMPO, width: 30, padding: 2, height: 24, cursor: 'pointer' }}
+          />
+        </span>
+
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--c2)' }}>
+          Traço
+          <input
+            type="range"
+            min="1"
+            max="80"
+            value={espessura}
+            onChange={(evento) => setEspessura(Number(evento.target.value))}
+            style={{ width: 74 }}
+          />
+        </label>
+
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--c2)' }}>
+          Opacidade
+          <input
+            type="range"
+            min="5"
+            max="100"
+            value={Math.round(opacidade * 100)}
+            onChange={(evento) => setOpacidade(Number(evento.target.value) / 100)}
+            style={{ width: 74 }}
+          />
+        </label>
+
+        <span style={{ width: 1, height: 20, background: 'color-mix(in srgb, var(--c2) 18%, transparent)' }} />
+
+        <button type="button" onClick={() => setZoom((z) => zoomSeguro(z - 0.25))} style={BOTAO} aria-label="Diminuir zoom">
+          −
+        </button>
+        <span style={{ fontSize: 10.5, color: 'var(--c2)', minWidth: 38, textAlign: 'center' }}>
+          {Math.round(zoom * 100)}%
+        </span>
+        <button type="button" onClick={() => setZoom((z) => zoomSeguro(z + 0.25))} style={BOTAO} aria-label="Aumentar zoom">
+          +
+        </button>
+        <button type="button" onClick={() => setZoom(selectZoomAjuste(tamanho, areaRef))} style={BOTAO}>
+          Ajustar
+        </button>
+
+        <span style={{ width: 1, height: 20, background: 'color-mix(in srgb, var(--c2) 18%, transparent)' }} />
+
+        <button
+          type="button"
+          onClick={desfazer}
+          disabled={historia.current.indice < 0}
+          style={{ ...BOTAO, opacity: historia.current.indice < 0 ? 0.45 : 1 }}
+        >
+          Desfazer
+        </button>
+        <button
+          type="button"
+          onClick={refazer}
+          disabled={historia.current.indice >= historia.current.passos.length - 1}
+          style={{
+            ...BOTAO,
+            opacity: historia.current.indice >= historia.current.passos.length - 1 ? 0.45 : 1,
+          }}
+        >
+          Refazer
+        </button>
+
+        <button type="button" onClick={() => setPainelCamadas((v) => !v)} style={BOTAO}>
+          Camadas ({camadas.length})
+        </button>
+        <button type="button" onClick={() => entradaArquivo.current?.click()} style={BOTAO}>
+          Abrir imagem
+        </button>
+        <button type="button" onClick={() => setNovoAberto(true)} style={BOTAO}>
+          Novo
+        </button>
+
+        <button
+          type="button"
+          onClick={(evento) => {
+            const caixa = evento.currentTarget.getBoundingClientRect();
+            setMenu({ x: caixa.right, y: caixa.bottom + 4 });
+          }}
+          style={{ ...BOTAO, marginLeft: 'auto' }}
+          aria-label="Mais opções"
+        >
+          ⋮
+        </button>
+      </div>
+
+      {/* área do desenho */}
+      <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex' }}>
+        <div
+          ref={areaRef}
+          className="glass-scroll"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            overflow: 'auto',
+            padding: 16,
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              width: tamanho.largura * zoom,
+              height: tamanho.altura * zoom,
+              flexShrink: 0,
+              boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
+              background:
+                'repeating-conic-gradient(rgba(255,255,255,0.06) 0% 25%, rgba(0,0,0,0.10) 0% 50%) 50% / 18px 18px',
+            }}
+          >
+            <canvas
+              ref={telaRef}
+              width={tamanho.largura}
+              height={tamanho.altura}
+              onContextMenu={abrirMenu}
+              onPointerDown={aoPressionar}
+              onPointerMove={aoMover}
+              onPointerUp={aoSoltar}
+              onPointerLeave={aoSoltar}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                display: 'block',
+                touchAction: 'none',
+                cursor:
+                  ferramenta === 'mao'
+                    ? 'grab'
+                    : ferramenta === 'conta-gotas'
+                      ? 'crosshair'
+                      : 'crosshair',
+                imageRendering: zoom >= 3 ? 'pixelated' : 'auto',
+              }}
+            />
+            <canvas
+              ref={previewRef}
+              width={tamanho.largura}
+              height={tamanho.altura}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
+        </div>
+
+        {painelCamadas ? (
+          <div
+            className="glass-scroll"
+            style={{
+              width: pequeno ? 176 : 208,
+              flexShrink: 0,
+              position: pequeno ? 'absolute' : 'static',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              zIndex: 6,
+              borderLeft: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
+              background: 'color-mix(in srgb, var(--c8) 82%, transparent)',
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+              padding: '10px 10px 14px',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 7,
+            }}
+          >
+            <div style={{ display: 'flex', gap: 5 }}>
+              <button type="button" onClick={adicionarCamada} style={{ ...BOTAO, flex: 1 }}>
+                + Camada
+              </button>
+              <button type="button" onClick={duplicarCamada} style={BOTAO} aria-label="Duplicar camada">
+                ⧉
+              </button>
+            </div>
+
+            {[...camadas].reverse().map((camada) => (
+              <div
+                key={camada.id}
+                onClick={() => setAtivaId(camada.id)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 5,
+                  padding: '7px 8px',
+                  borderRadius: 9,
+                  border: `1px solid ${
+                    camada.id === camadaAtiva?.id
+                      ? 'color-mix(in srgb, var(--c1) 45%, transparent)'
+                      : 'color-mix(in srgb, var(--c2) 12%, transparent)'
+                  }`,
+                  background: 'color-mix(in srgb, var(--c8) 45%, transparent)',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <button
+                    type="button"
+                    onClick={(evento) => {
+                      evento.stopPropagation();
+                      alternarVisivel(camada.id);
+                    }}
+                    aria-label={camada.visivel ? 'Esconder camada' : 'Mostrar camada'}
+                    style={{ ...BOTAO, height: 22, minWidth: 24, padding: '0 5px', fontSize: 10 }}
+                  >
+                    {camada.visivel ? '◉' : '○'}
+                  </button>
+                  <span
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      fontSize: 10.5,
+                      color: 'var(--c3)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {camada.nome}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(evento) => {
+                      evento.stopPropagation();
+                      removerCamada(camada.id);
+                    }}
+                    aria-label="Apagar camada"
+                    style={{ ...BOTAO, height: 22, minWidth: 24, padding: '0 5px', fontSize: 10 }}
+                  >
+                    <CloseIcon size={10} />
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={Math.round(camada.opacidade * 100)}
+                  onClick={(evento) => evento.stopPropagation()}
+                  onChange={(evento) => mudarOpacidadeCamada(camada.id, Number(evento.target.value) / 100)}
+                  style={{ width: '100%' }}
+                  aria-label={`Opacidade da camada ${camada.nome}`}
+                />
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <input
+        ref={entradaArquivo}
+        type="file"
+        accept="image/*"
+        onChange={(evento) => abrirImagem(evento.target.files?.[0])}
+        style={{ display: 'none' }}
+      />
+
+      {menu ? (
+        <MenuFlutuante x={menu.x} y={menu.y} itens={itensMenu} onFechar={() => setMenu(null)} />
+      ) : null}
+
+      {confirmarLimpar ? (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9400,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 12,
+            background: 'rgba(0,0,0,0.45)',
+            backdropFilter: 'blur(3px)',
+            WebkitBackdropFilter: 'blur(3px)',
+            fontFamily: 'var(--font-main)',
+          }}
+          onMouseDown={(evento) => {
+            if (evento.target === evento.currentTarget) setConfirmarLimpar(false);
+          }}
+        >
+          <div role="dialog" aria-modal="true" aria-label="Limpar tudo" style={{ ...MODAL_CAIXA, width: 380 }}>
+            <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <span
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: 12.5,
+                  letterSpacing: '0.04em',
+                  color: 'var(--c1)',
+                }}
+              >
+                LIMPAR TUDO
+              </span>
+              <span style={{ fontSize: 11.5, color: 'var(--c2)', lineHeight: 1.5 }}>
+                Isso apaga todas as camadas do desenho atual. Não dá pra desfazer depois.
+              </span>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 2 }}>
+                <button type="button" onClick={() => setConfirmarLimpar(false)} style={BOTAO}>
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={limparTudo}
+                  style={{
+                    ...BOTAO,
+                    color: 'var(--erro)',
+                    borderColor: 'color-mix(in srgb, var(--erro) 40%, transparent)',
+                  }}
+                >
+                  Limpar tudo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {novoAberto ? (
+        <NovoDesenho
+          inicial={tamanho}
+          onFechar={() => setNovoAberto(false)}
+          onCriar={(largura, altura) => {
+            reiniciar(largura, altura);
+            setNovoAberto(false);
+          }}
+        />
+      ) : null}
+
+      {envio ? (
+        <EnviarDesenhoModal
+          blob={envio.blob}
+          nome="desenho"
+          onFechar={() => setEnvio(null)}
+          onEnviado={(destino) => avisar(`Desenho enviado para ${destino}`)}
+        />
+      ) : null}
+
+      {Aviso}
+    </div>
+  );
+}
+
+/* Ajusta o zoom para o desenho caber na área visível. */
+function selectZoomAjuste(tamanho, areaRef) {
+  const area = areaRef.current;
+  if (!area) return 1;
+  const escala = Math.min(
+    (area.clientWidth - 32) / tamanho.largura,
+    (area.clientHeight - 32) / tamanho.altura
+  );
+  if (!Number.isFinite(escala) || escala <= 0) return 1;
+  return Math.min(4, Math.max(0.25, Number(escala.toFixed(2))));
+}
+
+/* Diálogo de desenho novo: largura e altura em pixels. */
+function NovoDesenho({ inicial, onFechar, onCriar }) {
+  const [largura, setLargura] = useState(inicial?.largura || 900);
+  const [altura, setAltura] = useState(inicial?.altura || 620);
+
+  useEffect(() => {
+    const tecla = (evento) => {
+      if (evento.key === 'Escape') onFechar();
+    };
+    document.addEventListener('keydown', tecla);
+    return () => document.removeEventListener('keydown', tecla);
+  }, [onFechar]);
+
+  const campo = {
+    width: 84,
+    height: 28,
+    padding: '0 8px',
+    borderRadius: 7,
+    border: '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+    background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
+    color: 'var(--c3)',
+    fontFamily: 'var(--font-main)',
+    fontSize: 11.5,
+    outline: 'none',
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9400,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 12,
+        background: 'rgba(0,0,0,0.45)',
+        backdropFilter: 'blur(3px)',
+        WebkitBackdropFilter: 'blur(3px)',
+        fontFamily: 'var(--font-main)',
+      }}
+      onMouseDown={(evento) => {
+        if (evento.target === evento.currentTarget) onFechar();
+      }}
+    >
+      <div role="dialog" aria-modal="true" aria-label="Novo desenho" style={{ ...MODAL_CAIXA, width: 360 }}>
+        <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <span
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 12.5,
+              letterSpacing: '0.04em',
+              color: 'var(--c1)',
+            }}
+          >
+            NOVO DESENHO
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ fontSize: 10.5, color: 'var(--c2)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              Largura
+              <input
+                type="number"
+                min="64"
+                max="4000"
+                value={largura}
+                onChange={(evento) => setLargura(Number(evento.target.value))}
+                style={campo}
+              />
+            </label>
+            <label style={{ fontSize: 10.5, color: 'var(--c2)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              Altura
+              <input
+                type="number"
+                min="64"
+                max="4000"
+                value={altura}
+                onChange={(evento) => setAltura(Number(evento.target.value))}
+                style={campo}
+              />
+            </label>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+            <button type="button" onClick={onFechar} style={BOTAO}>
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => onCriar(Math.min(4000, Math.max(64, largura)), Math.min(4000, Math.max(64, altura)))}
+              style={{ ...BOTAO, color: 'var(--c1)' }}
+            >
+              Criar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

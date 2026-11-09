@@ -3,6 +3,7 @@ import '@/theme.css';
 import DesktopBackground from '@/components/DesktopBackground';
 import DesktopPet from '@/components/desktop/DesktopPet';
 import DesktopWidgets from '@/components/desktop/DesktopWidgets';
+import DesenhosFixados from '@/components/desktop/DesenhosFixados';
 import Taskbar from '@/components/Taskbar';
 import ChattersWindow from '@/components/ChattersWindow';
 import ModelosWindow from '@/components/ModelosWindow';
@@ -181,6 +182,7 @@ export default function Dashboard() {
           <MobileShell user={user} perfil={perfil} janelas={janelas} />
         ) : (
           <>
+            <DesenhosFixados />
             <DesktopWidgets />
             <Taskbar
               onOpenApp={janelas.abrir}
