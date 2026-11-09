@@ -53,10 +53,10 @@ const APPS = [
     desc: "Conteúdos das modelos",
   },
   {
-    id: "paints",
+    id: "paint",
     Icon: PaletteIcon,
-    title: "Paints",
-    desc: "Documentação de plugins do Paint.NET",
+    title: "Paint",
+    desc: "Referência da API de plugins do Paint.NET",
   },
 ];
 

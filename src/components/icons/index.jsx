@@ -348,7 +348,7 @@ export function RestoreIcon({ size = 16, className }) {
   );
 }
 
-/* Paleta: o app Paints, onde a documentação de plugins fica embutida. */
+/* Paleta: o app Paint, onde a referência da API de plugins fica embutida. */
 export function PaletteIcon({ size = 16, className }) {
   return (
     <Svg size={size} className={className}>
