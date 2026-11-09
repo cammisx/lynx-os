@@ -88,6 +88,9 @@ export default function JogosWindow({ onClose }) {
 
   const aplicar = useCallback(
     (novo) => {
+      /* Escreve na ref na hora: recorde e score total saem no mesmo instante
+         (fim de partida) e o segundo nao pode partir de uma copia velha. */
+      configRef.current = novo;
       salvarJogosConfig(user, novo);
     },
     [user]
@@ -160,6 +163,8 @@ export default function JogosWindow({ onClose }) {
               recorde={recordeDaConfig(jogoAberto.id, config)}
               partida={partidaDoJogo(config, jogoAberto.id, config[jogoAberto.id]?.tamanho)}
               vistos={config[jogoAberto.id]?.vistos || []}
+              total={config[jogoAberto.id]?.total || 0}
+              aoTotal={(valor) => mudarJogo(jogoAberto.id, { total: valor })}
               aoPartida={(partida) => salvarPartida(jogoAberto.id, partida)}
               aoRecorde={(valor) => registrar(jogoAberto.id, valor)}
               aoMudar={(parcial) => mudarJogo(jogoAberto.id, parcial)}

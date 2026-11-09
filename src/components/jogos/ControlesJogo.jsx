@@ -394,6 +394,7 @@ export function AvisoJogo({ titulo, texto, extra = null, acoes = [], tom = 'norm
           {texto}
         </span>
       ) : null}
+      {extra}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>{acoes}</div>
     </div>
   );
