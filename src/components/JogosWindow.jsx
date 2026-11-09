@@ -1,71 +1,322 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import Window from '@/components/Window';
 import { GamepadIcon } from '@/components/icons';
+import { useAuth } from '@/lib/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import XadrezLichess from '@/components/jogos/XadrezLichess';
+import { salvarJogosConfig, usePerfil } from '@/lib/perfilUsuario';
+import {
+  JOGOS_PADRAO,
+  apagarRecordes,
+  gravarRecorde,
+  normalizarJogos,
+  recordeDaConfig,
+} from '@/lib/jogosConfig';
+import { IconeEngrenagem, PainelConfig, dourado, escuro, formatarTempo } from '@/components/jogos/EstruturaJogo';
+import { Icone2048, IconeCampo, IconeCobrinha, IconePokemon, IconeRebate } from '@/components/jogos/icones';
+import Jogo2048 from '@/components/jogos/Jogo2048';
+import JogoSnake from '@/components/jogos/JogoSnake';
+import JogoCampoMinado from '@/components/jogos/JogoCampoMinado';
+import JogoBreakout from '@/components/jogos/JogoBreakout';
 import QuemEhEssePokemon from '@/components/jogos/QuemEhEssePokemon';
-
-const JOGOS = [
-  { id: 'xadrez', label: 'Xadrez (Lichess)' },
-  { id: 'pokemon', label: 'Quem é esse Pokémon?' },
-];
 
 /**
  * Janela de Jogos: a pausa do time.
  *
- * Todo mundo vê, inclusive chatter. Os dois jogos usam APIs públicas e
- * gratuitas (Lichess embed e PokeAPI), então a janela não depende de nada pra
- * funcionar além de internet.
+ * Todo mundo ve, inclusive chatter. A janela e uma grade de cards: cada jogo
+ * mostra o proprio recorde, e entrar num jogo abre a tela dele com um "‹ Jogos"
+ * para voltar.
+ *
+ * As regras e os recordes vivem no perfil (campo `jogos_config` do User), com um
+ * bloco por jogo. Assim o que foi ajustado no computador abre igual no celular,
+ * e o recorde acompanha a pessoa em vez de ficar preso num aparelho.
  */
+const JOGOS = [
+  {
+    id: '2048',
+    nome: '2048',
+    dica: 'Some os numeros iguais',
+    Icone: Icone2048,
+    Componente: Jogo2048,
+    rotuloRecorde: 'recorde',
+  },
+  {
+    id: 'snake',
+    nome: 'Cobrinha',
+    dica: 'Coma e nao se enrosque',
+    Icone: IconeCobrinha,
+    Componente: JogoSnake,
+    rotuloRecorde: 'recorde',
+  },
+  {
+    id: 'campo',
+    nome: 'Campo minado',
+    dica: 'Cuidado onde pisa',
+    Icone: IconeCampo,
+    Componente: JogoCampoMinado,
+    rotuloRecorde: 'tempo',
+  },
+  {
+    id: 'breakout',
+    nome: 'Rebate-bola',
+    dica: 'Quebre todos os tijolos',
+    Icone: IconeRebate,
+    Componente: JogoBreakout,
+    rotuloRecorde: 'recorde',
+  },
+  {
+    id: 'pokemon',
+    nome: 'Quem e esse Pokemon?',
+    dica: 'Acerte pela silhueta',
+    Icone: IconePokemon,
+    Componente: QuemEhEssePokemon,
+    rotuloRecorde: 'recorde',
+  },
+];
+
+const textoRecorde = (jogo, recorde) => {
+  if (recorde == null) return 'sem recorde';
+  if (jogo.rotuloRecorde === 'tempo') return formatarTempo(recorde);
+  return String(recorde);
+};
+
 export default function JogosWindow({ onClose }) {
   const pequeno = useIsMobile();
-  const [jogo, setJogo] = useState('xadrez');
+  const { user } = useAuth();
+  const perfil = usePerfil(user);
+
+  const config = perfil.jogosConfig || normalizarJogos();
+  /* Guarda a ultima configuracao numa ref: dois cliques rapidos (recorde e
+     regra, por exemplo) nao podem partir de uma copia velha e apagar o outro. */
+  const configRef = useRef(config);
+  configRef.current = config;
+
+  const [aberto, setAberto] = useState(null);
+  const [painelGeral, setPainelGeral] = useState(false);
+
+  const aplicar = useCallback(
+    (novo) => {
+      salvarJogosConfig(user, novo);
+    },
+    [user]
+  );
+
+  const mudarJogo = useCallback(
+    (id, parcial) => {
+      const atual = configRef.current;
+      aplicar({ ...atual, [id]: { ...atual[id], ...parcial } });
+    },
+    [aplicar]
+  );
+
+  const restaurarJogo = useCallback(
+    (id) => {
+      const atual = configRef.current;
+      aplicar({ ...atual, [id]: { ...JOGOS_PADRAO[id] } });
+    },
+    [aplicar]
+  );
+
+  const registrar = useCallback(
+    (id, valor) => {
+      const atual = configRef.current;
+      const novo = gravarRecorde(atual, id, valor);
+      if (novo !== atual) aplicar(novo);
+    },
+    [aplicar]
+  );
+
+  const limparRecordes = useCallback(() => {
+    aplicar(apagarRecordes(configRef.current));
+  }, [aplicar]);
+
+  const jogoAberto = JOGOS.find((jogo) => jogo.id === aberto) || null;
 
   return (
-    <Window title="Jogos" icon={GamepadIcon} onClose={onClose} width={860} height={640}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%', minHeight: 0 }}>
-        <div
-          style={{
-            display: 'flex',
-            gap: 6,
-            borderBottom: '1px solid color-mix(in srgb, var(--c2) 12%, transparent)',
-            paddingBottom: 8,
-            flexShrink: 0,
-            overflowX: pequeno ? 'auto' : undefined,
-          }}
-        >
-          {JOGOS.map((item) => {
-            const ativa = jogo === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setJogo(item.id)}
+    <Window title="Jogos" icon={GamepadIcon} onClose={onClose} width={880} height={660}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+        {jogoAberto ? (
+          jogoAberto.id === 'pokemon' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                <button type="button" onClick={() => setAberto(null)} style={botaoVoltar}>
+                  ‹ Jogos
+                </button>
+              </div>
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <QuemEhEssePokemon
+                  recordeExterno={recordeDaConfig('pokemon', config)}
+                  aoRecorde={(valor) => registrar('pokemon', valor)}
+                />
+              </div>
+            </div>
+          ) : (
+            <jogoAberto.Componente
+              valores={config[jogoAberto.id]}
+              geral={config.geral}
+              recorde={recordeDaConfig(jogoAberto.id, config)}
+              aoRecorde={(valor) => registrar(jogoAberto.id, valor)}
+              aoMudar={(parcial) => mudarJogo(jogoAberto.id, parcial)}
+              aoVoltar={() => setAberto(null)}
+              aoRestaurar={() => restaurarJogo(jogoAberto.id)}
+              aoApagarRecordes={limparRecordes}
+            />
+          )
+        ) : (
+          <>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                paddingBottom: 10,
+                marginBottom: 12,
+                borderBottom: `1px solid ${escuro(10)}`,
+                flexShrink: 0,
+              }}
+            >
+              <span
                 style={{
-                  height: pequeno ? 34 : 26,
-                  padding: pequeno ? '0 14px' : '0 12px',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                  borderRadius: 7,
-                  border: ativa
-                    ? '1px solid color-mix(in srgb, var(--c1) 55%, transparent)'
-                    : '1px solid transparent',
-                  background: ativa ? 'color-mix(in srgb, var(--c1) 18%, transparent)' : 'transparent',
-                  color: ativa ? 'var(--c1)' : 'var(--c2)',
                   fontFamily: 'var(--font-main)',
-                  fontSize: 11.5,
-                  fontWeight: 700,
-                  cursor: 'pointer',
+                  fontSize: 11,
+                  color: escuro(55),
+                  letterSpacing: '0.02em',
                 }}
               >
-                {item.label}
+                Escolha um jogo. Recordes e regras ficam na sua conta.
+              </span>
+              <div style={{ flex: 1 }} />
+              <button
+                type="button"
+                onClick={() => setPainelGeral(true)}
+                title="Preferencias dos jogos"
+                aria-label="Preferencias dos jogos"
+                style={{ ...botaoVoltar, width: 28, height: 28, padding: 0 }}
+              >
+                <IconeEngrenagem />
               </button>
-            );
-          })}
-        </div>
+            </div>
 
-        {jogo === 'xadrez' ? <XadrezLichess /> : <QuemEhEssePokemon />}
+            <div
+              className="glass-scroll"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(auto-fill, minmax(${pequeno ? 108 : 132}px, 1fr))`,
+                gap: 10,
+                overflowY: 'auto',
+                alignContent: 'start',
+                paddingRight: 2,
+              }}
+            >
+              {JOGOS.map((jogo) => {
+                const recorde = recordeDaConfig(jogo.id, config);
+                return (
+                  <button
+                    key={jogo.id}
+                    type="button"
+                    onClick={() => setAberto(jogo.id)}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      gap: 6,
+                      padding: '14px 12px',
+                      minHeight: pequeno ? 104 : 116,
+                      borderRadius: 12,
+                      border: `1px solid ${escuro(13)}`,
+                      background: 'color-mix(in srgb, var(--c8) 48%, transparent)',
+                      color: 'var(--c2)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'border-color 140ms ease, transform 140ms ease',
+                    }}
+                    onMouseEnter={(evento) => {
+                      evento.currentTarget.style.borderColor = dourado(40);
+                      evento.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(evento) => {
+                      evento.currentTarget.style.borderColor = escuro(13);
+                      evento.currentTarget.style.transform = 'none';
+                    }}
+                  >
+                    <span style={{ color: 'var(--c1)', display: 'flex' }}>
+                      <jogo.Icone tamanho={pequeno ? 20 : 22} />
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-main)',
+                        fontSize: pequeno ? 11.5 : 12,
+                        fontWeight: 800,
+                        color: 'var(--c3)',
+                        lineHeight: 1.25,
+                      }}
+                    >
+                      {jogo.nome}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-main)', fontSize: 9.5, color: escuro(50), lineHeight: 1.3 }}>
+                      {jogo.dica}
+                    </span>
+                    <span
+                      style={{
+                        marginTop: 'auto',
+                        fontFamily: 'var(--font-main)',
+                        fontSize: 9.5,
+                        fontWeight: 700,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        color: recorde == null ? escuro(35) : 'var(--c1)',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {textoRecorde(jogo, recorde)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {painelGeral ? (
+          <PainelConfig
+            titulo="Preferencias dos jogos"
+            campos={[
+              {
+                chave: 'direcional',
+                rotulo: 'Setas de vidro na tela',
+                tipo: 'toggle',
+              },
+              {
+                chave: 'pausarFora',
+                rotulo: 'Pausar ao sair da aba',
+                tipo: 'toggle',
+              },
+            ]}
+            valores={config.geral}
+            aoMudar={(parcial) => aplicar({ ...configRef.current, geral: { ...configRef.current.geral, ...parcial } })}
+            aoFechar={() => setPainelGeral(false)}
+            aoRestaurar={() => aplicar({ ...configRef.current, geral: { ...JOGOS_PADRAO.geral } })}
+            aoApagarRecordes={limparRecordes}
+            nota="Vale para todos os jogos e acompanha sua conta nos dois aparelhos."
+          />
+        ) : null}
       </div>
     </Window>
   );
 }
+
+const botaoVoltar = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 6,
+  height: 28,
+  padding: '0 10px',
+  borderRadius: 8,
+  border: `1px solid ${escuro(14)}`,
+  background: 'color-mix(in srgb, var(--c8) 52%, transparent)',
+  color: 'var(--c2)',
+  fontFamily: 'var(--font-main)',
+  fontSize: 11.5,
+  fontWeight: 700,
+  cursor: 'pointer',
+};

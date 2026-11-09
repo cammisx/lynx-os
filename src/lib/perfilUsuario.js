@@ -12,6 +12,7 @@ import { aplicarFonte, fonteDoNavegador, tamanhoPorId } from '@/lib/fonte';
 import { aplicarFonteApp, fonteAppDoNavegador } from '@/lib/fontesApp';
 import { buscarPerfil, salvarPerfilPublico } from '@/lib/perfis';
 import { escreverBarra } from '@/lib/barraTarefas';
+import { escreverJogos, normalizarJogos } from '@/lib/jogosConfig';
 import {
   CAMPO_CELULAR,
   PERFIL_PADRAO,
@@ -70,6 +71,7 @@ const camposDoUser = (extras = {}) => {
     barra_ordem: escreverBarra(compartilhado.barraOrdem),
     barra_fixadas: escreverBarra(compartilhado.barraFixadas),
     agenda_ordem: escreverBarra(compartilhado.agendaOrdem),
+    jogos_config: escreverJogos(compartilhado.jogosConfig),
     tema: d.tema || '',
     tema_modo: d.modo || '',
     fonte_escala: d.fonte || '',
@@ -274,6 +276,32 @@ export const salvarOrdemAgenda = async (user, ordem = []) => {
     return { remoto: true };
   } catch (erro) {
     console.warn('[Perfil] o User recusou a ordem da agenda:', erro?.message || erro);
+    return { remoto: false };
+  }
+};
+
+/**
+ * Guarda as regras e os recordes dos jogos.
+ *
+ * Mesmo esquema da barra de tarefas: aplica no estado na hora (a tela responde
+ * sem esperar a rede), repete no navegador e manda o perfil inteiro para o
+ * User. Assim o que foi ajustado no computador abre igual no celular e o
+ * recorde feito num aparelho nao e apagado pelo outro.
+ */
+export const salvarJogosConfig = async (user, config = null) => {
+  compartilhado = { ...compartilhado, jogosConfig: normalizarJogos(config) };
+  atual = montarPerfil();
+  gravarTudo(user?.id);
+  avisar();
+  if (!user?.id) return { remoto: false };
+
+  try {
+    await base44.auth.updateMe(
+      camposDoUser({ jogos_config: escreverJogos(compartilhado.jogosConfig) })
+    );
+    return { remoto: true };
+  } catch (erro) {
+    console.warn('[Perfil] o User recusou as configuracoes dos jogos:', erro?.message || erro);
     return { remoto: false };
   }
 };

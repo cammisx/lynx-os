@@ -7,6 +7,7 @@ import { FONTE_PADRAO } from '@/lib/fonte';
 import { FONTE_APP_PADRAO, fonteAppValida } from '@/lib/fontesApp';
 import { emLista } from '@/lib/barraTarefas';
 import { COR_PADRAO, PET_PADRAO, corValida, petValido } from '@/lib/pets';
+import { lerJogos, mesclarJogos, normalizarJogos } from '@/lib/jogosConfig';
 
 /**
  * Fundo do desktop em três estados:
@@ -47,6 +48,8 @@ export const PERFIL_PADRAO = {
   petCor: COR_PADRAO,
   /* Nome dado ao bicho, mostrado no balão de fala e no tooltip. */
   petNome: '',
+  /* Regras e recordes dos jogos da janela Jogos (vale nos dois aparelhos). */
+  jogosConfig: null,
 };
 
 /** Campos custom do User, quando publicados no Builder. */
@@ -69,6 +72,7 @@ export const perfilDoUsuario = (user) => ({
   pet: user?.pet || '',
   petCor: user?.pet_cor || '',
   petNome: user?.pet_nome || '',
+  jogosConfig: lerJogos(user?.jogos_config),
 });
 
 export const mesclarPerfilCom = (local = {}, remoto = {}) => {
@@ -102,6 +106,8 @@ export const mesclarPerfilCom = (local = {}, remoto = {}) => {
     pet: petValido(perfil.pet),
     petCor: corValida(perfil.petCor),
     petNome: String(perfil.petNome || '').trim().slice(0, 24),
+    /* Regras da conta mandam; os recordes ficam com o melhor dos dois lados. */
+    jogosConfig: mesclarJogos(perfil.jogosConfig, remoto.jogosConfig),
   };
 };
 
@@ -118,6 +124,7 @@ export const CAMPOS_COMPARTILHADOS = [
   'barraOrdem',
   'barraFixadas',
   'agendaOrdem',
+  'jogosConfig',
 ];
 
 export const PREF_POR_APARELHO = [
@@ -192,6 +199,7 @@ export const compartilhadoDoPerfil = (perfil = {}) => ({
   barraOrdem: emLista(perfil.barraOrdem),
   barraFixadas: emLista(perfil.barraFixadas),
   agendaOrdem: emLista(perfil.agendaOrdem),
+  jogosConfig: normalizarJogos(perfil.jogosConfig),
 });
 
 /** Nome que vale na tela: o do perfil manda, depois o da conta. */

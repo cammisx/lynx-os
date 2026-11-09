@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { carregarPokemons, sortearRodada, spriteDoPokemon } from '@/lib/pokemon';
 
-/* Recorde fica no aparelho: é brincadeira de pausa, não precisa de entidade. */
+/* O recorde de verdade vive no perfil (campo jogos_config). O localStorage
+   aqui e so uma copia local, para nao perder o numero se o banco falhar. */
 const CHAVE_RECORDE = 'lynx:pokemon-recorde';
 
 const dourado = (valor) => `color-mix(in srgb, var(--c1) ${valor}%, transparent)`;
@@ -52,7 +53,7 @@ const rotuloStyle = {
  * própria arte oficial com brightness(0); ao responder a cor volta e o nome
  * aparece. Teclado: 1-4 responde, Enter/Space vai pra próxima.
  */
-export default function QuemEhEssePokemon() {
+export default function QuemEhEssePokemon({ recordeExterno = 0, aoRecorde }) {
   const [lista, setLista] = useState(null);
   const [erro, setErro] = useState('');
   const [tentativa, setTentativa] = useState(0);
@@ -62,7 +63,7 @@ export default function QuemEhEssePokemon() {
   const [acertos, setAcertos] = useState(0);
   const [erros, setErros] = useState(0);
   const [sequencia, setSequencia] = useState(0);
-  const [recorde, setRecorde] = useState(lerRecorde);
+  const [recorde, setRecorde] = useState(() => Math.max(lerRecorde(), Number(recordeExterno) || 0));
 
   useEffect(() => {
     let vivo = true;
@@ -101,13 +102,14 @@ export default function QuemEhEssePokemon() {
         if (nova > recorde) {
           setRecorde(nova);
           gravarRecorde(nova);
+          aoRecorde?.(nova);
         }
       } else {
         setErros((valor) => valor + 1);
         setSequencia(0);
       }
     },
-    [rodada, escolha, sequencia, recorde]
+    [rodada, escolha, sequencia, recorde, aoRecorde]
   );
 
   /* Atalhos só quando o foco não está num campo: chat e formulários seguem

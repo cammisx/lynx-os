@@ -111,6 +111,10 @@
     "barra_fixadas": {
       "type": "string",
       "description": "Janelas fixadas na barra de tarefas, separadas por virgula"
+    },
+    "jogos_config": {
+      "type": "string",
+      "description": "Regras e recordes dos jogos do LynxOS em JSON (vale no desktop e no celular)"
     }
   },
   "required": [
