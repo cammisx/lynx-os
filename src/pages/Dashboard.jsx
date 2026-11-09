@@ -19,7 +19,7 @@ import JogosWindow from '@/components/JogosWindow';
 import { JanelaContext } from '@/components/desktop/JanelaContext';
 import ConfirmarFechar from '@/components/desktop/ConfirmarFechar';
 import { janelaPorId } from '@/lib/janelas';
-import { pedirPasseioMesa, tutorialPixieVisto } from '@/lib/pixie';
+import { tutorialPixieVisto } from '@/lib/pixie';
 import { SEPARADOR, useMenuContexto } from '@/components/desktop/MenuContexto';
 import { abrirConfigNaAba, registrarAbridorConfig } from '@/lib/configAba';
 import useJanelas from '@/hooks/useJanelas';
@@ -146,17 +146,6 @@ export default function Dashboard({ tutorial = false }) {
 
   itensDesktop.current = [
     { id: 'preferencias', rotulo: 'Preferências', acao: () => irParaConfig('preferencias') },
-    /* O passeio da mesa fica à mão de qualquer pessoa, não só no tutorial.
-       Na rota do tutorial não entra: lá quem conta a história é o roteiro. */
-    ...(tutorial
-      ? []
-      : [
-          {
-            id: 'passeio-mesa',
-            rotulo: 'Passeio pela área de trabalho',
-            acao: () => pedirPasseioMesa(),
-          },
-        ]),
     {
       id: 'modo',
       rotulo: perfil.modo === MODO_CLARO ? 'Mudar para o modo escuro' : 'Mudar para o modo claro',

@@ -25,23 +25,6 @@ export const assinarChamadoPixie = (fn) => {
   return () => window.removeEventListener(EVENTO, ouvir);
 };
 
-/* ---------- o passeio da área de trabalho ---------- */
-
-const EVENTO_PASSEIO = 'lynx:passeio-mesa';
-
-/* Pede a Pixie o passeio da mesa. O menu da mesa usa isso; quem estiver com
-   ela na tela (a ajuda do sistema) atende. */
-export const pedirPasseioMesa = () => {
-  if (typeof window === 'undefined') return;
-  window.dispatchEvent(new Event(EVENTO_PASSEIO));
-};
-
-export const assinarPasseioMesa = (fn) => {
-  if (typeof window === 'undefined') return () => {};
-  window.addEventListener(EVENTO_PASSEIO, fn);
-  return () => window.removeEventListener(EVENTO_PASSEIO, fn);
-};
-
 /* Item pronto para colar em qualquer menu de clique direito. */
 export const itemChamarPixie = ({ x = 0, y = 0, alvo = null } = {}) => ({
   id: 'chamar-pixie',

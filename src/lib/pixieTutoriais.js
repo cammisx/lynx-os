@@ -8,14 +8,23 @@
  * 2. escreva a fala em TUTORIAIS com essa mesma chave.
  *
  * Quando o elemento não tem marcador, vale o lugar genérico em POR_LUGAR
- * (barra de tarefas, relógio, janela, chat, mesa). Sem nada disso a resposta é
+ * (barra de tarefas, relógio, janela, chat). Sem nada disso a resposta é
  * null: ela se apresenta e espera a pessoa apontar o que quer saber.
+ *
+ * A mesa não tem fala curta de propósito: explicar a área de trabalho é o
+ * passeio inteiro (TOUR_MESA), que ela conta quando é chamada ali.
  */
 
 export const SAUDACAO =
   'Oi! Ainda não tenho tutorial dessa parte. Clique no lugar que você quer que eu explique.';
 
 export const SEM_TUTORIAL = 'Ainda não tenho tutorial dessa parte. Quer apontar outro lugar?';
+
+/* O menu dela quando já não há roteiro: perguntar outro lugar ou se despedir. */
+export const CHAMADO_PARA_PERGUNTAR = 'Sobre o que você quer saber? Clique no lugar.';
+export const AGRADECIMENTO =
+  'Eu que agradeço! Qualquer coisa, é só me chamar com o botão direito.';
+export const DESPEDIDA = 'Até logo! Se precisar, é só me chamar com o botão direito!';
 
 /* Tutoriais por marcador (data-pixie-alvo). */
 const TUTORIAIS = {
@@ -30,7 +39,6 @@ const POR_LUGAR = {
   janela:
     'Para minimizar é o traço; para fechar, o X. A janela anda se você arrastar pela barra de cima.',
   chat: 'O chat fica aqui do lado: canal geral, os canais das modelos e os privados.',
-  mesa: 'Aqui é a mesa. Clique direito nela para abrir as preferências, trocar o tema e abrir as janelas.',
 };
 
 /* Sem tutorial escrito, a resposta é null (e não um texto de "não sei"): é o

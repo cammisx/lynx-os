@@ -6,6 +6,9 @@ import { useAuth } from '@/lib/AuthContext';
 import { salvarPerfil } from '@/lib/perfilUsuario';
 import { assinarChamadoPixie, marcarTutorialPixieVisto } from '@/lib/pixie';
 import {
+  AGRADECIMENTO,
+  CHAMADO_PARA_PERGUNTAR,
+  DESPEDIDA,
   SEM_TUTORIAL,
   alvoDoPonto,
   falaDoElemento,
@@ -62,9 +65,6 @@ const PROXIMO = {
   apresentacao: 'atalho',
 };
 
-const CHAMADO_PARA_PERGUNTAR = 'Sobre o que você quer saber? Clique no lugar.';
-const AGRADECIMENTO = 'Eu que agradeço! Qualquer coisa, é só me chamar com o botão direito.';
-const DESPEDIDA = 'Até logo! Se precisar, é só me chamar com o botão direito!';
 const ESPERA_DA_DESPEDIDA = 2600; // tempo para ler a despedida antes de sair
 
 /* Depois dela, o sistema é da pessoa: a rota inicial, com a mesa à vontade. */
@@ -80,18 +80,11 @@ export default function TutorialRoteiro() {
   const [apontando, setApontando] = useState(false);
   const [menu, setMenu] = useState(null);
   const [saida, setSaida] = useState(null);
-  /* O passeio da mesa (mesmo fio da ajuda do sistema) e a marca de já ter
-     passado por ele inteiro: depois disso, clicar na mesa não repete. */
-  const [tourVisto, setTourVisto] = useState(false);
+  /* O passeio da mesa é o mesmo fio da ajuda do sistema. */
   /* Terminada a explicação, o balão sai (no clique ou sozinho) e ela fica só
      flutuando na tela, até alguém chamar pelo menu dela. */
   const [descansando, setDescansando] = useState(false);
-  const tour = useTourMesa({
-    aoTerminar: () => {
-      setTourVisto(true);
-      setDescansando(true);
-    },
-  });
+  const tour = useTourMesa({ aoTerminar: () => setDescansando(true) });
   const [encerrado, setEncerrado] = useState(false);
   const campoRef = useRef(null);
 
@@ -108,7 +101,16 @@ export default function TutorialRoteiro() {
     () =>
       assinarChamadoPixie(({ x, y, alvo }) => {
         const conhecida = alvo ? falaDoElemento(alvo) : falaDoPonto(x, y);
+        const lugar = alvo ? lugarDoElemento(alvo) : lugarDoElemento(alvoDoPonto(x, y));
         setDescansando(false);
+        /* A mesa não tem fala curta: chamada ali, ela conta a área de
+           trabalho inteira (o mesmo passeio do primeiro acesso). */
+        if (lugar === 'mesa') {
+          setResposta(null);
+          setApontando(false);
+          tour.iniciar();
+          return;
+        }
         setApontando(!conhecida);
         setResposta(conhecida || null);
       }),
@@ -138,8 +140,11 @@ export default function TutorialRoteiro() {
      roteiro. O menu aberto não deixa o clique vazar para cá. */
   const aoCliqueNaTela = (evento) => {
     if (saida) return;
-    /* Flutuando em silêncio: o clique nela não reabre a conversa. */
-    if (descansando) return;
+    /* Flutuando em silêncio: só o clique nela reage, abrindo o menu dela. */
+    if (descansando) {
+      setMenu({ x: evento?.clientX ?? 0, y: evento?.clientY ?? 0 });
+      return;
+    }
 
     const x = evento?.clientX ?? 0;
     const y = evento?.clientY ?? 0;
@@ -150,9 +155,14 @@ export default function TutorialRoteiro() {
       return;
     }
     if (apontando) {
-      const apontado = falaDoPonto(x, y) || SEM_TUTORIAL;
       setApontando(false);
-      setResposta(apontado);
+      /* Apontou a mesa: a explicação dela é o passeio inteiro. */
+      if (lugarDoElemento(alvoDoPonto(x, y)) === 'mesa') {
+        setResposta(null);
+        tour.iniciar();
+        return;
+      }
+      setResposta(falaDoPonto(x, y) || SEM_TUTORIAL);
       return;
     }
     if (resposta) {
@@ -163,7 +173,7 @@ export default function TutorialRoteiro() {
        vira "me conta o que é isso aqui" em vez de não fazer nada. Na área de
        trabalho, o clique começa o passeio (ela abre menu e janela junto). */
     if (passo === 'atalho') {
-      if (lugarDoElemento(alvoDoPonto(x, y)) === 'mesa' && !tourVisto) {
+      if (lugarDoElemento(alvoDoPonto(x, y)) === 'mesa') {
         setResposta(null);
         setApontando(false);
         tour.iniciar();
