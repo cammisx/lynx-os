@@ -46,7 +46,7 @@ export default function useTourMesa({ aoTerminar } = {}) {
        a janela pode estar abrindo e a rolagem ainda acontecendo. */
     destacarArea(fala.area);
     let vivo = true;
-    const esperas = [0, 220, 480, 820, 1200].map((atraso) =>
+    const esperas = [0, 240, 520].map((atraso) =>
       setTimeout(() => {
         if (!vivo) return;
         const caixa = medirArea(fala.area);

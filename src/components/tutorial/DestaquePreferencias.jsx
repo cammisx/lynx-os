@@ -27,8 +27,8 @@ export default function DestaquePreferencias() {
 
     const medir = () => setCaixa(medirArea(area) || null);
     medir();
-    /* A janela pode estar abrindo ou rolando ainda: mede mais algumas vezes. */
-    const atrasos = [140, 360, 700, 1100].map((ms) => setTimeout(medir, ms));
+    /* A janela pode estar abrindo ainda: mede mais uma vez. */
+    const atrasos = [160, 420].map((ms) => setTimeout(medir, ms));
     window.addEventListener('resize', medir);
     document.addEventListener('scroll', medir, true);
 
