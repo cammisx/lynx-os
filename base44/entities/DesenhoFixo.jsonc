@@ -6,22 +6,27 @@
       "type": "string"
     },
     "desenho_url": {
-      "type": "string"
+      "type": "string",
+      "description": "URL da imagem do desenho"
     },
     "nome": {
       "type": "string"
     },
     "largura": {
-      "type": "number"
+      "type": "number",
+      "description": "Largura do widget na mesa, em pixels"
     },
     "altura": {
-      "type": "number"
+      "type": "number",
+      "description": "Altura do widget na mesa, em pixels"
     },
     "pos_x": {
-      "type": "number"
+      "type": "number",
+      "description": "Posicao horizontal do widget na mesa"
     },
     "pos_y": {
-      "type": "number"
+      "type": "number",
+      "description": "Posicao vertical do widget na mesa"
     }
   },
   "required": [
