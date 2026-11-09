@@ -13,6 +13,10 @@ Duas tiras:
   segundos para ela virar de lado. Essa tira toca de traz para frente quando
   ela vai para a direita e de frente para traz quando ela vai para a esquerda.
 
+As tiras saem em src/assets/pixie/tiras, e não em public: o Vite renomeia o
+arquivo com o hash do conteúdo, então o navegador nunca fica com uma tira velha
+em cache e um quadro a mais ou a menos no CSS.
+
 As imagens são normalizadas para 104x96 (o mesmo quadro de 105x96 que ela
 mandou, menos 1px de largura para o passo do CSS cair em número inteiro).
 """
@@ -20,6 +24,7 @@ from PIL import Image
 import os
 
 PASTA = "src/assets/pixie"
+SAIDA = "src/assets/pixie/tiras"
 LARG, ALT = 104, 96
 
 # bote das asas, tocado sem parar
@@ -40,5 +45,6 @@ def montar(numeros, destino):
 
 
 if __name__ == "__main__":
-    montar(CORPO, "public/tutorial/pixie-corpo.png")
-    montar(VIRAR, "public/tutorial/pixie-virar.png")
+    os.makedirs(SAIDA, exist_ok=True)
+    montar(CORPO, f"{SAIDA}/pixie-corpo.png")
+    montar(VIRAR, f"{SAIDA}/pixie-virar.png")

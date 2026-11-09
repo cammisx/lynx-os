@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import tiraCorpo from '@/assets/pixie/tiras/pixie-corpo.png';
+import tiraVirar from '@/assets/pixie/tiras/pixie-virar.png';
 
 /**
  * A pixie que guia o tutorial da rota /tutorial.
@@ -103,13 +105,13 @@ const ESTILOS = `
 }
 .pixie-corpo {
   inset: 0;
-  background-image: url(/tutorial/pixie-corpo.png);
+  background-image: url(${tiraCorpo});
   background-size: ${LARGURA * QUADROS}px ${ALTURA}px;
   animation: pixie-quadros 0.6s steps(${QUADROS}) infinite;
 }
 .pixie-virar {
   inset: 0;
-  background-image: url(/tutorial/pixie-virar.png);
+  background-image: url(${tiraVirar});
   background-size: ${VIRADA_LARGURA * VIRADA_QUADROS}px ${VIRADA_ALTURA}px;
   animation: pixie-virar-ida ${VIRADA_DURACAO}s steps(${VIRADA_QUADROS}) 1 both;
 }
