@@ -10,6 +10,10 @@ import { useChatPanel } from '@/components/chat/ChatProvider';
 import { useAuth } from '@/lib/AuthContext';
 import { janelaPorId } from '@/lib/janelas';
 import MenuFlutuante from '@/components/desktop/MenuFlutuante';
+import { itemChamarPixie } from '@/lib/pixie';
+/* Traço entre grupos do menu de clique direito dos ícones. */
+const SEPARADOR_MENU = { separador: true };
+
 
 export default function Taskbar({
   onOpenApp,
@@ -279,6 +283,8 @@ export default function Taskbar({
                     acao: () => onFecharJanela && onFecharJanela(item.id),
                   }
                 : null,
+              SEPARADOR_MENU,
+              itemChamarPixie({ alvo: menuJanela.ancora }),
             ].filter(Boolean);
             return (
               <MenuFlutuante

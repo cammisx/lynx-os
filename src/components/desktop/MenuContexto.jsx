@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import MenuFlutuante from './MenuFlutuante';
+import { itemChamarPixie } from '@/lib/pixie';
 
 /**
  * Menu de botão direito do app inteiro, no lugar do menu do navegador.
@@ -206,9 +207,14 @@ export function MenuContextoProvider({ children }) {
         extras.push(...lista);
       });
 
-      const itens = [...base, ...(base.length && extras.length ? [SEPARADOR] : []), ...extras];
-      /* Sem nada para oferecer, o menu do navegador continua valendo. */
-      if (!itens.length) return;
+      const semPixie = [...base, ...(base.length && extras.length ? [SEPARADOR] : []), ...extras];
+      /* Chamar a Pixie está em todo menu: ela é a explicação do sistema. E
+         com isso todo lugar tem menu, mesmo onde antes vinha o do navegador. */
+      const itens = [
+        ...semPixie,
+        ...(semPixie.length ? [SEPARADOR] : []),
+        itemChamarPixie({ x: evento.clientX, y: evento.clientY, alvo: evento.target }),
+      ];
       evento.preventDefault();
       setMenu({ x: evento.clientX, y: evento.clientY, itens });
     };

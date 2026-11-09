@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { base44 } from '@/api/base44Client';
 import MenuFlutuante from '@/components/desktop/MenuFlutuante';
+import { itemChamarPixie } from '@/lib/pixie';
 import { CloseIcon } from '@/components/icons';
 import { MODAL_CAIXA } from '@/lib/modalStyles';
 import useAviso from '@/components/ui/Aviso';
@@ -711,6 +712,8 @@ export default function PaintCanvas() {
     { id: 'colar', rotulo: 'Colar', atalho: 'Ctrl+V', acao: colarSelecao },
     { separador: true },
     { id: 'limpar', rotulo: 'Limpar tudo', perigo: true, acao: () => setConfirmarLimpar(true) },
+    { separador: true },
+    itemChamarPixie({ x: menu?.x, y: menu?.y }),
   ];
 
   /* ---------- abrir imagem ---------- */

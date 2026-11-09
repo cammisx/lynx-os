@@ -35,6 +35,7 @@ import useAplicarConvite from '@/hooks/useAplicarConvite';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileShell from '@/components/mobile/MobileShell';
 import TutorialRoteiro from '@/components/tutorial/TutorialRoteiro';
+import PixieAjuda from '@/components/tutorial/PixieAjuda';
 
 /* Cada janela do menu iniciar é um componente; o id é o mesmo da taskbar. */
 const COMPONENTES = {
@@ -236,6 +237,8 @@ export default function Dashboard({ tutorial = false }) {
         })}
 
       {tutorial && !telaPequena ? <TutorialRoteiro /> : null}
+      {/* Fora do tutorial ela só aparece quando é chamada pelo botão direito. */}
+      {!tutorial && !telaPequena ? <PixieAjuda /> : null}
 
       {fechando ? (
         <ConfirmarFechar

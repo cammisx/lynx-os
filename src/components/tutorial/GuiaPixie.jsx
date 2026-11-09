@@ -316,7 +316,10 @@ export default function GuiaPixie({
 
           {/* A área do clique direito: um pouco maior que o desenho, senão é
               difícil acertar num bicho que mexe. O menu é dela mesma, então o
-              menu do sistema não entra no lugar. */}
+              menu do sistema não entra no lugar. Sem ninguém para atender o
+              clique, ela não pega o mouse: o clique segue para o que está
+              atrás (o menu do sistema, com o Chamar Pixie, por exemplo). */}
+          {aoMenu || aoClique ? (
           <div
             data-menu-own="true"
             onContextMenu={(evento) => {
@@ -329,9 +332,10 @@ export default function GuiaPixie({
               position: 'absolute',
               inset: -8,
               pointerEvents: 'auto',
-              cursor: aoMenu || aoClique ? 'pointer' : 'default',
+              cursor: 'pointer',
             }}
           />
+          ) : null}
         </div>
 
         {/* balão de fala: acima do desenho e dentro da tela */}

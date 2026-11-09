@@ -3,6 +3,8 @@ import GuiaPixie from '@/components/tutorial/GuiaPixie';
 import MenuFlutuante from '@/components/desktop/MenuFlutuante';
 import { useAuth } from '@/lib/AuthContext';
 import { salvarPerfil } from '@/lib/perfilUsuario';
+import { assinarChamadoPixie } from '@/lib/pixie';
+import { SEM_TUTORIAL, falaDoElemento, falaDoPonto } from '@/lib/pixieTutoriais';
 
 /**
  * O roteiro do tutorial da rota /tutorial.
@@ -45,33 +47,6 @@ const CHAMADO_PARA_PERGUNTAR = 'Sobre o que você quer saber? Clique no lugar.';
 const DESPEDIDA = 'Ok, se precisar, é só me chamar com o botão direito!';
 const ESPERA_DA_DESPEDIDA = 2600; // tempo para ler a despedida antes de sair
 
-/**
- * O que ela responde depende do lugar da tela que a pessoa apontou. As falas
- * abaixo são provisórias: é só trocar o texto na chave do lugar.
- */
-const RESPOSTAS = {
-  barra:
-    'Essa é a barra de tarefas: cada ícone abre uma janela. Clique direito num ícone para fixar ou tirar ele da barra.',
-  relogio: 'No relógio ficam seus turnos, o ponto do dia e a agenda da semana.',
-  janela: 'Para minimizar é o traço; para fechar, o X. A janela anda se você arrastar pela barra de cima.',
-  chat: 'O chat fica aqui do lado: canal geral, os canais das modelos e os privados.',
-  mesa: 'Aqui é a mesa. Clique direito nela para abrir as preferências, trocar o tema e abrir as janelas.',
-  fora: 'Essa parte eu ainda não conheço. Quer apontar outro lugar?',
-};
-
-/* O lugar da tela embaixo do clique, sem contar a camada da pixie. */
-const lugarApontado = (x, y) => {
-  const pilha = document.elementsFromPoint?.(x, y) || [];
-  const alvo = pilha.find((elemento) => !elemento.closest?.('[data-pixie]'));
-  if (!alvo) return 'fora';
-  if (alvo.closest('[data-relogio]')) return 'relogio';
-  if (alvo.closest('.chat-painel')) return 'chat';
-  if (alvo.closest('[data-janela]')) return 'janela';
-  if (alvo.closest('.taskbar')) return 'barra';
-  if (alvo.closest('[data-desktop]')) return 'mesa';
-  return 'fora';
-};
-
 export default function TutorialRoteiro() {
   const { user } = useAuth();
   const [passo, setPasso] = useState('boasVindas');
@@ -90,6 +65,18 @@ export default function TutorialRoteiro() {
     const t = setTimeout(() => campoRef.current?.focus(), 60);
     return () => clearTimeout(t);
   }, [passo]);
+
+  /* Chamada pelo botão direito de algum menu: se o lugar já tem tutorial, ela
+     fala dele; se não, se apresenta e espera a pessoa apontar. */
+  useEffect(
+    () =>
+      assinarChamadoPixie(({ x, y, alvo }) => {
+        const conhecida = alvo ? falaDoElemento(alvo) : falaDoPonto(x, y);
+        setApontando(!conhecida);
+        setResposta(conhecida || null);
+      }),
+    []
+  );
 
   /* Depois da despedida ela sai da tela. */
   useEffect(() => {
@@ -111,8 +98,10 @@ export default function TutorialRoteiro() {
     if (saindo) return;
 
     if (apontando) {
+      const apontado =
+        falaDoPonto(evento?.clientX ?? 0, evento?.clientY ?? 0) || SEM_TUTORIAL;
       setApontando(false);
-      setResposta(RESPOSTAS[lugarApontado(evento?.clientX ?? 0, evento?.clientY ?? 0)]);
+      setResposta(apontado);
       return;
     }
     if (resposta) {

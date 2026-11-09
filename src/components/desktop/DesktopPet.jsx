@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PetSprite from '@/components/desktop/PetSprite';
 import CoracaoPet from '@/components/desktop/CoracaoPet';
 import MenuPet from '@/components/desktop/MenuPet';
+import { itemChamarPixie } from '@/lib/pixie';
 import PetNomeModal from '@/components/desktop/PetNomeModal';
 import PetReacoesModal from '@/components/desktop/PetReacoesModal';
 import useReacoesPet from '@/hooks/useReacoesPet';
@@ -71,6 +72,8 @@ export default function DesktopPet({
   const caladoRef = useRef(null);
   const coracoesRef = useRef(null);
   const voltaRef = useRef(null);
+  /* O desenho do pet: a Pixie usa para saber que estão falando dele. */
+  const petRef = useRef(null);
 
   useEffect(() => {
     setAnimado(!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
@@ -171,6 +174,8 @@ export default function DesktopPet({
             { id: 'reacoes', rotulo: 'Editar reações…', acao: () => setModalReacoes(true) },
           ]
         : []),
+      SEPARADOR,
+      itemChamarPixie({ alvo: petRef.current }),
     ];
   }, [pet, cor, nome, admin, onTrocarPet, onTrocarCor, reagir]);
 
@@ -281,6 +286,8 @@ export default function DesktopPet({
 
   const interagir = (
     <div
+      ref={petRef}
+      data-pixie-alvo="pet"
       onClick={() => reagir('clique')}
       onContextMenu={abrirMenu}
       role="button"

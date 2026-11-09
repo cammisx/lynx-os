@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { ImageIcon, TrashIcon } from '@/components/icons';
+import { ImageIcon, StarIcon, TrashIcon } from '@/components/icons';
+import { chamarPixie } from '@/lib/pixie';
 
 const LARGURA = 178;
 
@@ -113,6 +114,20 @@ export default function CanalMenu({ canal, nome, posicao, salvando, erro, onAlte
           <ImageIcon size={14} />
         </span>
         {salvando ? 'Enviando imagem…' : 'Alterar imagem'}
+      </button>
+
+      <button
+        type="button"
+        style={itemStyle}
+        onClick={() => {
+          chamarPixie({ x: posicao.x, y: posicao.y });
+          onFechar();
+        }}
+      >
+        <span style={{ color: 'var(--c1)', display: 'flex' }}>
+          <StarIcon size={14} />
+        </span>
+        Chamar Pixie
       </button>
 
       {canal?.foto_url && (

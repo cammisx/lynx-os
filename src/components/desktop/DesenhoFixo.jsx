@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import MenuFlutuante from '@/components/desktop/MenuFlutuante';
+import { itemChamarPixie } from '@/lib/pixie';
 import useAviso from '@/components/ui/Aviso';
 import EnviarDesenhoModal from '@/components/paint/EnviarDesenhoModal';
 import { baixarJpg, urlParaBlob } from '@/lib/paint';
@@ -131,6 +132,8 @@ export default function DesenhoFixo({ desenho, onMover, onRedimensionar, onDesaf
     { id: 'enviar', rotulo: 'Enviar para…', acao: prepararEnvio },
     { separador: true },
     { id: 'desafixar', rotulo: 'Desafixar da área de trabalho', perigo: true, acao: onDesafixar },
+    { separador: true },
+    itemChamarPixie({ alvo: caixaRef.current }),
   ];
 
   return (
