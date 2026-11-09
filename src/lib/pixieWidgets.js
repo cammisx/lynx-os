@@ -24,6 +24,19 @@ export const PASSEIOS_DE_WIDGET = {
       'Para fechar, o X no canto. O widget continua na mesa, é só abrir de novo quando precisar.',
     ],
   },
+  paginas: {
+    icone: '[data-widget="paginas"]',
+    painel: '[aria-label="Widget de Páginas"]',
+    abertura: 'Clique duas vezes no ícone de Páginas para abrir o widget.',
+    passos: [
+      'Esse é o widget de Páginas: as páginas que são suas e como está cada uma agora.',
+      'Aqui em cima ele conta quantas estão livres neste instante: é o que diz se tem para onde ir.',
+      'Cada linha é uma página: o nome da modelo, o estado (Livre, Ocupada ou Em pausa) e, quando está livre, até quando ela fica.',
+      'Com a página livre aparece o botão Entrar na página: é por ele que você assume a página e começa o shift nela.',
+      'O Atualizar, aqui no topo, relê na hora; fora isso ele se atualiza sozinho a cada 15 segundos.',
+      'Para fechar, o X no canto. O ícone continua na mesa, é só abrir de novo quando precisar.',
+    ],
+  },
 };
 
 /* O passeio do widget, se ele já tiver um escrito. */

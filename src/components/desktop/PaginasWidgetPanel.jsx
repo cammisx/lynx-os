@@ -120,6 +120,8 @@ export default function PaginasWidgetPanel({
   return createPortal(
     <div
       ref={painelRef}
+      role="dialog"
+      aria-label="Widget de Páginas"
       style={{
         position: 'fixed',
         left: pos.left,

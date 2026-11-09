@@ -22,6 +22,13 @@ const zoomDaRaiz = () => {
   return Number.isFinite(valor) && valor > 0 ? valor : 1;
 };
 
+/* A chave do widget vai para o HTML sem acento: "Páginas" vira "paginas". */
+const chaveDoWidget = (label) =>
+  String(label || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
 /* A barra de tarefas ocupa 1.5/24 da altura da tela (ver .taskbar no tema). */
 const alturaDaBarra = () =>
   typeof window === 'undefined' ? 0 : (window.innerHeight * 1.5) / 24;
@@ -168,7 +175,7 @@ export default function WidgetIcon({ label, Icon = TurnoIcon, position, onOpen, 
       tabIndex={0}
       aria-label={label}
       /* Para a Pixie achar o ícone e brilhar ele no passeio do widget. */
-      data-widget={label.toLowerCase()}
+      data-widget={chaveDoWidget(label)}
       onMouseDown={startDrag}
       onClick={() => setSelecionado(true)}
       onKeyDown={(event) => {
