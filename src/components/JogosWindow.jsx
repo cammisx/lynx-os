@@ -59,7 +59,7 @@ const JOGOS = [
   {
     id: 'pokemon',
     nome: 'Quem e esse Pokemon?',
-    dica: 'Acerte pela silhueta',
+    dica: 'Esse aqui é só pokemon mesmo',
     Icone: IconePokemon,
     Componente: QuemEhEssePokemon,
     rotuloRecorde: 'recorde',
