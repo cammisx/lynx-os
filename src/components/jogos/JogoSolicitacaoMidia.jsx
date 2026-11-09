@@ -97,9 +97,7 @@ export default function JogoSolicitacaoMidia({
   valores,
   geral,
   recorde,
-  total = 0,
   aoRecorde,
-  aoTotal,
   aoMudar,
   aoVoltar,
   aoRestaurar,
@@ -134,22 +132,6 @@ export default function JogoSolicitacaoMidia({
   const recordeRef = useRef(recorde);
   recordeRef.current = recorde;
   const pontosRef = useRef(0);
-
-  /* Score total: cada partida entra UMA vez na soma, mesmo que a pessoa feche
-     a janela logo depois de perder. */
-  const totalRef = useRef(total);
-  totalRef.current = total;
-  const aoTotalRef = useRef(aoTotal);
-  aoTotalRef.current = aoTotal;
-  const partidaContada = useRef(false);
-  const somarNoTotal = useCallback((valor) => {
-    const numero = Math.round(Number(valor) || 0);
-    if (numero <= 0 || partidaContada.current) return;
-    partidaContada.current = true;
-    aoTotalRef.current?.((Number(totalRef.current) || 0) + numero);
-  }, []);
-  const somarRef = useRef(somarNoTotal);
-  somarRef.current = somarNoTotal;
 
   /* O tabuleiro ocupa o maior quadrado que cabe na janela: toda a largura que
      existe e a altura que sobra abaixo do topo (deixando espaco pro direcional).
@@ -196,7 +178,6 @@ export default function JogoSolicitacaoMidia({
     jogo.current = criarPartida(grade);
     jogo.current.proximoNascimento = performance.now();
     pontosRef.current = 0;
-    partidaContada.current = false;
     setPontos(0);
     setFlutuantes([]);
     setEstado('pronto');
@@ -249,8 +230,7 @@ export default function JogoSolicitacaoMidia({
     estadoJogo.parado = true;
     setEstado('fim');
     aoRecorde?.(estadoJogo.pontos);
-    somarNoTotal(estadoJogo.pontos);
-  }, [aoRecorde, somarNoTotal]);
+  }, [aoRecorde]);
 
   const avancar = useCallback(() => {
     const estadoJogo = jogo.current;
@@ -349,8 +329,6 @@ export default function JogoSolicitacaoMidia({
       const valor = pontosRef.current;
       const atual = recordeRef.current;
       if (valor > 0 && (atual == null || valor > atual)) registroRef.current?.(valor);
-      /* Fechar a janela no meio da partida ainda soma no score total. */
-      somarRef.current?.(valor);
     },
     []
   );
@@ -542,7 +520,7 @@ export default function JogoSolicitacaoMidia({
           {estado === 'pronto' ? (
             <AvisoJogo
               titulo="SOLICITAÇÃO DE MÍDIA"
-              extra={<PlacarTotal valor={total} />}
+              extra={<PlacarTotal valor={recorde ?? 0} rotulo="recorde" />}
               acoes={[
                 <BotaoVidro key="ir" tom="principal" onClick={() => setEstado('jogando')}>
                   Começar

@@ -59,8 +59,6 @@ export const JOGOS_PADRAO = {
     pele: 'morena',
     pelos: false,
     controle: 'setas',
-    /* Score acumulado de todas as partidas, mostrado na tela de inicio. */
-    total: 0,
   },
   campo: { dificuldade: 'facil', largura: 9, altura: 9, minas: 10 },
   recordes: {},
@@ -191,7 +189,6 @@ export const normalizarJogos = (bruto) => {
       pele: escolha(snake.pele, TONS_PELE, JOGOS_PADRAO.snake.pele),
       pelos: typeof snake.pelos === 'boolean' ? snake.pelos : JOGOS_PADRAO.snake.pelos,
       controle: escolha(snake.controle, CONTROLES_COBRA, JOGOS_PADRAO.snake.controle),
-      total: inteiro(snake.total, [0, 999999999], 0),
     },
     campo: normalizarCampo(base.campo),
     recordes: normalizarRecordes(base.recordes),
