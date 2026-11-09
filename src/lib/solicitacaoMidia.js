@@ -87,6 +87,11 @@ export const fraseDoFim = (pontos) => FRASES_FIM[classificacao(pontos)];
 export const LEGENDA_ITENS =
   'Berinjela 25 · Foto 50 · Vídeo 100 · Estrela 200 · Telefone 500 · Moedas de 5 a 500';
 
+/** Texto da tela de inicio (o que a pessoa le antes de comecar). */
+export const TEXTO_INICIO_SOLICITACAO =
+  'Utilize as setas ou deslize o dedo para se movimentar pelo mapa e aperte Espaço ' +
+  'para pausar. Alimente a cobrinha com conteúdo para fazer mais pontos!';
+
 export const INSTRUCAO_SOLICITACAO =
   'Como jogar: setas do teclado, WASD, deslize o dedo ou use o direcional. ' +
   `Cada item fica só um tempo na tela: ${LEGENDA_ITENS}. ` +

@@ -11,7 +11,7 @@ import {
 import {
   INSTRUCAO_SOLICITACAO,
   ITENS,
-  LEGENDA_ITENS,
+  TEXTO_INICIO_SOLICITACAO,
   PELES,
   TONS_PELE,
   fraseDoFim,
@@ -498,7 +498,7 @@ export default function JogoSolicitacaoMidia({
           {estado === 'pronto' ? (
             <AvisoJogo
               titulo="SOLICITAÇÃO DE MÍDIA"
-              texto={`${LEGENDA_ITENS}. Setas, deslize, direcional ou espaço para pausar.`}
+              texto={TEXTO_INICIO_SOLICITACAO}
               acoes={[
                 <BotaoVidro key="ir" tom="principal" onClick={() => setEstado('jogando')}>
                   Começar
@@ -548,9 +548,6 @@ export default function JogoSolicitacaoMidia({
                   animation: 'entraPlacar 260ms ease-out both',
                 }}
               >
-                <span style={{ fontFamily: 'var(--font-main)', fontSize: 15, fontWeight: 800, color: '#ffe08a' }}>
-                  Gozou!
-                </span>
                 <span style={{ fontFamily: 'var(--font-main)', fontSize: 20, fontWeight: 800, color: '#ffffff', fontVariantNumeric: 'tabular-nums' }}>
                   {pontos}
                 </span>
