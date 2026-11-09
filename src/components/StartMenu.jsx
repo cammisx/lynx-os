@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { iniciaisDe, nomeDe, usePerfil } from "@/lib/perfilUsuario";
+import { CONFIRMAR_SAIR, FUNDO_MENU_INICIAR, MENU_INICIAR } from "@/lib/camadas";
 import {
   UsersIcon,
   CalendarIcon,
@@ -91,7 +92,7 @@ export default function StartMenu({ open, onClose, onOpenApp, onOpenConfig }) {
     left: "3px",
     width: "calc(100vw / 6)",
     height: "65vh",
-    zIndex: 1100,
+    zIndex: MENU_INICIAR,
     borderRadius: 14,
     background: "transparent",
     backdropFilter: "blur(24px) saturate(1.4)",
@@ -161,7 +162,7 @@ export default function StartMenu({ open, onClose, onOpenApp, onOpenConfig }) {
         style={{
           position: "fixed",
           inset: 0,
-          zIndex: 1099,
+          zIndex: FUNDO_MENU_INICIAR,
           background: "transparent",
         }}
       />
@@ -310,7 +311,7 @@ export default function StartMenu({ open, onClose, onOpenApp, onOpenConfig }) {
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 9000,
+            zIndex: CONFIRMAR_SAIR,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

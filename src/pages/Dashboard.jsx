@@ -182,6 +182,7 @@ export default function Dashboard() {
             <DesktopWidgets />
             <Taskbar
               onOpenApp={janelas.abrir}
+              proximaCamada={janelas.proximaCamada}
               itens={janelas.itens}
               janelaAtiva={janelas.ativa}
               onAlternarJanela={janelas.alternar}

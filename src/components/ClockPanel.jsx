@@ -21,6 +21,7 @@ import CobrirVagoModal from '@/components/shifts/CobrirVagoModal';
 import { CloseIcon } from '@/components/icons';
 import { MODAL_CAIXA } from '@/lib/modalStyles';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { RELOGIO_CELULAR, RELOGIO_DESKTOP } from '@/lib/camadas';
 
 const DAY_MS = 86400000;
 const REFRESH_MS = 15000;
@@ -39,7 +40,15 @@ const shortDate = (date) =>
 
 const asList = (result) => (Array.isArray(result) ? result : result?.items || []);
 
-export default function ClockPanel({ open, onClose, anchorRef, notificacoes = [], onOpenJustificativa }) {
+export default function ClockPanel({
+  open,
+  onClose,
+  notificacoes = [],
+  onOpenJustificativa,
+  /* Camada vinda do shell: o relógio abre acima das janelas e, quando uma
+     delas é clicada, ela recebe uma camada maior e vem para a frente. */
+  zIndex = RELOGIO_DESKTOP,
+}) {
   /* No celular o relógio e a agenda tomam a tela inteira, no lugar do painel
      de 700x500 que sai do canto da barra no desktop. */
   const pequeno = useIsMobile();
@@ -69,16 +78,19 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
   const [vagaAberta, setVagaAberta] = useState(null);
   const panelRef = useRef(null);
 
+  /* O painel não fecha ao clicar fora: só no Esc e no X. Clicar em outra coisa
+     apenas traz aquilo para a frente, sem interromper o que se está fazendo.
+     Com um seletor de data/hora aberto, o Esc fecha só o seletor. */
   useEffect(() => {
     if (!open) return undefined;
-    const handleDown = (event) => {
-      if (panelRef.current && panelRef.current.contains(event.target)) return;
-      if (anchorRef && anchorRef.current && anchorRef.current.contains(event.target)) return;
+    const handleKey = (event) => {
+      if (event.key !== 'Escape') return;
+      if (document.querySelector('[data-dtp-panel]')) return;
       onClose();
     };
-    document.addEventListener('mousedown', handleDown);
-    return () => document.removeEventListener('mousedown', handleDown);
-  }, [open, onClose, anchorRef]);
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [open, onClose]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -265,7 +277,7 @@ export default function ClockPanel({ open, onClose, anchorRef, notificacoes = []
         border: pequeno ? 'none' : '1px solid color-mix(in srgb, var(--c1) 22%, transparent)',
         borderRadius: pequeno ? 0 : 16,
         boxShadow: '0 12px 48px rgba(0,0,0,0.5)',
-        zIndex: pequeno ? 8400 : 1200,
+        zIndex: pequeno ? RELOGIO_CELULAR : zIndex,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',

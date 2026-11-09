@@ -445,6 +445,7 @@ export default function DateTimePicker({
         createPortal(
         <div
           ref={panelRef}
+          data-dtp-panel="true"
           style={{
             ...painelFixo,
             left: pos.left,

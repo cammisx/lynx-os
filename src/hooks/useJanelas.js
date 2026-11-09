@@ -78,6 +78,9 @@ export default function useJanelas({ ordemInicial = [], fixadasIniciais = [], ao
     itens,
     ativa: itemNaFrente(itens),
     sujas,
+    /* Camada livre do gerenciador: quem abre por cima de todas as janelas
+       (o relógio) usa isso para não nascer atrás de nenhuma delas. */
+    proximaCamada,
     abrir,
     fechar: useCallback(
       (id) => {

@@ -20,6 +20,7 @@ export default function Taskbar({
   onAbrirJanela,
   onFecharJanela,
   onMoverJanela,
+  proximaCamada,
 }) {
   const { user } = useAuth();
   const { items, naoLidas, markRead, markAllRead, reload } = useNotifications(
@@ -31,6 +32,10 @@ export default function Taskbar({
   const [now, setNow] = useState(() => new Date());
   const [menuOpen, setMenuOpen] = useState(false);
   const [clockOpen, setClockOpen] = useState(false);
+  /* Camada reservada quando o relógio abre: ele nasce na frente de todas as
+     janelas e quem for clicado depois ganha uma camada maior, vindo para a
+     frente dele sem fechá-lo. */
+  const [camadaRelogio, setCamadaRelogio] = useState(0);
   const [bellOpen, setBellOpen] = useState(false);
   const [menuJanela, setMenuJanela] = useState(null);
   const [arrastando, setArrastando] = useState(null);
@@ -215,6 +220,7 @@ export default function Taskbar({
           tabIndex={0}
           aria-label="Abrir turnos"
           onClick={() => {
+            if (!clockOpen) setCamadaRelogio(proximaCamada ? proximaCamada() : 0);
             setClockOpen((prev) => !prev);
             setBellOpen(false);
           }}
@@ -239,7 +245,7 @@ export default function Taskbar({
       <ClockPanel
         open={clockOpen}
         onClose={() => setClockOpen(false)}
-        anchorRef={clockRef}
+        zIndex={8000 + camadaRelogio}
         notificacoes={items}
         onOpenJustificativa={openNotification}
       />
