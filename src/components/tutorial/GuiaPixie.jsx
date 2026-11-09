@@ -4,9 +4,10 @@ import { useEffect, useRef } from 'react';
  * A pixie que guia o tutorial da rota /tutorial.
  *
  * O desenho vem da folha de sprites que a Chloë mandou (ver
- * scripts/extrair-pixie.py): três quadros do bote das asas, já com o fundo
- * preto virando transparência. A tira é animada por background-position em
- * steps, então não tem nada de canvas rodando.
+ * scripts/extrair-pixie.py): três quadros do bote das asas e a faixa de
+ * estrelinhas do fim da folha, tudo com o fundo preto virando transparência.
+ * As asas andam por background-position em steps; as estrelinhas ficam atrás
+ * dela piscando devagar, como poeira de luz. Nada de canvas por trás.
  *
  * Ela passeia sozinha pela área de trabalho numa senoide lenta e o balão de
  * fala vai junto, porque mora dentro do mesmo grupo que se move. Nada aqui
@@ -29,14 +30,21 @@ const ESCALA = 3;
 const LARGURA = QUADRO_LARG * ESCALA;
 const ALTURA = QUADRO_ALT * ESCALA;
 
+/* A janela de estrelinhas da folha (300x91) vira poeira de luz atrás dela. */
+const RASTROS = [
+  { largura: 132, altura: 40, x: -138, y: -14, opacidade: 0.6, duracao: 3.4, atraso: 0 },
+  { largura: 99, altura: 30, x: -96, y: 20, opacidade: 0.45, duracao: 4.3, atraso: 1.1, espelhado: true },
+  { largura: 66, altura: 20, x: -58, y: -40, opacidade: 0.38, duracao: 5.1, atraso: 2.2 },
+];
+
 const ESTILOS = `
 @keyframes pixie-quadros {
   from { background-position-x: 0; }
   to { background-position-x: -${QUADRO_LARG * QUADROS * ESCALA}px; }
 }
-@keyframes pixie-pisca {
-  0%, 100% { opacity: 0; transform: scale(0.4); }
-  45% { opacity: 0.9; transform: scale(1); }
+@keyframes pixie-rastro-pisca {
+  0%, 100% { opacity: 0.12; }
+  50% { opacity: 1; }
 }
 @keyframes pixie-balao {
   from { opacity: 0; transform: translate(-50%, -66px) scale(0.94); }
@@ -49,28 +57,32 @@ const ESTILOS = `
   animation: pixie-quadros 0.42s steps(${QUADROS}) infinite;
   filter: drop-shadow(0 0 7px rgba(240, 148, 58, 0.6)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
 }
-.pixie-pisca { animation: pixie-pisca 2.6s ease-in-out infinite; }
+.pixie-rastro {
+  background-image: url(/tutorial/pixie-brilhos.png);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  animation: pixie-rastro-pisca 3.4s ease-in-out infinite;
+}
 @media (prefers-reduced-motion: reduce) {
   .pixie-corpo { animation: none !important; }
-  .pixie-pisca { animation: none !important; opacity: 0.5; }
+  .pixie-rastro { animation: none !important; opacity: 0.3 !important; }
 }
 `;
 
-/** Estrelinha de quatro pontas: o brilho que sobra no caminho dela. */
-const Estrela = ({ tamanho, atraso, x, y }) => (
+/** Um punhado de estrelinhas da folha, piscando atrás dela. */
+const Rastro = ({ largura, altura, x, y, opacidade, duracao, atraso, espelhado }) => (
   <span
-    className="pixie-pisca"
+    className="pixie-rastro"
     style={{
       position: 'absolute',
       left: x,
       top: y,
-      width: tamanho,
-      height: tamanho,
-      background: 'var(--c1)',
-      clipPath:
-        'polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%)',
+      width: largura,
+      height: altura,
+      opacity: opacidade,
+      transform: espelhado ? 'scaleX(-1)' : 'none',
+      animationDuration: `${duracao}s`,
       animationDelay: `${atraso}s`,
-      animationDuration: `${2.6 + atraso}s`,
     }}
   />
 );
@@ -121,11 +133,10 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
         ref={grupoRef}
         style={{ position: 'absolute', left: 0, top: 0, width: 0, height: 0, willChange: 'transform' }}
       >
-        {/* brilho que fica para trás */}
-        <Estrela tamanho={6} atraso={0} x={-34} y={-18} />
-        <Estrela tamanho={4} atraso={0.7} x={24} y={-6} />
-        <Estrela tamanho={5} atraso={1.4} x={-16} y={12} />
-        <Estrela tamanho={3} atraso={1.9} x={30} y={18} />
+        {/* a poeira de luz que fica para trás */}
+        {RASTROS.map((rastro) => (
+          <Rastro key={rastro.x} {...rastro} />
+        ))}
 
         {/* corpo, apoiado no ponto do caminho */}
         <div
