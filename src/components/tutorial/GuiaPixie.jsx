@@ -50,7 +50,7 @@ const PIRUETA_SALTO = 9; // px que ela sobe no meio do giro
 /* Tamanho de um quadro na folha e o quanto ele cresce na tela. */
 const QUADRO_LARG = 104;
 const QUADRO_ALT = 96;
-const QUADROS = 9;
+const QUADROS = 26;
 /* 0,75 deixa o desenho no mesmo tamanho de antes na tela (78x72). */
 const ESCALA = 0.75;
 const LARGURA = QUADRO_LARG * ESCALA;
@@ -110,7 +110,7 @@ const ESTILOS = `
   inset: 0;
   background-image: url(/tutorial/pixie-corpo.png);
   background-size: ${LARGURA * QUADROS}px ${ALTURA}px;
-  animation: pixie-quadros 0.9s steps(${QUADROS}) infinite;
+  animation: pixie-quadros 1.2s steps(${QUADROS}) infinite;
 }
 .pixie-giro {
   left: ${(LARGURA - GIRO_LARGURA) / 2}px;
