@@ -13,7 +13,7 @@ import {
   CORES,
   COM_PREENCHIMENTO,
   FERRAMENTAS,
-  LIMITE_CORES,
+  LIMITE_CORES_CUSTOM,
   LIMITE_HISTORICO,
   TRANSPARENTE,
   baixarJpg,
@@ -165,7 +165,7 @@ export default function PaintCanvas() {
       const lista = bruto ? JSON.parse(bruto) : [];
       setCoresCustom(
         Array.isArray(lista)
-          ? lista.filter((tom) => /^#[0-9a-f]{6}$/i.test(tom)).slice(-LIMITE_CORES)
+          ? lista.filter((tom) => /^#[0-9a-f]{6}$/i.test(tom)).slice(-LIMITE_CORES_CUSTOM)
           : []
       );
     } catch {
@@ -426,7 +426,7 @@ export default function PaintCanvas() {
     if (!/^#[0-9a-f]{6}$/.test(tom)) return;
     setCoresCustom((atual) => {
       /* Passou de dez, a mais antiga sai sozinha. */
-      const lista = [...atual.filter((item) => item !== tom), tom].slice(-LIMITE_CORES);
+      const lista = [...atual.filter((item) => item !== tom), tom].slice(-LIMITE_CORES_CUSTOM);
       try {
         localStorage.setItem(chaveCores, JSON.stringify(lista));
       } catch {
@@ -1075,12 +1075,43 @@ export default function PaintCanvas() {
                 </span>
               </div>
 
+              <span style={{ fontSize: 9, letterSpacing: '0.09em', color: 'var(--c2)' }}>
+                PADRÃO
+              </span>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                {CORES.map((tom) => (
+                  <button
+                    key={`padrao-${tom}`}
+                    type="button"
+                    onClick={() => definirCor(tom)}
+                    aria-label={`Cor padrão ${tom}`}
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 5,
+                      cursor: 'pointer',
+                      background: tom,
+                      border:
+                        (alvo === 'preenchimento' ? corFundo : cor).toLowerCase() ===
+                        tom.toLowerCase()
+                          ? '2px solid var(--c1)'
+                          : '1px solid rgba(0,0,0,0.25)',
+                    }}
+                  />
+                ))}
+              </div>
+
+              <span style={{ fontSize: 9, letterSpacing: '0.09em', color: 'var(--c2)' }}>
+                SALVAS
+              </span>
+
               <button type="button" onClick={() => salvarCorCustom(corAtiva)} style={BOTAO}>
                 Salvar cor
               </button>
 
               <span style={{ fontSize: 9, lineHeight: 1.4, color: 'var(--c2)', opacity: 0.85 }}>
-                Até {LIMITE_CORES} cores salvas. Passando disso, a mais antiga sai.
+                Até {LIMITE_CORES_CUSTOM} cores salvas. Passando disso, a mais antiga sai.
               </span>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>

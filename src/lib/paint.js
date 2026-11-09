@@ -36,8 +36,10 @@ export const COM_PREENCHIMENTO = ['retangulo', 'elipse'];
 
 export const TRANSPARENTE = 'transparente';
 
-/** Quantas cores personalizadas cabem na paleta de cada pessoa. */
-export const LIMITE_CORES = 10;
+/* As CORES acima são as dez padrão: são fixas, iguais para todo mundo e nunca
+   entram na conta das personalizadas. A paleta de cada pessoa é 10 padrão +
+   até 10 personalizadas, vinte no total. */
+export const LIMITE_CORES_CUSTOM = 10;
 
 /** Quantos passos de desfazer ficam guardados. */
 export const LIMITE_HISTORICO = 15;
