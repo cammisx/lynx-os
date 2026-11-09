@@ -43,18 +43,6 @@ export function IconeCampo({ tamanho = 22 }) {
   );
 }
 
-export function IconeRebate({ tamanho = 22 }) {
-  return (
-    <svg {...caixa} width={tamanho} height={tamanho}>
-      <rect x="3" y="3.5" width="6" height="3.2" rx="1" fill="currentColor" opacity="0.75" />
-      <rect x="10.5" y="3.5" width="6" height="3.2" rx="1" fill="currentColor" opacity="0.55" />
-      <rect x="17" y="3.5" width="4" height="3.2" rx="1" fill="currentColor" opacity="0.35" />
-      <circle cx="15.5" cy="11.5" r="1.7" fill="currentColor" />
-      <rect x="7" y="18.2" width="10" height="2.6" rx="1.3" fill="currentColor" />
-    </svg>
-  );
-}
-
 export function IconePokemon({ tamanho = 22 }) {
   return (
     <svg {...caixa} width={tamanho} height={tamanho}>

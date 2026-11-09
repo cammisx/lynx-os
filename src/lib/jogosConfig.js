@@ -19,7 +19,10 @@ import { TONS_PELE } from './solicitacaoMidia.js';
    claro que o valor antigo pode nao valer mais. */
 export const VERSAO_JOGOS = 1;
 
-export const JOGOS = ['2048', 'snake', 'campo', 'breakout', 'pokemon'];
+export const JOGOS = ['2048', 'snake', 'campo', 'pokemon'];
+
+/** Jogos que sairam do ar: os recordes antigos desses nao valem mais nada. */
+const JOGOS_APOSENTADOS = ['breakout'];
 
 export const VELOCIDADES = ['lenta', 'normal', 'rapida'];
 export const GRADES = ['pequena', 'media', 'grande'];
@@ -37,8 +40,6 @@ export const LIMITES = {
   tamanho2048: [3, 6],
   campoLargura: [5, 30],
   campoAltura: [5, 20],
-  vidasBreakout: [1, 9],
-  fileirasBreakout: [3, 6],
 };
 
 export const JOGOS_PADRAO = {
@@ -48,12 +49,11 @@ export const JOGOS_PADRAO = {
   '2048': { tamanho: 4, partidas: {}, vistos: [] },
   snake: { velocidade: 'normal', grade: 'media', paredes: 'morte', pele: 'morena', pelos: false },
   campo: { dificuldade: 'facil', largura: 9, altura: 9, minas: 10 },
-  breakout: { vidas: 5, velocidade: 'normal', fileiras: 5 },
   recordes: {},
 };
 
 /** Campo minado guarda MENOR tempo; todos os outros guardam MAIOR pontuacao. */
-const MAIOR_MELHOR = { '2048': true, snake: true, breakout: true, pokemon: true, campo: false };
+const MAIOR_MELHOR = { '2048': true, snake: true, pokemon: true, campo: false };
 
 const inteiro = (valor, [min, max], padrao) => {
   const numero = Math.round(Number(valor));
@@ -80,8 +80,10 @@ const normalizarCampo = (bruto = {}) => {
 /** Recordes: numero finito e nao negativo, no maximo 200 chaves (defesa). */
 const normalizarRecordes = (bruto) => {
   if (!bruto || typeof bruto !== 'object') return {};
+  const aposentado = (chave) => JOGOS_APOSENTADOS.some((jogo) => String(chave).startsWith(`${jogo}:`) || chave === jogo);
   return Object.fromEntries(
     Object.entries(bruto)
+      .filter(([chave]) => !aposentado(chave))
       .filter(([, valor]) => Number.isFinite(Number(valor)) && Number(valor) >= 0)
       .slice(0, 200)
       .map(([chave, valor]) => [String(chave).slice(0, 60), Math.round(Number(valor))])
@@ -152,7 +154,6 @@ export const normalizarJogos = (bruto) => {
   const geral = base.geral || {};
   const j2048 = base['2048'] || {};
   const snake = base.snake || {};
-  const breakout = base.breakout || {};
 
   return {
     versao: VERSAO_JOGOS,
@@ -176,11 +177,6 @@ export const normalizarJogos = (bruto) => {
       pelos: typeof snake.pelos === 'boolean' ? snake.pelos : JOGOS_PADRAO.snake.pelos,
     },
     campo: normalizarCampo(base.campo),
-    breakout: {
-      vidas: inteiro(breakout.vidas, LIMITES.vidasBreakout, JOGOS_PADRAO.breakout.vidas),
-      velocidade: escolha(breakout.velocidade, VELOCIDADES, JOGOS_PADRAO.breakout.velocidade),
-      fileiras: inteiro(breakout.fileiras, LIMITES.fileirasBreakout, JOGOS_PADRAO.breakout.fileiras),
-    },
     recordes: normalizarRecordes(base.recordes),
   };
 };
@@ -204,10 +200,6 @@ export const chaveRecorde = (jogo, config = JOGOS_PADRAO) => {
       }
       return `campo:${campo.dificuldade || 'facil'}`;
     }
-    case 'breakout':
-      return `breakout:${c.breakout?.fileiras || 5}:${c.breakout?.velocidade || 'normal'}:${
-        c.breakout?.vidas || 5
-      }`;
     case 'pokemon':
       return 'pokemon';
     default:

@@ -1,14 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BotaoVidro, MolduraJogo, PainelConfig, escuro, formatarTempo } from '@/components/jogos/EstruturaJogo';
 import { AvisoJogo, usePausaFora } from '@/components/jogos/ControlesJogo';
+import EfeitoGozada from '@/components/jogos/EfeitoGozada';
 import { LIMITES } from '@/lib/jogosConfig';
 
 /**
- * Campo minado.
+ * EJACULACAO PRECOCE (o campo minado): venda todas as midias antes que o cara
+ * goze.
  *
- * O primeiro clique nunca explode: as minas so sao sorteadas depois dele, e a
- * casa clicada e as vizinhas ficam livres. Bandeirinha no clique direito, no
- * toque longo ou no modo bandeira (para quem esta no celular).
+ * O primeiro clique nunca explode: as bombas so sao sorteadas depois dele, e a
+ * casa clicada e as vizinhas ficam livres. A marcacao (clique direito, toque
+ * longo ou modo marcar) virou a midia vendida: um emoji de foto ou video
+ * sorteado na hora, com uma chance absurda de cair telefone, que paga 1 ponto
+ * de bonus.
+ *
+ * A bomba nao tem sprite: ao explodir, a casa fica um quadrado branco. E o fim
+ * de partida sempre leva a gozada na tela, ganhando ou perdendo, com o texto de
+ * cada resultado.
  *
  * O recorde e o MENOR tempo de conclusao daquela dificuldade. Campo
  * personalizado tem recorde proprio, porque o tamanho muda tudo.
@@ -16,7 +24,22 @@ import { LIMITES } from '@/lib/jogosConfig';
 
 const CORES = ['var(--c2)', 'var(--info)', 'var(--ok)', 'var(--erro)', 'var(--aviso)', 'var(--c1)'];
 
-const casaVazia = () => ({ mina: false, vizinhos: 0, aberta: false, bandeira: false, explodida: false });
+/** Sprite de cada midia marcada. O telefone e o easter egg. */
+const MIDIAS = { foto: '📷', video: '🎥', telefone: '📱' };
+
+/** 0,000000000000042% de cair telefone: praticamente nunca, mas paga 1 ponto. */
+const CHANCE_TELEFONE = 0.000000000000042 / 100;
+
+const sortearMidia = () =>
+  Math.random() < CHANCE_TELEFONE ? 'telefone' : Math.random() < 0.5 ? 'foto' : 'video';
+
+const casaVazia = () => ({
+  mina: false,
+  vizinhos: 0,
+  aberta: false,
+  bandeira: false,
+  midia: null,
+});
 
 const montar = (largura, altura) =>
   Array.from({ length: largura * altura }, () => casaVazia());
@@ -75,6 +98,7 @@ export default function JogoCampoMinado({
   const [estado, setEstado] = useState('pronto');
   const [segundos, setSegundos] = useState(0);
   const [bandeira, setBandeira] = useState(false);
+  const [bonus, setBonus] = useState(0);
   const [painel, setPainel] = useState(false);
 
   const pressao = useRef(null);
@@ -86,6 +110,7 @@ export default function JogoCampoMinado({
     setEstado('pronto');
     setSegundos(0);
     setBandeira(false);
+    setBonus(0);
   }, [largura, altura]);
 
   useEffect(() => {
@@ -126,7 +151,7 @@ export default function JogoCampoMinado({
         const proximas = tabuleiro.map((casa) => ({ ...casa }));
 
         if (proximas[indice].mina) {
-          proximas[indice] = { ...proximas[indice], aberta: true, explodida: true };
+          proximas[indice] = { ...proximas[indice], aberta: true };
           proximas.forEach((casa) => {
             if (casa.mina) casa.aberta = true;
           });
@@ -165,13 +190,23 @@ export default function JogoCampoMinado({
   const marcar = useCallback(
     (indice) => {
       if (estado === 'ganhou' || estado === 'perdeu') return;
+      const atual = casas[indice];
+      if (!atual || atual.aberta) return;
+      /* Cada marcacao sorteia de novo o sprite: quase sempre foto ou video.
+         O sorteio acontece AQUI, fora do setCasas, para o bonus do telefone
+         nao depender de quando o React resolve o estado. */
+      const vendendo = !atual.bandeira;
+      const midia = vendendo ? sortearMidia() : atual.midia;
+
       setCasas((anteriores) =>
-        anteriores.map((casa, posicao) =>
-          posicao === indice && !casa.aberta ? { ...casa, bandeira: !casa.bandeira } : casa
-        )
+        anteriores.map((casa, posicao) => {
+          if (posicao !== indice || casa.aberta) return casa;
+          return { ...casa, bandeira: !casa.bandeira, midia };
+        })
       );
+      if (vendendo && midia === 'telefone') setBonus((valor) => valor + 1);
     },
-    [estado]
+    [casas, estado]
   );
 
   const tocar = useCallback(
@@ -246,7 +281,7 @@ export default function JogoCampoMinado({
 
   return (
     <MolduraJogo
-      titulo="Campo minado"
+      titulo="EJACULAÇÃO PRECOCE"
       aoVoltar={aoVoltar}
       recorde={recorde}
       rotuloRecorde="tempo"
@@ -255,33 +290,41 @@ export default function JogoCampoMinado({
       painel={
         painel ? (
           <PainelConfig
-            titulo="Campo minado"
+            titulo="Ejaculação Precoce"
             campos={campos}
             valores={valores}
             aoMudar={aoMudar}
             aoFechar={() => setPainel(false)}
             aoRestaurar={aoRestaurar}
             aoApagarRecordes={aoApagarRecordes}
-            nota={`${largura}x${altura} com ${minas} minas. O primeiro clique nunca explode.`}
+            nota={`${largura}x${altura} com ${minas} mídias para vender. O primeiro clique nunca explode.`}
           />
         ) : null
       }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', minHeight: 0 }}>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 10, width: '100%', minHeight: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: 'var(--font-main)', fontSize: 17, fontWeight: 800, color: 'var(--c1)', fontVariantNumeric: 'tabular-nums' }}>
             {formatarTempo(segundos)}
           </span>
           <span style={{ fontFamily: 'var(--font-main)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: escuro(50) }}>
-            minas {Math.max(0, minas - bandeiras)}
+            mídias {Math.max(0, minas - bandeiras)}
           </span>
+          {bonus > 0 ? (
+            <span
+              title="Bônus dos telefones vendidos"
+              style={{ fontFamily: 'var(--font-main)', fontSize: 10, fontWeight: 800, color: '#ffe08a' }}
+            >
+              ★ +{bonus} {bonus === 1 ? 'ponto' : 'pontos'}
+            </span>
+          ) : null}
           <div style={{ flex: 1 }} />
           <BotaoVidro
             tom={bandeira ? 'principal' : 'normal'}
             onClick={() => setBandeira((modo) => !modo)}
-            title="Modo bandeira"
+            title="Modo marcar"
           >
-            ⚑ bandeira
+            📷 marcar
           </BotaoVidro>
           <BotaoVidro onClick={reiniciar}>Nova</BotaoVidro>
         </div>
@@ -324,14 +367,16 @@ export default function JogoCampoMinado({
                     height: ladoCasa,
                     borderRadius: 5,
                     border: `1px solid ${fechada ? escuro(16) : escuro(6)}`,
-                    background: casa.explodida
-                      ? 'color-mix(in srgb, var(--erro) 55%, transparent)'
-                      : casa.aberta
-                        ? 'color-mix(in srgb, var(--c8) 60%, transparent)'
-                        : `color-mix(in srgb, var(--c1) ${casa.bandeira ? 22 : 9}%, transparent)`,
+                    /* Bomba nao tem sprite: a casa inteira vira um quadrado branco. */
+                    background:
+                      casa.aberta && casa.mina
+                        ? '#ffffff'
+                        : casa.aberta
+                          ? 'color-mix(in srgb, var(--c8) 60%, transparent)'
+                          : `color-mix(in srgb, var(--c1) ${casa.bandeira ? 22 : 9}%, transparent)`,
                     color: casa.mina ? 'var(--erro)' : corDoNumero(casa.vizinhos),
                     fontFamily: 'var(--font-main)',
-                    fontSize: Math.max(10, ladoCasa * 0.46),
+                    fontSize: Math.max(10, ladoCasa * 0.5),
                     fontWeight: 800,
                     display: 'flex',
                     alignItems: 'center',
@@ -342,34 +387,17 @@ export default function JogoCampoMinado({
                     lineHeight: 1,
                   }}
                 >
-                  {casa.bandeira && fechada ? '⚑' : casa.aberta && casa.mina ? '✷' : casa.aberta && casa.vizinhos ? casa.vizinhos : ''}
+                  {casa.bandeira && fechada
+                    ? MIDIAS[casa.midia || 'foto']
+                    : casa.aberta && casa.mina
+                      ? ''
+                      : casa.aberta && casa.vizinhos
+                        ? casa.vizinhos
+                        : ''}
                 </button>
               );
             })}
 
-            {estado === 'ganhou' ? (
-              <AvisoJogo
-                tom="vitoria"
-                titulo="Limpou tudo!"
-                texto={`${formatarTempo(segundos)} nesta dificuldade.`}
-                acoes={[
-                  <BotaoVidro key="nova" tom="principal" onClick={reiniciar}>
-                    Outra
-                  </BotaoVidro>,
-                ]}
-              />
-            ) : null}
-            {estado === 'perdeu' ? (
-              <AvisoJogo
-                titulo="Boom"
-                texto="Essa casa tinha mina. Tenta de novo."
-                acoes={[
-                  <BotaoVidro key="nova" tom="principal" onClick={reiniciar}>
-                    De novo
-                  </BotaoVidro>,
-                ]}
-              />
-            ) : null}
             {estado === 'pausado' ? (
               <AvisoJogo
                 titulo="Pausado"
@@ -384,8 +412,31 @@ export default function JogoCampoMinado({
         </div>
 
         <p style={{ margin: 0, fontFamily: 'var(--font-main)', fontSize: 9.5, color: escuro(45), textAlign: 'center' }}>
-          Toque longo ou clique direito marca bandeira
+          Toque longo ou clique direito vende a mídia
         </p>
+
+        {estado === 'ganhou' ? (
+          <EfeitoGozada
+            titulo="Arrasou, vendeu tudo!"
+            texto={`${formatarTempo(segundos)} nesta dificuldade.`}
+            acao={
+              <BotaoVidro tom="principal" onClick={reiniciar}>
+                Outra
+              </BotaoVidro>
+            }
+          />
+        ) : null}
+
+        {estado === 'perdeu' ? (
+          <EfeitoGozada
+            titulo="Desculpa, é que vc é muito gostosa"
+            acao={
+              <BotaoVidro tom="principal" onClick={reiniciar}>
+                De novo
+              </BotaoVidro>
+            }
+          />
+        ) : null}
       </div>
     </MolduraJogo>
   );

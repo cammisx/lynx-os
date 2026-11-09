@@ -14,11 +14,10 @@ import {
   recordeDaConfig,
 } from '@/lib/jogosConfig';
 import { IconeEngrenagem, PainelConfig, dourado, escuro, formatarTempo } from '@/components/jogos/EstruturaJogo';
-import { Icone2048, IconeCampo, IconeCobrinha, IconePokemon, IconeRebate } from '@/components/jogos/icones';
+import { Icone2048, IconeCampo, IconeCobrinha, IconePokemon } from '@/components/jogos/icones';
 import Jogo2048 from '@/components/jogos/Jogo2048';
 import JogoSolicitacaoMidia from '@/components/jogos/JogoSolicitacaoMidia';
 import JogoCampoMinado from '@/components/jogos/JogoCampoMinado';
-import JogoBreakout from '@/components/jogos/JogoBreakout';
 import QuemEhEssePokemon from '@/components/jogos/QuemEhEssePokemon';
 
 /**
@@ -51,19 +50,11 @@ const JOGOS = [
   },
   {
     id: 'campo',
-    nome: 'Campo minado',
-    dica: 'Cuidado onde pisa',
+    nome: 'EJACULAÇÃO PRECOCE',
+    dica: 'Tente vender todas as mídias antes que o cara goze',
     Icone: IconeCampo,
     Componente: JogoCampoMinado,
     rotuloRecorde: 'tempo',
-  },
-  {
-    id: 'breakout',
-    nome: 'Rebate-bola',
-    dica: 'Quebre todos os tijolos',
-    Icone: IconeRebate,
-    Componente: JogoBreakout,
-    rotuloRecorde: 'recorde',
   },
   {
     id: 'pokemon',
