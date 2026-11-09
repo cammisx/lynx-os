@@ -15,6 +15,9 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose, 
   useEffect(() => {
     const handleDown = (event) => {
       if (panelRef.current && panelRef.current.contains(event.target)) return;
+      /* A camada da Pixie cobre a tela no tutorial: o "continua" dela não é
+         clique fora, senão o painel fechava a cada passo. */
+      if (event.target.closest?.('[data-pixie]')) return;
       if (anchorRef && anchorRef.current && anchorRef.current.contains(event.target)) return;
       onClose();
     };
@@ -99,6 +102,7 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose, 
           <button
             type="button"
             aria-label="Abrir as configurações de notificação"
+            data-pixie-alvo="notificacoes-config"
             title="Configurações de notificação"
             onClick={() => {
               onClose();
@@ -146,6 +150,7 @@ export default function NotificationsPanel({ items, anchorRef, onOpen, onClose, 
       </div>
 
       <div
+        data-pixie-alvo="notificacoes-abas"
         style={{
           display: 'flex',
           alignItems: 'center',

@@ -99,6 +99,9 @@ export default function JustificativaModal({ notification, onClose, onSaved }) {
 
   return createPortal(
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Justificativa do turno"
       style={{
         position: 'fixed',
         inset: 0,

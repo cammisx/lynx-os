@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GuiaPixie from '@/components/tutorial/GuiaPixie';
 import MenuFlutuante from '@/components/desktop/MenuFlutuante';
@@ -20,6 +20,10 @@ import {
   lugarDoElemento,
 } from '@/lib/pixieTutoriais';
 import useTourMesa from '@/lib/useTourMesa';
+import useTourAvisos from '@/lib/useTourAvisos';
+import { definirAvisoDoPasseio } from '@/lib/pixieAvisos';
+import { garantirAvisoDoPasseio } from '@/lib/notificacoes';
+import { base44 } from '@/api/base44Client';
 import { posicaoAoRedorDaArea } from '@/lib/destaquePreferencias';
 
 /**
@@ -89,15 +93,30 @@ export default function TutorialRoteiro() {
   /* Terminada a explicação, o balão sai (no clique ou sozinho) e ela fica só
      flutuando na tela, até alguém chamar pelo menu dela. */
   const [descansando, setDescansando] = useState(false);
-  const tour = useTourMesa({
-    /* Terminada a primeira explicação, a pessoa cai no Início e ela fica
+  /* O passeio das notificações vem depois do das Preferências, na mesma
+     janela de Configurações. Quem termina o primeiro começa o segundo. */
+  /* O aviso que o passeio vai abrir: o de resposta que já existe (quem foi
+     convidado com turno marcado chega com o dele), ou um de boas-vindas criado
+     na hora, para conta sem nenhum. */
+  const prepararAviso = useCallback(async () => {
+    const aviso = await garantirAvisoDoPasseio(base44, user);
+    definirAvisoDoPasseio(aviso);
+  }, [user]);
+
+  const avisos = useTourAvisos({
+    /* Terminada a explicação inteira, a pessoa cai no Início e ela fica
        flutuando em silêncio até alguém chamar. */
     aoTerminar: () => {
       salvarTutorialPixieVisto();
       marcarPixieEmEspera();
       navegar(ROTA_DEPOIS, { replace: true });
     },
+    aoPrepararAviso: prepararAviso,
   });
+  const tour = useTourMesa({
+    aoTerminar: () => avisos.iniciar(),
+  });
+
   const [encerrado, setEncerrado] = useState(false);
   /* Quando a pessoa clica nela em vez de apontar um lugar: ela se explica. */
   const [sobre, setSobre] = useState(null);
@@ -147,12 +166,13 @@ export default function TutorialRoteiro() {
   const fala = useMemo(() => {
     if (saida) return saida;
     if (descansando) return null;
+    if (avisos.emTour) return avisos.fala || FALAS[passo];
     if (tour.emTour) return tour.fala || FALAS[passo];
     if (sobre !== null) return SOBRE_PIXIE[sobre];
     if (resposta) return resposta;
     if (apontando) return CHAMADO_PARA_PERGUNTAR;
     return FALAS[passo];
-  }, [saida, descansando, tour, sobre, resposta, apontando, passo]);
+  }, [saida, descansando, avisos, tour, sobre, resposta, apontando, passo]);
 
   /* O clique na tela: aponta o lugar, fecha uma resposta antiga ou segue o
      roteiro. O menu aberto não deixa o clique vazar para cá. */
@@ -189,6 +209,12 @@ export default function TutorialRoteiro() {
       return;
     }
 
+    /* No passeio das notificações o clique é o "continua" só quando ela está
+       explicando: nos passos de espera quem age é a pessoa. */
+    if (avisos.emTour) {
+      if (!avisos.esperando) avisos.avancar();
+      return;
+    }
     /* No passeio da mesa o clique é o "continua". */
     if (tour.emTour) {
       tour.avancar();
@@ -232,17 +258,23 @@ export default function TutorialRoteiro() {
     if (proximo) setPasso(proximo);
   };
 
+  /* Durante um passeio, quem manda na captura é o passeio: no das
+     notificações existem passos em que quem age é a pessoa (abrir o sino,
+     abrir o aviso) e aí a tela tem de ficar livre. Era o `passo === 'atalho'`
+     do roteiro que deixava a camada ligada e engolia esses cliques. */
   const capturarClique =
     !encerrado &&
     !saida &&
     !descansando &&
     !menu &&
-    (apontando ||
-      tour.emTour ||
-      sobre !== null ||
-      Boolean(resposta) ||
-      passo === 'atalho' ||
-      SAI_NO_CLIQUE.includes(passo));
+    (avisos.emTour
+      ? !avisos.esperando
+      : tour.emTour ||
+        apontando ||
+        sobre !== null ||
+        Boolean(resposta) ||
+        passo === 'atalho' ||
+        SAI_NO_CLIQUE.includes(passo));
 
   const enviarNome = async (evento) => {
     evento.preventDefault();
@@ -268,6 +300,7 @@ export default function TutorialRoteiro() {
     setResposta(null);
     setSobre(null);
     tour.parar();
+    avisos.parar();
     salvarTutorialPixieVisto();
     setSaida(fala);
   };
@@ -304,7 +337,13 @@ export default function TutorialRoteiro() {
         capturarClique={capturarClique}
         comemorando={comemorando}
         /* No passeio das Preferências ela vai para o lado do bloco em destaque. */
-        ancora={tour.destaque ? posicaoAoRedorDaArea(tour.destaque.caixa) : null}
+        ancora={
+          avisos.caixa
+            ? posicaoAoRedorDaArea(avisos.caixa)
+            : tour.destaque
+              ? posicaoAoRedorDaArea(tour.destaque.caixa)
+              : null
+        }
         aoClique={aoCliqueNaTela}
         aoMenu={({ x, y }) => setMenu({ x, y })}
       >

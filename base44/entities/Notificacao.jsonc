@@ -28,7 +28,8 @@
         "mencao",
         "vaga_coberta",
         "saida_automatica",
-        "saida_pendente"
+        "saida_pendente",
+        "boas_vindas"
       ],
       "enumColors": [
         "yellow",

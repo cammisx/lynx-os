@@ -72,6 +72,42 @@ export const medirArea = (area) => {
   };
 };
 
+/**
+ * A mesma moldura, agora em qualquer elemento da tela.
+ *
+ * As Preferências são medidas por bloco (o rótulo e os irmãos dele), mas o sino,
+ * o painel de avisos e uma linha de notificação são elementos soltos: aqui a
+ * medida é a caixa deles com uma folga curta, presa na tela.
+ */
+export const medirSeletor = (seletor) => {
+  if (typeof document === 'undefined' || !seletor) return null;
+  const elemento = document.querySelector(seletor);
+  if (!elemento) return null;
+  const caixa = elemento.getBoundingClientRect();
+  if (!caixa.width && !caixa.height) return null;
+
+  const folga = 6;
+  const esquerda = Math.max(caixa.left - folga, 2);
+  const topo = Math.max(caixa.top - folga, 2);
+  const direita = Math.min(caixa.right + folga, window.innerWidth - 3);
+  const base = Math.min(caixa.bottom + folga, window.innerHeight - 3);
+
+  return {
+    left: esquerda,
+    top: topo,
+    width: Math.max(28, direita - esquerda),
+    height: Math.max(22, base - topo),
+  };
+};
+
+/* Acende a moldura num elemento solto (sino, painel, linha de aviso). */
+export const destacarSeletor = (seletor) => {
+  if (typeof window === 'undefined') return null;
+  pedidoAtual += 1;
+  window.dispatchEvent(new CustomEvent(EVENTO_DESTAQUE, { detail: { seletor } }));
+  return medirSeletor(seletor);
+};
+
 /* Onde a janela precisa parar para o bloco caber na vista. */
 const rolagemIdeal = (rolagem, bloco) => {
   const janela = rolagem.getBoundingClientRect();

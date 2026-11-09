@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { EVENTO_DESTAQUE, medirArea } from '@/lib/destaquePreferencias';
+import { EVENTO_DESTAQUE, medirArea, medirSeletor } from '@/lib/destaquePreferencias';
 
 /**
  * A moldura dourada em volta da área das Preferências que a Pixie está
@@ -11,21 +11,26 @@ import { EVENTO_DESTAQUE, medirArea } from '@/lib/destaquePreferencias';
  */
 export default function DestaquePreferencias() {
   const [area, setArea] = useState(null);
+  /* Elemento solto (sino, painel de avisos, linha): medido pela caixa dele. */
+  const [seletor, setSeletor] = useState(null);
   const [caixa, setCaixa] = useState(null);
 
   useEffect(() => {
-    const ouvir = (evento) => setArea(evento.detail?.area || null);
+    const ouvir = (evento) => {
+      setArea(evento.detail?.area || null);
+      setSeletor(evento.detail?.seletor || null);
+    };
     window.addEventListener(EVENTO_DESTAQUE, ouvir);
     return () => window.removeEventListener(EVENTO_DESTAQUE, ouvir);
   }, []);
 
   useEffect(() => {
-    if (!area) {
+    if (!area && !seletor) {
       setCaixa(null);
       return undefined;
     }
 
-    const medir = () => setCaixa(medirArea(area) || null);
+    const medir = () => setCaixa((seletor ? medirSeletor(seletor) : medirArea(area)) || null);
     medir();
     /* A janela pode estar abrindo ainda: mede mais uma vez. */
     const atrasos = [160, 420].map((ms) => setTimeout(medir, ms));
@@ -37,7 +42,7 @@ export default function DestaquePreferencias() {
       window.removeEventListener('resize', medir);
       document.removeEventListener('scroll', medir, true);
     };
-  }, [area]);
+  }, [area, seletor]);
 
   if (!caixa) return null;
 

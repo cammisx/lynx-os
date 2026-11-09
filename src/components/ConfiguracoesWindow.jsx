@@ -434,6 +434,7 @@ export default function ConfiguracoesWindow({ onClose }) {
               paddingRight: 2,
             }}
           >
+            <div data-pref-area="som">
             <BlocoSom
               titulo="Som das notificações"
               dica={
@@ -452,8 +453,10 @@ export default function ConfiguracoesWindow({ onClose }) {
               rodape={`Vale só para o ${pequeno ? 'celular' : 'computador'}. O outro aparelho tem o som dele.`}
               extra={botaoEnviarAudio}
             />
+            </div>
 
             <div
+              data-pref-area="audios"
               style={{
                 display: 'flex',
                 flexDirection: 'column',

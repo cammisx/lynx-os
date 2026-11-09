@@ -143,6 +143,9 @@ export default function ConfirmarTurnoModal({ notification, chatterNome, onClose
 
   return createPortal(
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Confirmar turno"
       style={{
         position: 'fixed',
         inset: 0,

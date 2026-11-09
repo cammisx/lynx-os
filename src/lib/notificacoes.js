@@ -3,6 +3,95 @@ import { nomeDaPessoa } from '@/lib/pessoas';
 import notificarAdminsSolicitacao, { listarAdmins } from '@/lib/solicitacoes';
 import { nextOccurrence } from '@/lib/aceite';
 import { acharMencoes, primeiroNome, resumoDaMensagem } from '@/lib/mencoes';
+/* Os tipos que abrem uma janela de resposta ao clicar. Servem para o passeio da
+   Pixie saber se o aviso da frente tem ações para explicar. */
+export const TIPOS_COM_RESPOSTA = [
+  'novo_shift',
+  'turno_esquecido',
+  'cutucada',
+  'folga_pendente',
+  'horario_disponivel',
+  'venda_pendente',
+  'saida_automatica',
+  'saida_pendente',
+];
+
+const comoLista = (resposta) =>
+  Array.isArray(resposta) ? resposta : Array.isArray(resposta?.items) ? resposta.items : [];
+
+/**
+ * Garante um aviso para o passeio das notificações.
+ *
+ * Conta nova chega sem nenhum aviso: as notificações nascem de evento real
+ * (turno, folga, vaga, cutucada). Para o primeiro acesso ter o que abrir, se
+ * não houver nenhum aviso com resposta esperando a pessoa, cria um de
+ * boas-vindas. O que ela abrir no passeio sai da lista na hora.
+ */
+export const garantirAvisoDoPasseio = async (base44, user) => {
+  if (!user?.id) return null;
+
+  let lista = [];
+  try {
+    const resposta = await base44.entities.Notificacao.filter(
+      { usuario_id: user.id },
+      '-created_date',
+      40,
+      0
+    );
+    lista = comoLista(resposta);
+  } catch (falha) {
+    console.warn('[Notificacao] não consegui ler os avisos do passeio', falha);
+  }
+
+  const comResposta = lista.find((item) => isNaoLida(item) && TIPOS_COM_RESPOSTA.includes(item.tipo));
+  if (comResposta) return comResposta;
+
+  /* Um que não pede resposta (menção, vaga coberta) serve de exemplo, mas o
+     passeio prefere o de boas-vindas: ele é feito para isso. */
+  const exemplo = lista.find((item) => isNaoLida(item));
+  if (exemplo) return exemplo;
+
+  /* Quem foi convidado já com turno marcado chega COM aviso: o convite é
+     aplicado na sessão e acende o de turno novo. Se ele ainda não apareceu,
+     dá um respiro e olha de novo antes de criar o de boas-vindas. */
+  await new Promise((resolver) => setTimeout(resolver, 1400));
+  try {
+    const resposta = await base44.entities.Notificacao.filter(
+      { usuario_id: user.id },
+      '-created_date',
+      40,
+      0
+    );
+    const depois = comoLista(resposta);
+    const chegou = depois.find(
+      (item) => isNaoLida(item) && TIPOS_COM_RESPOSTA.includes(item.tipo)
+    );
+    if (chegou) return chegou;
+    const outro = depois.find((item) => isNaoLida(item));
+    if (outro) return outro;
+  } catch (falha) {
+    console.warn('[Notificacao] releitura dos avisos do passeio falhou', falha);
+  }
+
+  try {
+    const criada = await base44.entities.Notificacao.create({
+      usuario_id: user.id,
+      titulo: 'Boas-vindas à Lynx',
+      mensagem:
+        'Este é o lugar onde o sistema te avisa: turno, ponto, folga, vaga livre e menção. Abrir um aviso mostra o que ele pede e os botões de resposta.',
+      tipo: 'boas_vindas',
+      status: 'pendente',
+      lida: false,
+      criado_por_automacao: false,
+    });
+    emitNotificationsChanged();
+    return criada || null;
+  } catch (falha) {
+    console.warn('[Notificacao] não consegui criar o aviso de boas-vindas', falha);
+    return null;
+  }
+};
+
 /** Não lida = ainda não abriu e não está resolvida. */
 export const isNaoLida = (notification) =>
   Boolean(notification) && !notification.lida && notification.status !== 'resolvida';

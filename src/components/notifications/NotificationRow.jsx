@@ -27,6 +27,10 @@ export default function NotificationRow({ notification, read, onOpen }) {
   return (
     <button
       type="button"
+      /* O passeio das notificações acha a linha do aviso que escolheu abrir. */
+      data-pixie-alvo="notificacao"
+      data-notif-id={notification.id}
+      data-tipo={notification.tipo || ''}
       onClick={() => onOpen(notification)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

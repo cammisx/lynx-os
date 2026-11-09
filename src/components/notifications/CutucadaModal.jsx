@@ -60,6 +60,9 @@ export default function CutucadaModal({ notificacao, onClose }) {
 
   return createPortal(
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Cutucada"
       style={{
         position: 'fixed',
         inset: 0,
