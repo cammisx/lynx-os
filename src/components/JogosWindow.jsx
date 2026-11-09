@@ -7,8 +7,10 @@ import { salvarJogosConfig, usePerfil } from '@/lib/perfilUsuario';
 import {
   JOGOS_PADRAO,
   apagarRecordes,
+  gravarPartida,
   gravarRecorde,
   normalizarJogos,
+  partidaDoJogo,
   recordeDaConfig,
 } from '@/lib/jogosConfig';
 import { IconeEngrenagem, PainelConfig, dourado, escuro, formatarTempo } from '@/components/jogos/EstruturaJogo';
@@ -125,6 +127,17 @@ export default function JogosWindow({ onClose }) {
     [aplicar]
   );
 
+  /* Partida em andamento (tabuleiro, pontos e quando foi mexida). Nulo apaga
+     o que estava salvo, como quando a pessoa comeca de novo. */
+  const salvarPartida = useCallback(
+    (id, partida) => {
+      const atual = configRef.current;
+      const novo = gravarPartida(atual, id, atual[id]?.tamanho, partida);
+      if (novo !== atual) aplicar(novo);
+    },
+    [aplicar]
+  );
+
   const limparRecordes = useCallback(() => {
     aplicar(apagarRecordes(configRef.current));
   }, [aplicar]);
@@ -154,6 +167,8 @@ export default function JogosWindow({ onClose }) {
               valores={config[jogoAberto.id]}
               geral={config.geral}
               recorde={recordeDaConfig(jogoAberto.id, config)}
+              partida={partidaDoJogo(config, jogoAberto.id, config[jogoAberto.id]?.tamanho)}
+              aoPartida={(partida) => salvarPartida(jogoAberto.id, partida)}
               aoRecorde={(valor) => registrar(jogoAberto.id, valor)}
               aoMudar={(parcial) => mudarJogo(jogoAberto.id, parcial)}
               aoVoltar={() => setAberto(null)}

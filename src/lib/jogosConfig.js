@@ -43,7 +43,7 @@ export const JOGOS_PADRAO = {
   versao: VERSAO_JOGOS,
   /* `direcional`: mostra as setas de vidro na tela (util no celular). */
   geral: { direcional: true, pausarFora: true },
-  '2048': { tamanho: 4, meta: 2048 },
+  '2048': { tamanho: 4, meta: 2048, partidas: {} },
   snake: { velocidade: 'normal', grade: 'media', paredes: 'morte' },
   campo: { dificuldade: 'facil', largura: 9, altura: 9, minas: 10 },
   breakout: { vidas: 5, velocidade: 'normal', fileiras: 5 },
@@ -86,6 +86,48 @@ const normalizarRecordes = (bruto) => {
   );
 };
 
+/* ------------------------- partidas em andamento ------------------------- */
+
+/**
+ * Uma partida salva do 2048: o tabuleiro inteiro, os pontos e quando foi
+ * mexida pela ultima vez. Só entra o que bate com o tamanho da grade e com
+ * numeros que o jogo sabe desenhar; qualquer outra coisa e descartada.
+ */
+const POTENCIA_DE_DOIS = (valor) => valor === 0 || (valor > 0 && (valor & (valor - 1)) === 0);
+
+const normalizarPartida = (bruto, tamanho) => {
+  const celulas = Array.isArray(bruto?.celulas) ? bruto.celulas.map(Number) : null;
+  if (!celulas || celulas.length !== tamanho * tamanho) return null;
+  if (celulas.some((valor) => !Number.isFinite(valor) || valor < 0 || !POTENCIA_DE_DOIS(valor))) {
+    return null;
+  }
+  const pontos = Number(bruto?.pontos);
+  if (!Number.isFinite(pontos) || pontos < 0) return null;
+  const atualizado = Number(bruto?.atualizado);
+  return {
+    celulas,
+    pontos: Math.round(pontos),
+    atualizado: Number.isFinite(atualizado) ? Math.round(atualizado) : 0,
+  };
+};
+
+/** Chave de cada partida: o tamanho do tabuleiro (4x4 nao apaga o 6x6). */
+const normalizarPartidas = (bruto) => {
+  if (!bruto || typeof bruto !== 'object') return {};
+  const saida = {};
+  Object.entries(bruto)
+    .slice(0, 8)
+    .forEach(([chave, valor]) => {
+      const tamanho = Math.round(Number(chave));
+      if (!Number.isFinite(tamanho) || tamanho < LIMITES.tamanho2048[0] || tamanho > LIMITES.tamanho2048[1]) {
+        return;
+      }
+      const partida = normalizarPartida(valor, tamanho);
+      if (partida) saida[String(tamanho)] = partida;
+    });
+  return saida;
+};
+
 /**
  * Recebe o que veio do banco (ou nada) e devolve uma configuracao completa,
  * com todo valor fora da regua voltando para o padrao. Nunca lanca.
@@ -108,6 +150,7 @@ export const normalizarJogos = (bruto) => {
     '2048': {
       tamanho: inteiro(j2048.tamanho, LIMITES.tamanho2048, JOGOS_PADRAO['2048'].tamanho),
       meta: inteiro(j2048.meta, LIMITES.meta2048, JOGOS_PADRAO['2048'].meta),
+      partidas: normalizarPartidas(j2048.partidas),
     },
     snake: {
       velocidade: escolha(snake.velocidade, VELOCIDADES, JOGOS_PADRAO.snake.velocidade),
@@ -188,6 +231,39 @@ export const gravarRecorde = (config, jogo, valor) => {
 
 export const apagarRecordes = (config) => ({ ...normalizarJogos(config), recordes: {} });
 
+/* -------------------------- partidas em andamento -------------------------- */
+
+/** A partida salva de um jogo no tamanho em uso, ou null se nao houver. */
+export const partidaDoJogo = (config, jogo, tamanho) => {
+  if (jogo !== '2048') return null;
+  const salva = (config || JOGOS_PADRAO)['2048']?.partidas?.[String(tamanho)];
+  return salva || null;
+};
+
+/**
+ * Grava (ou apaga, com `partida` nulo) o tabuleiro em andamento.
+ * Devolve o MESMO objeto quando nada mudou, para quem chama nao escrever no
+ * banco a toa.
+ */
+export const gravarPartida = (config, jogo, tamanho, partida) => {
+  if (jogo !== '2048') return config;
+  const atual = normalizarJogos(config);
+  const chave = String(tamanho);
+  const partidas = { ...(atual['2048']?.partidas || {}) };
+
+  if (!partida) {
+    if (!partidas[chave]) return config;
+    delete partidas[chave];
+  } else {
+    const limpa = normalizarPartida(partida, tamanho);
+    if (!limpa) return config;
+    if (JSON.stringify(partidas[chave] || null) === JSON.stringify(limpa)) return config;
+    partidas[chave] = limpa;
+  }
+
+  return normalizarJogos({ ...atual, '2048': { ...atual['2048'], partidas } });
+};
+
 /* --------------------------- ponte com o banco --------------------------- */
 
 /** Le a string gravada no User. Campo vazio ou lixo cai no padrao. */
@@ -232,5 +308,21 @@ export const mesclarJogos = (local, remoto) => {
       : valor;
   });
 
-  return { ...doBanco, recordes };
+  /* Partidas em andamento: vale a que foi mexida por ultimo (empate fica com
+     a de mais pontos). Assim abrir no celular continua de onde parou no PC. */
+  const partidas = { ...(doBanco['2048']?.partidas || {}) };
+  Object.entries(doLocal['2048']?.partidas || {}).forEach(([chave, partida]) => {
+    const outra = partidas[chave];
+    const maisNova =
+      !outra ||
+      partida.atualizado > outra.atualizado ||
+      (partida.atualizado === outra.atualizado && partida.pontos > outra.pontos);
+    if (maisNova) partidas[chave] = partida;
+  });
+
+  return {
+    ...doBanco,
+    '2048': { ...doBanco['2048'], partidas },
+    recordes,
+  };
 };

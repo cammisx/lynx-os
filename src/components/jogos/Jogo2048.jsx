@@ -97,69 +97,172 @@ const estiloCasa = (valor, n) => {
   };
 };
 
-export default function Jogo2048({ valores, geral, recorde, aoRecorde, aoMudar, aoVoltar, aoRestaurar, aoApagarRecordes }) {
+export default function Jogo2048({
+  valores,
+  geral,
+  recorde,
+  partida,
+  aoRecorde,
+  aoPartida,
+  aoMudar,
+  aoVoltar,
+  aoRestaurar,
+  aoApagarRecordes,
+}) {
   const n = valores.tamanho;
   const meta = valores.meta;
 
-  const [celulas, setCelulas] = useState(() => comecar(n));
-  const [pontos, setPontos] = useState(0);
+  /* A partida salva so vale se for do mesmo tamanho de tabuleiro: um 4x4 nao
+     pode aparecer num 6x6. */
+  const partidaSalva = partida && partida.celulas?.length === n * n ? partida : null;
+
+  const [celulas, setCelulas] = useState(() =>
+    partidaSalva ? partidaSalva.celulas : comecar(n)
+  );
+  const [pontos, setPontos] = useState(() => (partidaSalva ? partidaSalva.pontos : 0));
   const [fim, setFim] = useState(null);
-  const [metaBatida, setMetaBatida] = useState(false);
+  const [metaBatida, setMetaBatida] = useState(() =>
+    Boolean(partidaSalva && partidaSalva.celulas.some((valor) => valor >= meta))
+  );
   const [painel, setPainel] = useState(false);
   const tabuleiro = useRef(null);
 
-  /* Recorde da partida que esta rolando: se a pessoa fechar a janela no meio,
-     o que ela fez ainda conta. */
-  const pontosRef = useRef(0);
-  pontosRef.current = pontos;
+  /* O tabuleiro que vale fica na ref: salvar e desenhar nao esperam o setState. */
+  const celulasRef = useRef(celulas);
+  const pontosRef = useRef(pontos);
   const recordeRef = useRef(recorde);
   recordeRef.current = recorde;
 
+  const relogioSalvar = useRef(null);
+  const partidaPendente = useRef(null);
+  const jaMontou = useRef(false);
+
+  const gravarAgora = useCallback(() => {
+    if (relogioSalvar.current) {
+      clearTimeout(relogioSalvar.current);
+      relogioSalvar.current = null;
+    }
+    const pendente = partidaPendente.current;
+    partidaPendente.current = null;
+    if (pendente) aoPartida?.(pendente);
+  }, [aoPartida]);
+
+  /* Cada jogada agenda a gravacao; a conta recebe uma escrita a cada 2,5s em
+     vez de uma por tecla. */
+  const agendarPartida = useCallback(
+    (novoTabuleiro, novosPontos) => {
+      partidaPendente.current = {
+        celulas: novoTabuleiro,
+        pontos: novosPontos,
+        atualizado: Date.now(),
+      };
+      if (relogioSalvar.current) return;
+      relogioSalvar.current = setTimeout(() => {
+        relogioSalvar.current = null;
+        gravarAgora();
+      }, 2500);
+    },
+    [gravarAgora]
+  );
+
+  const esquecerPartida = useCallback(() => {
+    if (relogioSalvar.current) {
+      clearTimeout(relogioSalvar.current);
+      relogioSalvar.current = null;
+    }
+    partidaPendente.current = null;
+    aoPartida?.(null);
+  }, [aoPartida]);
+
   const reiniciar = useCallback(() => {
-    setCelulas(comecar(n));
+    const nova = comecar(n);
+    celulasRef.current = nova;
+    pontosRef.current = 0;
+    setCelulas(nova);
     setPontos(0);
     setFim(null);
     setMetaBatida(false);
+    esquecerPartida();
+  }, [esquecerPartida, n]);
+
+  /* Trocar o tamanho no painel abre a partida salva daquele tamanho (ou uma
+     nova, se nao houver). Mudar a meta nao reinicia nada. */
+  useEffect(() => {
+    if (!jaMontou.current) {
+      jaMontou.current = true;
+      return;
+    }
+    setFim(null);
+    if (partidaSalva) {
+      celulasRef.current = partidaSalva.celulas;
+      pontosRef.current = partidaSalva.pontos;
+      setCelulas(partidaSalva.celulas);
+      setPontos(partidaSalva.pontos);
+      setMetaBatida(partidaSalva.celulas.some((valor) => valor >= meta));
+      return;
+    }
+    const nova = comecar(n);
+    celulasRef.current = nova;
+    pontosRef.current = 0;
+    setCelulas(nova);
+    setPontos(0);
+    setMetaBatida(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [n]);
 
-  /* Trocar o tamanho no painel comeca uma partida nova. */
-  useEffect(() => {
-    reiniciar();
-  }, [n, meta, reiniciar]);
+  /* As funcoes que vem de fora trocam de identidade a cada render da janela:
+     a ref guarda sempre a mais nova para o fechamento usar a certa. */
+  const gravacaoRef = useRef(gravarAgora);
+  gravacaoRef.current = gravarAgora;
+  const registroRef = useRef(aoRecorde);
+  registroRef.current = aoRecorde;
 
-  useEffect(
-    () => () => {
+  /* Fechar a janela (ou trocar de aba no celular) grava o que estava rolando:
+     a partida volta quando a pessoa voltar, em qualquer aparelho. */
+  useEffect(() => {
+    const aoEsconder = () => {
+      if (document.visibilityState === 'hidden') gravacaoRef.current?.();
+    };
+    document.addEventListener('visibilitychange', aoEsconder);
+    return () => {
+      document.removeEventListener('visibilitychange', aoEsconder);
       const valor = pontosRef.current;
       const atual = recordeRef.current;
-      if (valor > 0 && (atual == null || valor > atual)) aoRecorde?.(valor);
-    },
-    [aoRecorde]
-  );
+      if (valor > 0 && (atual == null || valor > atual)) registroRef.current?.(valor);
+      gravacaoRef.current?.();
+    };
+  }, []);
 
   const jogar = useCallback(
     (direcao) => {
       if (fim || painel) return;
-      setCelulas((anteriores) => {
-        const { celulas: proximas, ganho, mudou } = mover(anteriores, n, direcao);
-        if (!mudou) return anteriores;
+      const anteriores = celulasRef.current;
+      const { celulas: proximas, ganho, mudou } = mover(anteriores, n, direcao);
+      if (!mudou) return;
 
-        const comNova = plantar(proximas);
-        const total = pontos + ganho;
-        setPontos(total);
+      const comNova = plantar(proximas);
+      const total = pontosRef.current + ganho;
+      celulasRef.current = comNova;
+      pontosRef.current = total;
+      setCelulas(comNova);
+      setPontos(total);
 
-        const maior = Math.max(...comNova);
-        if (maior >= meta && !metaBatida) {
-          setMetaBatida(true);
-          setFim('vitoria');
-          aoRecorde?.(total);
-        } else if (!temJogada(comNova, n)) {
-          setFim('derrota');
-          aoRecorde?.(total);
-        }
-        return comNova;
-      });
+      /* Chegar na meta nao para o jogo: so avisa uma vez e segue somando. */
+      if (Math.max(...comNova) >= meta && !metaBatida) {
+        setMetaBatida(true);
+        aoRecorde?.(total);
+      }
+
+      if (!temJogada(comNova, n)) {
+        setFim('derrota');
+        aoRecorde?.(total);
+        esquecerPartida();
+        return;
+      }
+
+      agendarPartida(comNova, total);
     },
-    [aoRecorde, fim, meta, metaBatida, n, painel, pontos]
+    [agendarPartida, aoRecorde, esquecerPartida, fim, meta, metaBatida, n, painel]
   );
 
   useTeclado(
@@ -192,7 +295,14 @@ export default function Jogo2048({ valores, geral, recorde, aoRecorde, aoMudar, 
     },
   ];
 
-  const fonteCasa = n >= 6 ? 11 : n === 5 ? 13 : n === 4 ? 16 : 18;
+  /* Fonte presa a grade: o bloco nunca muda de tamanho, so o numero encolhe
+     quando ganha mais digitos. */
+  const fonteCasa = (valor) => {
+    const base = n >= 6 ? 14 : n === 5 ? 16 : n === 4 ? 20 : 23;
+    const digitos = String(valor || 0).length;
+    const fator = digitos >= 5 ? 0.6 : digitos === 4 ? 0.74 : digitos === 3 ? 0.9 : 1;
+    return Math.round(base * fator);
+  };
 
   return (
     <MolduraJogo
@@ -211,7 +321,7 @@ export default function Jogo2048({ valores, geral, recorde, aoRecorde, aoMudar, 
             aoFechar={() => setPainel(false)}
             aoRestaurar={aoRestaurar}
             aoApagarRecordes={aoApagarRecordes}
-            nota="Cada tamanho de tabuleiro tem o seu proprio recorde."
+            nota="Cada tamanho de tabuleiro tem o seu proprio recorde. A partida em andamento volta quando voce reabrir, em qualquer aparelho."
           />
         ) : null
       }
@@ -226,7 +336,7 @@ export default function Jogo2048({ valores, geral, recorde, aoRecorde, aoMudar, 
           </span>
           <div style={{ flex: 1 }} />
           <span style={{ fontFamily: 'var(--font-main)', fontSize: 10, color: escuro(50) }}>
-            meta {meta}
+            {metaBatida ? `meta ${meta} batida` : `meta ${meta}`}
           </span>
         </div>
 
@@ -235,11 +345,13 @@ export default function Jogo2048({ valores, geral, recorde, aoRecorde, aoMudar, 
             ref={tabuleiro}
             style={{
               display: 'grid',
-              gridTemplateColumns: `repeat(${n}, 1fr)`,
+              gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${n}, minmax(0, 1fr))`,
               gap: 6,
               width: 'min(100%, 380px)',
               aspectRatio: '1 / 1',
               padding: 6,
+              minHeight: 0,
               borderRadius: 12,
               border: `1px solid ${escuro(12)}`,
               background: 'color-mix(in srgb, var(--c8) 46%, transparent)',
@@ -254,9 +366,14 @@ export default function Jogo2048({ valores, geral, recorde, aoRecorde, aoMudar, 
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  minWidth: 0,
+                  minHeight: 0,
+                  overflow: 'hidden',
+                  padding: 0,
+                  lineHeight: 1,
                   borderRadius: 8,
                   fontFamily: 'var(--font-main)',
-                  fontSize: fonteCasa,
+                  fontSize: fonteCasa(valor),
                   fontVariantNumeric: 'tabular-nums',
                   transition: 'background 120ms ease, color 120ms ease',
                 }}
@@ -268,26 +385,30 @@ export default function Jogo2048({ valores, geral, recorde, aoRecorde, aoMudar, 
 
           {fim ? (
             <AvisoJogo
-              tom={fim === 'vitoria' ? 'vitoria' : 'normal'}
-              titulo={fim === 'vitoria' ? `Chegou em ${meta}!` : 'Sem jogadas'}
-              texto={
-                fim === 'vitoria'
-                  ? `${pontos} pontos. Pode continuar somando ou comecar de novo.`
-                  : `${pontos} pontos nesta partida.`
-              }
+              tom="normal"
+              titulo="Sem jogadas"
+              texto={`${pontos} pontos nesta partida.`}
               acoes={[
-                fim === 'vitoria' ? (
-                  <BotaoVidro key="seguir" onClick={() => setFim(null)}>
-                    Continuar
-                  </BotaoVidro>
-                ) : null,
                 <BotaoVidro key="novo" tom="principal" onClick={reiniciar}>
                   De novo
                 </BotaoVidro>,
-              ].filter(Boolean)}
+              ]}
             />
           ) : null}
         </div>
+
+        {metaBatida && !fim ? (
+          <div
+            style={{
+              fontFamily: 'var(--font-main)',
+              fontSize: 11,
+              color: dourado(72),
+              textAlign: 'center',
+            }}
+          >
+            Chegou em {meta}! O jogo continua, some o quanto quiser.
+          </div>
+        ) : null}
 
         {geral.direcional ? (
           <div style={{ marginTop: 'auto' }}>
