@@ -7,20 +7,25 @@ import { MODAL_CAIXA } from '@/lib/modalStyles';
 import CampoMoeda from '@/components/conteudo/CampoMoeda';
 import {
   COLUNAS,
+  abasDe,
+  abasParaSalvar,
   avisosDaTabela,
   itemDePreco,
-  itensParaSalvar,
+  novaAba,
   novoItemPreco,
-  tabelaDe,
+  totalDeItens,
 } from '@/lib/tabelaPrecos';
 
 const GRADE = 'minmax(0, 1fr) 86px 86px 86px 24px';
+
+const escuro = (valor) => `color-mix(in srgb, var(--c2) ${valor}%, transparent)`;
+const dourado = (valor) => `color-mix(in srgb, var(--c1) ${valor}%, transparent)`;
 
 const campo = {
   width: '100%',
   padding: '6px 8px',
   borderRadius: 8,
-  border: '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+  border: `1px solid ${escuro(16)}`,
   background: 'color-mix(in srgb, var(--c8) 55%, transparent)',
   color: 'var(--c3)',
   fontFamily: 'var(--font-main)',
@@ -29,40 +34,148 @@ const campo = {
   boxSizing: 'border-box',
 };
 
+const botaoAba = {
+  padding: '4px 10px',
+  borderRadius: 8,
+  border: 'none',
+  fontFamily: 'var(--font-main)',
+  fontSize: 9.5,
+  fontWeight: 700,
+  letterSpacing: '0.03em',
+  whiteSpace: 'nowrap',
+  flex: '0 0 auto',
+  cursor: 'pointer',
+};
+
+const botaoAcao = {
+  padding: '5px 9px',
+  borderRadius: 7,
+  border: `1px solid ${escuro(18)}`,
+  background: escuro(6),
+  color: 'var(--c3)',
+  fontFamily: 'var(--font-main)',
+  fontSize: 9.5,
+  cursor: 'pointer',
+};
+
 /**
- * Tabela de preços da modelo: guia padrão com item e três valores (mínimo,
- * normal e máximo). O admin escreve; o chatter só lê.
+ * Tabela de preços da modelo: guia com abas (uma tabela por aba) e, em cada
+ * aba, itens com três valores — mínimo, normal e máximo. O admin cria, nomeia
+ * e edita as abas de cada modelo; o chatter só lê.
  */
 export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }) {
   const { user } = useAuth();
-  const [itens, setItens] = useState(() => tabelaDe(conteudo));
+  const [abas, setAbas] = useState(() => abasDe(conteudo));
+  const [ativaId, setAtivaId] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
   const [mexido, setMexido] = useState(false);
+  const [renomeando, setRenomeando] = useState(false);
+  const [nomeTemp, setNomeTemp] = useState('');
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+
+  const ativa = abas.find((aba) => aba.id === ativaId) || abas[0] || null;
+  const itens = ativa?.itens || [];
 
   useEffect(() => {
     const tecla = (evento) => {
-      if (evento.key === 'Escape' && !salvando) onFechar();
+      if (evento.key !== 'Escape') return;
+      if (renomeando) {
+        setRenomeando(false);
+        setNomeTemp('');
+        return;
+      }
+      if (confirmandoExclusao) {
+        setConfirmandoExclusao(false);
+        return;
+      }
+      if (!salvando) onFechar();
     };
     document.addEventListener('keydown', tecla);
     return () => document.removeEventListener('keydown', tecla);
-  }, [onFechar, salvando]);
+  }, [onFechar, salvando, renomeando, confirmandoExclusao]);
+
+  const trocarAba = (id) => {
+    setAtivaId(id);
+    setRenomeando(false);
+    setConfirmandoExclusao(false);
+    setNomeTemp('');
+  };
 
   const mudarItem = (id, campoAlvo, valor) => {
+    if (!ativa) return;
     setMexido(true);
-    setItens((atuais) =>
-      atuais.map((linha) => (linha.id === id ? itemDePreco({ ...linha, [campoAlvo]: valor }) : linha))
+    setAbas((atuais) =>
+      atuais.map((aba) =>
+        aba.id !== ativa.id
+          ? aba
+          : {
+              ...aba,
+              itens: aba.itens.map((linha) =>
+                linha.id === id ? itemDePreco({ ...linha, [campoAlvo]: valor }) : linha
+              ),
+            }
+      )
     );
   };
 
-  const adicionar = () => {
+  const adicionarItem = () => {
+    if (!ativa) return;
     setMexido(true);
-    setItens((atuais) => [...atuais, novoItemPreco()]);
+    setAbas((atuais) =>
+      atuais.map((aba) =>
+        aba.id !== ativa.id ? aba : { ...aba, itens: [...aba.itens, novoItemPreco()] }
+      )
+    );
   };
 
-  const remover = (id) => {
+  const removerItem = (id) => {
+    if (!ativa) return;
     setMexido(true);
-    setItens((atuais) => atuais.filter((linha) => linha.id !== id));
+    setAbas((atuais) =>
+      atuais.map((aba) =>
+        aba.id !== ativa.id ? aba : { ...aba, itens: aba.itens.filter((linha) => linha.id !== id) }
+      )
+    );
+  };
+
+  const adicionarAba = () => {
+    const nova = novaAba('');
+    setMexido(true);
+    setAbas((atuais) => [...atuais, nova]);
+    setAtivaId(nova.id);
+    setConfirmandoExclusao(false);
+    setNomeTemp('');
+    setRenomeando(true);
+  };
+
+  const abrirRenomear = () => {
+    if (!ativa) return;
+    setConfirmandoExclusao(false);
+    setNomeTemp(ativa.nome);
+    setRenomeando(true);
+  };
+
+  const confirmarRenomear = () => {
+    if (!ativa) return;
+    setMexido(true);
+    setAbas((atuais) =>
+      atuais.map((aba) => (aba.id !== ativa.id ? aba : { ...aba, nome: nomeTemp.trim() }))
+    );
+    setRenomeando(false);
+    setNomeTemp('');
+  };
+
+  const excluirAba = () => {
+    if (!ativa) return;
+    const indice = abas.findIndex((aba) => aba.id === ativa.id);
+    const restantes = abas.filter((aba) => aba.id !== ativa.id);
+    const proxima = restantes[indice] || restantes[indice - 1] || null;
+    setMexido(true);
+    setAbas(restantes);
+    setAtivaId(proxima?.id || '');
+    setConfirmandoExclusao(false);
+    setRenomeando(false);
   };
 
   const salvar = async () => {
@@ -71,7 +184,7 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
     setErro('');
     try {
       await base44.entities.Conteudo.update(conteudo.id, {
-        tabela_precos: itensParaSalvar(itens),
+        tabela_precos: abasParaSalvar(abas),
         atualizado_por: user?.id || '',
         atualizado_por_nome: user?.full_name || user?.email || '',
       });
@@ -86,7 +199,7 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
   };
 
   const avisos = admin ? avisosDaTabela(itens) : [];
-  const vazia = !itens.length;
+  const vazio = !itens.length;
 
   return createPortal(
     <div
@@ -114,7 +227,7 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
             justifyContent: 'space-between',
             gap: 10,
             padding: '12px 16px',
-            borderBottom: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
+            borderBottom: `1px solid ${escuro(14)}`,
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -129,7 +242,8 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
               TABELA DE PREÇOS
             </span>
             <span style={{ fontSize: 10, color: 'var(--c2)' }}>
-              {nomeDoConteudo(conteudo)}
+              {nomeDoConteudo(conteudo)} · {totalDeItens(abas)} itens em {abas.length}{' '}
+              {abas.length === 1 ? 'aba' : 'abas'}
               {admin ? ' · guia da modelo, você escreve' : ' · só leitura'}
             </span>
           </div>
@@ -142,8 +256,8 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
               width: 24,
               height: 24,
               borderRadius: 7,
-              border: '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
-              background: 'color-mix(in srgb, var(--c8) 50%, transparent)',
+              border: `1px solid ${escuro(18)}`,
+              background: escuro(8),
               color: 'var(--c3)',
               cursor: 'pointer',
               fontSize: 12,
@@ -154,9 +268,169 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
           </button>
         </div>
 
+        <div style={{ padding: '9px 16px 0' }}>
+          <div
+            className="glass-scroll"
+            style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 8 }}
+            role="tablist"
+            aria-label="Abas da tabela de preços"
+          >
+            {abas.map((aba) => {
+              const atual = aba.id === ativa?.id;
+              return (
+                <button
+                  key={aba.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={atual}
+                  onClick={() => trocarAba(aba.id)}
+                  style={{
+                    ...botaoAba,
+                    color: atual ? 'var(--c1)' : 'var(--c2)',
+                    background: atual ? dourado(14) : escuro(6),
+                    border: `1px solid ${atual ? dourado(45) : escuro(18)}`,
+                  }}
+                >
+                  {aba.nome.trim() || 'Sem nome'}
+                </button>
+              );
+            })}
+            {admin ? (
+              <button
+                type="button"
+                onClick={adicionarAba}
+                disabled={salvando}
+                title="Criar uma aba nova"
+                style={{
+                  ...botaoAba,
+                  color: 'var(--c1)',
+                  background: 'transparent',
+                  border: `1px dashed ${dourado(38)}`,
+                }}
+              >
+                + aba
+              </button>
+            ) : null}
+          </div>
+
+          {admin && ativa ? (
+            renomeando ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8 }}>
+                <input
+                  value={nomeTemp}
+                  onChange={(evento) => setNomeTemp(evento.target.value)}
+                  onKeyDown={(evento) => {
+                    if (evento.key === 'Enter') confirmarRenomear();
+                  }}
+                  autoFocus
+                  placeholder="Nome da aba"
+                  aria-label="Nome da aba"
+                  maxLength={40}
+                  style={{ ...campo, flex: 1, minWidth: 0 }}
+                />
+                <button
+                  type="button"
+                  onClick={confirmarRenomear}
+                  style={{
+                    ...botaoAcao,
+                    border: `1px solid ${dourado(45)}`,
+                    background: dourado(14),
+                    color: 'var(--c1)',
+                    fontWeight: 700,
+                  }}
+                >
+                  Salvar nome
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRenomeando(false);
+                    setNomeTemp('');
+                  }}
+                  style={botaoAcao}
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : confirmandoExclusao ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  padding: '7px 9px',
+                  marginBottom: 8,
+                  borderRadius: 8,
+                  border: '1px solid color-mix(in srgb, var(--erro) 32%, transparent)',
+                  background: 'color-mix(in srgb, var(--erro) 9%, transparent)',
+                }}
+              >
+                <span style={{ fontSize: 9.5, color: 'var(--c3)', lineHeight: 1.5 }}>
+                  Excluir “{ativa.nome.trim() || 'Sem nome'}”
+                  {itens.length ? ` e seus ${itens.length} itens` : ' (vazia)'}?
+                </span>
+                <div style={{ display: 'flex', gap: 6, flex: '0 0 auto' }}>
+                  <button
+                    type="button"
+                    onClick={excluirAba}
+                    style={{
+                      ...botaoAcao,
+                      border: '1px solid color-mix(in srgb, var(--erro) 45%, transparent)',
+                      background: 'color-mix(in srgb, var(--erro) 16%, transparent)',
+                      color: 'var(--erro)',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Excluir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmandoExclusao(false)}
+                    style={botaoAcao}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  paddingBottom: 8,
+                }}
+              >
+                <span style={{ fontSize: 9, letterSpacing: '0.06em', color: 'var(--c2)', opacity: 0.8 }}>
+                  ABA: {ativa.nome.trim().toUpperCase() || 'SEM NOME'}
+                </span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button type="button" onClick={abrirRenomear} style={botaoAcao}>
+                    ✎ Renomear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => (itens.length ? setConfirmandoExclusao(true) : excluirAba())}
+                    style={{
+                      ...botaoAcao,
+                      color: 'var(--erro)',
+                      border: '1px solid color-mix(in srgb, var(--erro) 30%, transparent)',
+                      background: 'color-mix(in srgb, var(--erro) 8%, transparent)',
+                    }}
+                  >
+                    × Excluir aba
+                  </button>
+                </div>
+              </div>
+            )
+          ) : null}
+        </div>
+
         <div
           className="glass-scroll"
-          style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 16px' }}
+          style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 16px 12px' }}
         >
           <div
             style={{
@@ -165,7 +439,6 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
               gap: 6,
               alignItems: 'center',
               marginBottom: 6,
-              paddingRight: admin ? 0 : 0,
             }}
           >
             <span style={{ fontSize: 9, letterSpacing: '0.08em', color: 'var(--c2)', opacity: 0.8 }}>
@@ -189,12 +462,12 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
             <span />
           </div>
 
-          {vazia ? (
+          {!ativa ? (
             <div
               style={{
                 padding: '22px 16px',
                 borderRadius: 10,
-                border: '1px dashed color-mix(in srgb, var(--c1) 22%, transparent)',
+                border: `1px dashed ${dourado(22)}`,
                 textAlign: 'center',
                 fontSize: 11,
                 color: 'var(--c2)',
@@ -202,8 +475,24 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
               }}
             >
               {admin
-                ? 'Nenhum item ainda. Comece pelo que mais aparece no chat: vídeo chamada, personalizado, áudio.'
+                ? 'Nenhuma aba ainda. Crie a primeira em “+ aba” e dê o nome que fizer sentido: Genérico, Sexting, Personalizados…'
                 : 'A tabela ainda está vazia.'}
+            </div>
+          ) : vazio ? (
+            <div
+              style={{
+                padding: '22px 16px',
+                borderRadius: 10,
+                border: `1px dashed ${dourado(22)}`,
+                textAlign: 'center',
+                fontSize: 11,
+                color: 'var(--c2)',
+                lineHeight: 1.6,
+              }}
+            >
+              {admin
+                ? 'Esta aba está vazia. Comece pelo que mais aparece no chat: vídeo chamada, personalizado, áudio.'
+                : 'Esta aba ainda está vazia.'}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -228,7 +517,7 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
                       ))}
                       <button
                         type="button"
-                        onClick={() => remover(linha.id)}
+                        onClick={() => removerItem(linha.id)}
                         disabled={salvando}
                         aria-label={`Remover ${linha.item || 'item'}`}
                         title="Remover item"
@@ -292,19 +581,19 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
             justifyContent: 'space-between',
             gap: 10,
             padding: '10px 16px',
-            borderTop: '1px solid color-mix(in srgb, var(--c2) 14%, transparent)',
+            borderTop: `1px solid ${escuro(14)}`,
           }}
         >
-          {admin ? (
+          {admin && ativa ? (
             <button
               type="button"
-              onClick={adicionar}
+              onClick={adicionarItem}
               disabled={salvando}
               style={{
                 padding: '7px 11px',
                 borderRadius: 8,
-                border: '1px solid color-mix(in srgb, var(--c1) 34%, transparent)',
-                background: 'color-mix(in srgb, var(--c1) 12%, transparent)',
+                border: `1px solid ${dourado(34)}`,
+                background: dourado(12),
                 color: 'var(--c1)',
                 fontFamily: 'var(--font-main)',
                 fontSize: 10.5,
@@ -326,7 +615,7 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
               style={{
                 padding: '7px 12px',
                 borderRadius: 8,
-                border: '1px solid color-mix(in srgb, var(--c2) 18%, transparent)',
+                border: `1px solid ${escuro(18)}`,
                 background: 'transparent',
                 color: 'var(--c3)',
                 fontFamily: 'var(--font-main)',
@@ -344,8 +633,8 @@ export default function ModalTabelaPrecos({ conteudo, admin, onFechar, onSalvo }
                 style={{
                   padding: '7px 14px',
                   borderRadius: 8,
-                  border: '1px solid color-mix(in srgb, var(--c1) 55%, transparent)',
-                  background: 'color-mix(in srgb, var(--c1) 20%, transparent)',
+                  border: `1px solid ${dourado(55)}`,
+                  background: dourado(20),
                   color: 'var(--c1)',
                   fontFamily: 'var(--font-main)',
                   fontSize: 10.5,

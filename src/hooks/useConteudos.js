@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { ehAdmin } from '@/lib/chat';
 import { conteudosVisiveis } from '@/lib/conteudos';
+import { abasPadrao } from '@/lib/tabelaPrecos';
 
 const asList = (resultado) => (Array.isArray(resultado) ? resultado : resultado?.items || []);
 
@@ -44,6 +45,7 @@ export default function useConteudos() {
                 modelo_id: modelo.id,
                 titulo: modelo.nome,
                 secoes: [],
+                tabela_precos: abasPadrao(),
                 arquivado: Boolean(modelo.arquivada),
                 arquivado_em: modelo.arquivada ? new Date().toISOString() : null,
               }).catch((falha) => {

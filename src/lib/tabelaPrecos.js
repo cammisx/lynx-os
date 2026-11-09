@@ -41,7 +41,45 @@ export const itensParaSalvar = (itens = []) =>
     .filter((linha) => linha.item.trim())
     .map((linha) => ({ ...linha, item: linha.item.trim() }));
 
-export const tabelaDe = (conteudo) => (conteudo?.tabela_precos || []).map(itemDePreco);
+const novoIdAba = () =>
+  `aba-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+
+/** Abas que toda modelo nova recebe, vazias e prontas para preencher. */
+export const ABAS_PADRAO = ['Genérico', 'Sexting', 'Packs & Outros', 'Personalizados'];
+
+/** Uma aba vazia. O nome nasce em branco para o admin escrever. */
+export const novaAba = (nome = '') => ({ id: novoIdAba(), nome, itens: [] });
+
+export const abasPadrao = () => ABAS_PADRAO.map((nome) => novaAba(nome));
+
+/**
+ * Lê o que veio do banco. O formato atual e uma lista de abas, cada uma com os
+ * seus itens. Formato antigo (lista solta de itens, sem aba) cai numa aba unica
+ * "Geral" para nada se perder.
+ */
+export const abasDe = (conteudo) => {
+  const bruto = conteudo?.tabela_precos;
+  if (!Array.isArray(bruto) || !bruto.length) return [];
+  const temAbas = bruto.some((linha) => Array.isArray(linha?.itens));
+  if (!temAbas) return [novaAba('Geral')].map((aba) => ({ ...aba, itens: bruto.map(itemDePreco) }));
+  return bruto.map((aba) => ({
+    id: String(aba?.id || '') || novoIdAba(),
+    nome: String(aba?.nome || ''),
+    itens: (aba?.itens || []).map(itemDePreco),
+  }));
+};
+
+/** O que vale gravar: toda aba fica (mesmo vazia), porque o nome e do admin. */
+export const abasParaSalvar = (abas = []) =>
+  (abas || []).map((aba) => ({
+    id: String(aba?.id || '') || novoIdAba(),
+    nome: String(aba?.nome || '').trim(),
+    itens: itensParaSalvar(aba?.itens || []),
+  }));
+
+/** Total de itens somando todas as abas, para resumos na tela. */
+export const totalDeItens = (abas = []) =>
+  (abas || []).reduce((soma, aba) => soma + (aba?.itens?.length || 0), 0);
 
 /** Texto do campo: moeda quando tem valor, travessão quando está em branco. */
 export const textoDoValor = (valor) => {

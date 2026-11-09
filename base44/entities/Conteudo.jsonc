@@ -34,15 +34,25 @@
     },
     "tabela_precos": {
       "type": "array",
-      "description": "Tabela de precos da modelo: cada linha tem o item e tres valores (minimo, normal e maximo)",
+      "description": "Tabela de precos da modelo, separada em abas. Cada aba tem nome (definido pelo admin) e os seus itens com tres valores: minimo, normal e maximo",
       "items": {
         "type": "object",
         "properties": {
           "id": { "type": "string" },
-          "item": { "type": "string", "description": "O que esta sendo vendido" },
-          "minimo": { "type": "number", "description": "Preco minimo, em reais (null quando vazio)" },
-          "normal": { "type": "number", "description": "Preco normal, em reais (null quando vazio)" },
-          "maximo": { "type": "number", "description": "Preco maximo, em reais (null quando vazio)" }
+          "nome": { "type": "string", "description": "Nome da aba, livre para o admin editar" },
+          "itens": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "item": { "type": "string", "description": "O que esta sendo vendido" },
+                "minimo": { "type": "number", "description": "Preco minimo, em reais (null quando vazio)" },
+                "normal": { "type": "number", "description": "Preco normal, em reais (null quando vazio)" },
+                "maximo": { "type": "number", "description": "Preco maximo, em reais (null quando vazio)" }
+              }
+            }
+          }
         }
       }
     },
