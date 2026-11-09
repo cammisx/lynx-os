@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
+import { escalaAtual } from '@/lib/fonte';
 
 /**
  * Posiciona uma lista suspensa em camada fixa sobre tudo.
  * Se não couber embaixo do campo, abre pra cima inteira.
+ *
+ * O html do app recebe `zoom` quando o tamanho de leitura não é Normal: a
+ * medida do campo vem em px de tela, mas o painel (que abre por portal dentro
+ * do html) posiciona em px locais. Por isso medimos tudo em px de tela e só
+ * convertemos no fim — sem isso o painel abre torto e mais estreito.
  */
 export default function usePopoverPos({
   open,
@@ -16,20 +22,27 @@ export default function usePopoverPos({
   const medir = useCallback(() => {
     const el = anchorRef.current;
     if (!el) return;
+    const zoom = escalaAtual();
     const r = el.getBoundingClientRect();
-    const abaixo = window.innerHeight - r.bottom - 12;
-    const acima = r.top - 12;
-    const abrirAcima = abaixo < Math.min(alturaMax, 220) && acima > abaixo;
+    const borda = 12 * zoom;
+    const colado = 6 * zoom;
+    const abaixo = window.innerHeight - r.bottom - borda;
+    const acima = r.top - borda;
+    const abrirAcima = abaixo < Math.min(alturaMax * zoom, 220 * zoom) && acima > abaixo;
     const disponivel = abrirAcima ? acima : abaixo;
-    const altura = Math.max(150, Math.min(alturaMax, disponivel));
-    const largura = Math.max(Math.round(r.width), minWidth);
+    const altura = Math.max(150 * zoom, Math.min(alturaMax * zoom, disponivel));
+    const largura = Math.max(Math.round(r.width), minWidth * zoom);
     const desejado = align === 'right' ? r.right - largura : r.left;
-    const left = Math.min(Math.max(8, desejado), Math.max(8, window.innerWidth - largura - 8));
+    const minimo = 8 * zoom;
+    const left = Math.min(
+      Math.max(minimo, desejado),
+      Math.max(minimo, window.innerWidth - largura - minimo)
+    );
     setPos({
-      left,
-      top: abrirAcima ? Math.max(8, r.top - altura - 6) : r.bottom + 6,
-      width: largura,
-      maxHeight: altura,
+      left: left / zoom,
+      top: (abrirAcima ? Math.max(minimo, r.top - altura - colado) : r.bottom + colado) / zoom,
+      width: largura / zoom,
+      maxHeight: altura / zoom,
       abrirAcima,
     });
   }, [anchorRef, alturaMax, minWidth, align]);

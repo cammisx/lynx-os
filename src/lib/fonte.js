@@ -18,6 +18,19 @@ export const TAMANHOS = [
 
 export const FONTE_PADRAO = 'normal';
 
+/**
+ * Zoom atual da raiz (1 quando o tamanho é Normal).
+ *
+ * O `zoom` no html multiplica de novo tudo que é posicionado em px por dentro
+ * dele, então quem posiciona por coordenada de tela precisa dividir por essa
+ * escala para cair no lugar certo.
+ */
+export const escalaAtual = () => {
+  if (typeof window === 'undefined') return 1;
+  const valor = parseFloat(getComputedStyle(document.documentElement).zoom);
+  return Number.isFinite(valor) && valor > 0 ? valor : 1;
+};
+
 export const tamanhoPorId = (id) => TAMANHOS.find((tamanho) => tamanho.id === id) || TAMANHOS[1];
 
 const PREFIXO_LOCAL = 'lynx:fonte';
