@@ -392,10 +392,10 @@ export default function JogoSolicitacaoMidia({
     {
       chave: 'pele',
       rotulo: 'Tom de pele',
-      tipo: 'segmentos',
-      opcoes: TONS_PELE.map((tom) => ({ valor: tom, rotulo: PELES[tom].nome })),
+      tipo: 'cores',
+      opcoes: TONS_PELE.map((tom) => ({ valor: tom, rotulo: PELES[tom].nome, cor: PELES[tom].cor })),
     },
-    { chave: 'pelos', rotulo: 'Pelos nas bolas', tipo: 'toggle' },
+    { chave: 'pelos', rotulo: 'Depilado', tipo: 'toggle', inverter: true },
   ];
 
   return (

@@ -189,8 +189,11 @@ const rotulo = {
  * Painel de configuracoes em vidro, sobreposto ao jogo.
  *
  * Cada campo e declarado pelo jogo: `segmentos` (escolha entre poucos valores),
- * `stepper` (numero com menos e mais) e `toggle` (liga e desliga). Aplicar e
- * imediato, entao o jogo recomeca com a nova regra quando ela muda.
+ * `cores` (igual ao segmentos, mas cada opcao e uma bolinha da propria cor, para
+ * quando o nome atrapalha, tipo tom de pele), `stepper` (numero com menos e mais)
+ * e `toggle` (liga e desliga, com `inverter` para quando o ligado e o negativo,
+ * tipo "depilado"). Aplicar e imediato, entao o jogo recomeca com a nova regra
+ * quando ela muda.
  */
 export function PainelConfig({
   titulo = 'Configuracoes',
@@ -335,6 +338,37 @@ function LinhaConfig({ campo, valor, aoMudar }) {
           })}
         </div>
       ) : null}
+      {campo.tipo === 'cores' ? (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {campo.opcoes.map((opcao) => {
+            const ativo = opcao.valor === valor;
+            return (
+              <button
+                key={String(opcao.valor)}
+                type="button"
+                onClick={() => aoMudar(opcao.valor)}
+                aria-label={opcao.rotulo || String(opcao.valor)}
+                aria-pressed={ativo}
+                title={opcao.rotulo || String(opcao.valor)}
+                style={{
+                  ...botaoBase,
+                  width: 30,
+                  height: 30,
+                  padding: 0,
+                  borderRadius: '50%',
+                  background: opcao.cor,
+                  border: `1px solid ${ativo ? 'var(--c1)' : escuro(22)}`,
+                  boxShadow: ativo
+                    ? `0 0 0 2px ${dourado(70)}, 0 4px 10px color-mix(in srgb, #000 45%, transparent)`
+                    : 'inset 0 1px 0 rgba(255,255,255,0.18)',
+                  transform: ativo ? 'scale(1.06)' : 'none',
+                  transition: 'transform 120ms ease, box-shadow 120ms ease',
+                }}
+              />
+            );
+          })}
+        </div>
+      ) : null}
       {campo.tipo === 'stepper' ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button
@@ -367,48 +401,54 @@ function LinhaConfig({ campo, valor, aoMudar }) {
           {campo.sufixo ? <span style={{ ...rotulo, color: escuro(50) }}>{campo.sufixo}</span> : null}
         </div>
       ) : null}
-      {campo.tipo === 'toggle' ? (
-        <button
-          type="button"
-          role="switch"
-          aria-checked={Boolean(valor)}
-          onClick={() => aoMudar(!valor)}
-          style={{
-            ...botaoBase,
-            height: 28,
-            width: 120,
-            padding: '0 10px',
-            justifyContent: 'flex-start',
-            color: valor ? 'var(--c1)' : escuro(60),
-            border: `1px solid ${valor ? dourado(45) : escuro(14)}`,
-            background: valor ? dourado(14) : vidro(40),
-          }}
-        >
-          <span
+      {campo.tipo === 'toggle' ? (() => {
+        /* `inverter` serve para o ligado ser o caso negativo ("depilado"):
+           o valor guardado continua sendo o positivo, so a exibicao muda. */
+        const marcado = campo.inverter ? !valor : Boolean(valor);
+        return (
+          <button
+            type="button"
+            role="switch"
+            aria-label={campo.rotulo}
+            aria-checked={marcado}
+            onClick={() => aoMudar(!valor)}
             style={{
-              width: 26,
-              height: 14,
-              borderRadius: 999,
-              border: `1px solid ${valor ? dourado(55) : escuro(22)}`,
-              background: valor ? dourado(40) : 'transparent',
-              display: 'inline-flex',
-              alignItems: 'center',
-              padding: 1,
-              justifyContent: valor ? 'flex-end' : 'flex-start',
+              ...botaoBase,
+              height: 28,
+              width: 120,
+              padding: '0 10px',
+              justifyContent: 'flex-start',
+              color: marcado ? 'var(--c1)' : escuro(60),
+              border: `1px solid ${marcado ? dourado(45) : escuro(14)}`,
+              background: marcado ? dourado(14) : vidro(40),
             }}
           >
             <span
               style={{
-                width: 10,
-                height: 10,
-                borderRadius: '50%',
-                background: valor ? 'var(--c1)' : escuro(45),
+                width: 26,
+                height: 14,
+                borderRadius: 999,
+                border: `1px solid ${marcado ? dourado(55) : escuro(22)}`,
+                background: marcado ? dourado(40) : 'transparent',
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: 1,
+                justifyContent: marcado ? 'flex-end' : 'flex-start',
               }}
-            />
-          </span>
-          {valor ? 'ligado' : 'desligado'}
-        </button>
-      ) : null}
+            >
+              <span
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  background: marcado ? 'var(--c1)' : escuro(45),
+                }}
+              />
+            </span>
+            {marcado ? 'ligado' : 'desligado'}
+          </button>
+        );
+      })() : null}
     </div>
   );
 }
