@@ -3,14 +3,16 @@ import { useEffect, useRef } from 'react';
 /**
  * A pixie que guia o tutorial da rota /tutorial.
  *
- * Ela passeia sozinha pela área de trabalho: o caminho é uma senoide lenta,
- * então nunca fica parada nem corre, e o balão de fala vai junto porque mora
- * dentro do mesmo grupo que se move.
+ * O desenho vem da folha de sprites que a Chloë mandou (ver
+ * scripts/extrair-pixie.py): três quadros do bote das asas, já com o fundo
+ * preto virando transparência. A tira é animada por background-position em
+ * steps, então não tem nada de canvas rodando.
  *
- * Nada aqui captura clique (a camada inteira é pointer-events: none): o
- * desktop atrás continua sendo o de verdade, com janelas e menu funcionando.
- * Com "reduzir movimento" ligado no sistema, ela fica no lugar e sem asas
- * batendo.
+ * Ela passeia sozinha pela área de trabalho numa senoide lenta e o balão de
+ * fala vai junto, porque mora dentro do mesmo grupo que se move. Nada aqui
+ * captura clique (a camada é pointer-events: none): o desktop atrás continua
+ * sendo o de verdade. Com "reduzir movimento" ligado, ela fica parada e sem
+ * asas batendo.
  */
 
 const DESLOCAMENTO_X = 0.34; // metade do caminho horizontal, em fração da tela
@@ -19,51 +21,56 @@ const BASE_Y = 0.62;
 const DESLOCAMENTO_Y = 0.055;
 const VELOCIDADE_Y = 0.37;
 
+/* Tamanho de um quadro na folha e o quanto ele cresce na tela. */
+const QUADRO_LARG = 26;
+const QUADRO_ALT = 24;
+const QUADROS = 3;
+const ESCALA = 3;
+const LARGURA = QUADRO_LARG * ESCALA;
+const ALTURA = QUADRO_ALT * ESCALA;
+
 const ESTILOS = `
-@keyframes pixie-asa-esq {
-  0%, 100% { transform: scaleX(1) rotate(0deg); }
-  50% { transform: scaleX(0.52) rotate(-7deg); }
-}
-@keyframes pixie-asa-dir {
-  0%, 100% { transform: scaleX(1) rotate(0deg); }
-  50% { transform: scaleX(0.52) rotate(7deg); }
-}
-@keyframes pixie-aura {
-  0%, 100% { opacity: 0.75; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.06); }
+@keyframes pixie-quadros {
+  from { background-position-x: 0; }
+  to { background-position-x: -${QUADRO_LARG * QUADROS * ESCALA}px; }
 }
 @keyframes pixie-pisca {
-  0%, 100% { opacity: 0; transform: scale(0.5); }
+  0%, 100% { opacity: 0; transform: scale(0.4); }
   45% { opacity: 0.9; transform: scale(1); }
 }
 @keyframes pixie-balao {
   from { opacity: 0; transform: translate(-50%, -66px) scale(0.94); }
   to { opacity: 1; transform: translate(-50%, -78px) scale(1); }
 }
-.pixie-asa-esq, .pixie-asa-dir, .pixie-aura, .pixie-pisca {
-  transform-box: fill-box;
-  transform-origin: center;
+.pixie-corpo {
+  background-image: url(/tutorial/pixie-dourada.png);
+  background-repeat: no-repeat;
+  background-size: ${LARGURA * QUADROS}px ${ALTURA}px;
+  animation: pixie-quadros 0.42s steps(${QUADROS}) infinite;
+  filter: drop-shadow(0 0 7px rgba(240, 148, 58, 0.6)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
 }
-.pixie-asa-esq { transform-origin: right center; animation: pixie-asa-esq 0.62s ease-in-out infinite; }
-.pixie-asa-dir { transform-origin: left center; animation: pixie-asa-dir 0.62s ease-in-out infinite; }
-.pixie-aura { animation: pixie-aura 3.4s ease-in-out infinite; }
+.pixie-pisca { animation: pixie-pisca 2.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .pixie-asa-esq, .pixie-asa-dir, .pixie-aura, .pixie-pisca { animation: none !important; }
+  .pixie-corpo { animation: none !important; }
+  .pixie-pisca { animation: none !important; opacity: 0.5; }
 }
 `;
 
 /** Estrelinha de quatro pontas: o brilho que sobra no caminho dela. */
-const Estrela = ({ x, y, tamanho, atraso }) => (
-  <path
+const Estrela = ({ tamanho, atraso, x, y }) => (
+  <span
     className="pixie-pisca"
-    d={`M ${x} ${y - tamanho} L ${x + tamanho * 0.28} ${y - tamanho * 0.28} L ${x + tamanho} ${y} L ${
-      x + tamanho * 0.28
-    } ${y + tamanho * 0.28} L ${x} ${y + tamanho} L ${x - tamanho * 0.28} ${y + tamanho * 0.28} L ${
-      x - tamanho
-    } ${y} L ${x - tamanho * 0.28} ${y - tamanho * 0.28} Z`}
     style={{
-      fill: 'var(--c1)',
-      animation: `pixie-pisca ${2.6 + atraso}s ease-in-out ${atraso}s infinite`,
+      position: 'absolute',
+      left: x,
+      top: y,
+      width: tamanho,
+      height: tamanho,
+      background: 'var(--c1)',
+      clipPath:
+        'polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%)',
+      animationDelay: `${atraso}s`,
+      animationDuration: `${2.6 + atraso}s`,
     }}
   />
 );
@@ -114,76 +121,27 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
         ref={grupoRef}
         style={{ position: 'absolute', left: 0, top: 0, width: 0, height: 0, willChange: 'transform' }}
       >
-        {/* corpo, centralizado no ponto do caminho */}
+        {/* brilho que fica para trás */}
+        <Estrela tamanho={6} atraso={0} x={-34} y={-18} />
+        <Estrela tamanho={4} atraso={0.7} x={24} y={-6} />
+        <Estrela tamanho={5} atraso={1.4} x={-16} y={12} />
+        <Estrela tamanho={3} atraso={1.9} x={30} y={18} />
+
+        {/* corpo, apoiado no ponto do caminho */}
         <div
           ref={corpoRef}
           style={{
             position: 'absolute',
             left: 0,
             top: 0,
-            width: 76,
-            height: 76,
-            marginLeft: -38,
-            marginTop: -50,
+            width: LARGURA,
+            height: ALTURA,
+            marginLeft: -LARGURA / 2,
+            marginTop: -ALTURA + 6,
             transition: 'transform 0.35s ease',
           }}
         >
-          <svg width="76" height="76" viewBox="0 0 76 76" role="img" aria-label="Pixie">
-            <defs>
-              <radialGradient id="pixie-aura-grad">
-                <stop offset="0%" style={{ stopColor: 'var(--c1)', stopOpacity: 0.55 }} />
-                <stop offset="55%" style={{ stopColor: 'var(--c1)', stopOpacity: 0.16 }} />
-                <stop offset="100%" style={{ stopColor: 'var(--c1)', stopOpacity: 0 }} />
-              </radialGradient>
-              <linearGradient id="pixie-corpo-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#fff6da" />
-                <stop offset="55%" style={{ stopColor: 'var(--c1)' }} />
-                <stop offset="100%" stopColor="#7b5cff" />
-              </linearGradient>
-              <linearGradient id="pixie-asa-grad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.85" />
-                <stop offset="100%" style={{ stopColor: 'var(--c1)', stopOpacity: 0.35 }} />
-              </linearGradient>
-            </defs>
-
-            <circle className="pixie-aura" cx="38" cy="42" r="28" fill="url(#pixie-aura-grad)" />
-
-            {/* asas */}
-            <path
-              className="pixie-asa-esq"
-              d="M35 34 C26 22 12 25 5 33 C13 41 27 44 35 40 Z"
-              fill="url(#pixie-asa-grad)"
-            />
-            <path
-              className="pixie-asa-dir"
-              d="M41 34 C50 22 64 25 71 33 C63 41 49 44 41 40 Z"
-              fill="url(#pixie-asa-grad)"
-            />
-
-            {/* vestido */}
-            <path
-              d="M31 40 C27 49 23 57 19 62 C29 67 47 67 57 62 C53 57 49 49 45 40 Z"
-              fill="url(#pixie-corpo-grad)"
-              opacity="0.95"
-            />
-            <path d="M34 42 C32 49 30 55 28 60 C34 62 42 62 48 60 C46 55 44 49 42 42 Z" fill="#fff8e6" opacity="0.35" />
-
-            {/* cabeça e cabelo */}
-            <circle cx="38" cy="31" r="7.6" fill="#fff4e1" opacity="0.96" />
-            <path
-              d="M30 30 C27 21 34 16 41 18 C48 20 51 27 48 34 C46 28 43 25 39 25 C35 25 32 27 30 30 Z"
-              fill="#6f5cff"
-              opacity="0.92"
-            />
-            <circle cx="35.6" cy="31.4" r="0.9" fill="#3a2a6b" />
-            <circle cx="40.6" cy="31.4" r="0.9" fill="#3a2a6b" />
-
-            {/* estrelinhas do rastro */}
-            <Estrela x="20" y="52" tamanho="3.4" atraso="0" />
-            <Estrela x="56" y="56" tamanho="2.8" atraso="0.7" />
-            <Estrela x="38" y="64" tamanho="2.4" atraso="1.4" />
-            <Estrela x="12" y="38" tamanho="2.2" atraso="1.9" />
-          </svg>
+          <div className="pixie-corpo" style={{ width: LARGURA, height: ALTURA }} />
         </div>
 
         {/* balão de fala */}
