@@ -8,8 +8,12 @@ import { useEffect, useRef } from 'react';
  * traz o bote das asas, animado por background-position em steps (nada de
  * canvas).
  *
- * O voo é o de antes das poses do giro: ela não gira nem passeia pela tela,
- * só bate as asas e sobe e desce devagar, num vaivém de senoide.
+ * O voo é o de antes das poses do giro: ela flutua de um lado para o outro da
+ * tela e sobe e desce, numa soma de senoides (dá um caminho orgânico, não um
+ * vaivém de metrônomo). A cada oito segundos ela vira de lado: aí entra a tira
+ * das nove poses, tocada uma vez, na ordem 9-8-7-6-5-4-3-2-1 quando ela está
+ * indo para a direita e na ordem 1-2-3-4-5-6-7-8-9 quando está indo para a
+ * esquerda.
  *
  * O balão mora no mesmo grupo (para acompanhar), mas é posicionado a cada
  * quadro com duas regras: fica sempre ACIMA do desenho dela, com folga, e
@@ -17,22 +21,39 @@ import { useEffect, useRef } from 'react';
  * e a pontinha continua apontando para ela.
  *
  * Nada aqui captura clique (a camada é pointer-events: none). Com "reduzir
- * movimento" ligado, ela fica parada e não pisca.
+ * movimento" ligado, ela fica parada e não pisca nem vira.
  */
 
-/* O vaivém: ela fica no meio da tela e sobe e desce numa senoide lenta. */
+/* O vaivém: ela flutua de um lado para o outro e sobe e desce. */
+const AMPLITUDE_X = 0.3; // metade do caminho horizontal, em fração da largura
+const FREQ_X = 0.39; // rad/s: uma travessia a cada 16s
+const AMPLITUDE_X2 = 0.09; // segunda senoide, para o caminho não ser robótico
+const FREQ_X2 = 0.72;
+const FASE_X2 = 1.1;
+
 const BASE_Y = 0.62;
 const AMPLITUDE_Y = 0.045; // quanto sobe e desce, em fração da altura da tela
-const VELOCIDADE_Y = 1.35; // radianos por segundo: um sobe e desce a cada 4,6s
+const FREQ_Y = 1.35; // rad/s: um sobe e desce a cada 4,6s
+const AMPLITUDE_Y2 = 0.012;
+const FREQ_Y2 = 2.3;
+
+/* A virada: a cada oito segundos ela roda as nove poses uma vez. */
+const VIRADA_CADA = 8;
+const VIRADA_DURACAO = 0.8; // tem de casar com a animação do CSS
 
 /* Tamanho de um quadro na folha e o quanto ele cresce na tela. */
 const QUADRO_LARG = 104;
 const QUADRO_ALT = 96;
-const QUADROS = 3;
+const QUADROS = 6;
 /* 0,75 deixa o desenho no mesmo tamanho de antes na tela (78x72). */
 const ESCALA = 0.75;
 const LARGURA = QUADRO_LARG * ESCALA;
 const ALTURA = QUADRO_ALT * ESCALA;
+
+/* A tira da virada: as nove poses, no mesmo tamanho de quadro. */
+const VIRADA_QUADROS = 9;
+const VIRADA_LARGURA = QUADRO_LARG * ESCALA;
+const VIRADA_ALTURA = QUADRO_ALT * ESCALA;
 
 /* Onde o desenho dela começa e termina em relação ao ponto do caminho. */
 const CORPO_TOPO = -ALTURA + 6;
@@ -59,6 +80,14 @@ const ESTILOS = `
   from { background-position-x: 0; }
   to { background-position-x: -${QUADRO_LARG * QUADROS * ESCALA}px; }
 }
+@keyframes pixie-virar-ida {
+  from { background-position-x: 0; }
+  to { background-position-x: -${VIRADA_LARGURA * VIRADA_QUADROS}px; }
+}
+@keyframes pixie-virar-volta {
+  from { background-position-x: -${VIRADA_LARGURA * VIRADA_QUADROS}px; }
+  to { background-position-x: 0; }
+}
 @keyframes pixie-pisca {
   0%, 100% { opacity: 0; transform: scale(0.4); }
   45% { opacity: 0.9; transform: scale(1); }
@@ -67,7 +96,7 @@ const ESTILOS = `
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.pixie-corpo {
+.pixie-corpo, .pixie-virar {
   position: absolute;
   background-repeat: no-repeat;
   filter: drop-shadow(0 0 7px rgba(240, 148, 58, 0.6)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
@@ -76,11 +105,17 @@ const ESTILOS = `
   inset: 0;
   background-image: url(/tutorial/pixie-corpo.png);
   background-size: ${LARGURA * QUADROS}px ${ALTURA}px;
-  animation: pixie-quadros 0.42s steps(${QUADROS}) infinite;
+  animation: pixie-quadros 0.6s steps(${QUADROS}) infinite;
+}
+.pixie-virar {
+  inset: 0;
+  background-image: url(/tutorial/pixie-virar.png);
+  background-size: ${VIRADA_LARGURA * VIRADA_QUADROS}px ${VIRADA_ALTURA}px;
+  animation: pixie-virar-ida ${VIRADA_DURACAO}s steps(${VIRADA_QUADROS}) 1 both;
 }
 .pixie-pisca { animation: pixie-pisca 2.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .pixie-corpo { animation: none !important; }
+  .pixie-corpo, .pixie-virar { animation: none !important; }
   .pixie-pisca { animation: none !important; opacity: 0.5; }
 }
 `;
@@ -109,6 +144,8 @@ const limitar = (valor, minimo, maximo) => Math.min(Math.max(valor, minimo), Mat
 export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
   const grupoRef = useRef(null);
   const corpoRef = useRef(null);
+  const asaRef = useRef(null);
+  const virarRef = useRef(null);
   const balaoRef = useRef(null);
   const pontaRef = useRef(null);
   const medidaRef = useRef({ largura: 0, altura: 0 });
@@ -136,6 +173,7 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
 
     const semMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
     const inicio = performance.now();
+    let virando = null;
     let raf = 0;
 
     const desenhar = (agora) => {
@@ -144,17 +182,44 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
       const larguraTela = window.innerWidth;
       const alturaTela = window.innerHeight;
 
-      const fracaoY = semMovimento ? BASE_Y : BASE_Y + AMPLITUDE_Y * Math.sin(t * VELOCIDADE_Y);
+      const fracaoX = semMovimento
+        ? 0.5
+        : 0.5 + AMPLITUDE_X * Math.sin(t * FREQ_X) + AMPLITUDE_X2 * Math.sin(t * FREQ_X2 + FASE_X2);
+      const fracaoY = semMovimento
+        ? BASE_Y
+        : BASE_Y + AMPLITUDE_Y * Math.sin(t * FREQ_Y) + AMPLITUDE_Y2 * Math.sin(t * FREQ_Y2);
+
+      /* Para que lado ela está indo agora: decide a ordem da virada. */
+      const velocidadeX =
+        AMPLITUDE_X * FREQ_X * Math.cos(t * FREQ_X) +
+        AMPLITUDE_X2 * FREQ_X2 * Math.cos(t * FREQ_X2 + FASE_X2);
+      const paraDireita = velocidadeX >= 0;
+
+      /* A cada oito segundos, as nove poses uma vez. */
+      const ciclo = semMovimento ? VIRADA_CADA : t % VIRADA_CADA;
+      const estaVirando = ciclo < VIRADA_DURACAO;
 
       const { largura: larguraBalao, altura: alturaBalao } = medidaRef.current;
 
       /* Ela nunca sobe tanto que o balão saia por cima, nem desce para fora. */
       const alturaNecessaria = FOLGA_DO_BALAO - TOPO_VISUAL + alturaBalao + MARGEM_DA_TELA;
       const limiteBaixo = alturaTela - MARGEM_DA_TELA - ALTURA / 2;
-      const x = larguraTela / 2;
+      const x = fracaoX * larguraTela;
       const y = limitar(fracaoY * alturaTela, alturaNecessaria, limiteBaixo);
 
       grupo.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+
+      /* Troca o bote das asas pela virada (só quando muda). Indo para a
+         direita a tira roda de traz para frente, indo para a esquerda de
+         frente para traz. */
+      if (estaVirando !== virando) {
+        virando = estaVirando;
+        if (asaRef.current) asaRef.current.style.display = estaVirando ? 'none' : 'block';
+        if (virarRef.current) virarRef.current.style.display = estaVirando ? 'block' : 'none';
+      }
+      if (virarRef.current) {
+        virarRef.current.style.animationName = paraDireita ? 'pixie-virar-volta' : 'pixie-virar-ida';
+      }
 
       /* O balão acompanha, mas preso dentro da tela: o deslocamento lateral
          só compensa o quanto ela passou das bordas. */
@@ -208,7 +273,8 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
             willChange: 'transform',
           }}
         >
-          <div className="pixie-corpo" />
+          <div ref={asaRef} className="pixie-corpo" />
+          <div ref={virarRef} className="pixie-virar" style={{ display: 'none' }} />
         </div>
 
         {/* balão de fala: acima do desenho e dentro da tela */}

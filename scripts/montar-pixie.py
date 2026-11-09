@@ -6,9 +6,12 @@ Cada sprite foi exportado separado, numerado pela Chloë (src/assets/pixie/NN.pn
 Aqui eles entram na ordem em que ela mandou e viram uma tira horizontal, que o
 GuiaPixie anima trocando a posição do fundo (steps).
 
-Só o bote das asas, e só as poses em que ela está DE FRENTE: das nove que ela
-mandou, as outras seis mostram a pixie de costas e davam a impressão de ela
-ficar virando. A pixie do tutorial não gira: só bate as asas e sobe e desce.
+Duas tiras:
+
+- corpo: as seis poses do bote das asas (11 a 16), que tocam sem parar.
+- virar: as nove poses (11 a 19) em ordem, tocadas uma vez a cada oito
+  segundos para ela virar de lado. Essa tira toca de traz para frente quando
+  ela vai para a direita e de frente para traz quando ela vai para a esquerda.
 
 As imagens são normalizadas para 104x96 (o mesmo quadro de 105x96 que ela
 mandou, menos 1px de largura para o passo do CSS cair em número inteiro).
@@ -19,8 +22,11 @@ import os
 PASTA = "src/assets/pixie"
 LARG, ALT = 104, 96
 
-# só as poses de frente: 17, 18 e 19 são as únicas com a luz na cara dela
-CORPO = [17, 18, 19]
+# bote das asas, tocado sem parar
+CORPO = [11, 12, 13, 14, 15, 16]
+
+# as nove poses, tocadas uma vez a cada virada
+VIRAR = [11, 12, 13, 14, 15, 16, 17, 18, 19]
 
 
 def montar(numeros, destino):
@@ -35,3 +41,4 @@ def montar(numeros, destino):
 
 if __name__ == "__main__":
     montar(CORPO, "public/tutorial/pixie-corpo.png")
+    montar(VIRAR, "public/tutorial/pixie-virar.png")
