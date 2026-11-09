@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import tiraCorpo from '@/assets/pixie/tiras/pixie-corpo.png';
-import tiraCostas from '@/assets/pixie/tiras/pixie-costas.png';
 import tiraVirar from '@/assets/pixie/tiras/pixie-virar.png';
 
 /**
@@ -11,19 +10,18 @@ import tiraVirar from '@/assets/pixie/tiras/pixie-virar.png';
  * por background-position em steps (nada de canvas). São três tiras:
  *
  * - frente: o bote das asas de frente (quadros 11 a 16), tocado sem parar;
- * - costas: o bote das asas de costas (quadros 17 a 19), tocado sem parar;
+ * - costas: o bote das asas de costas (quadros 17 a 19), montado em
+ *   pixie-costas.png mas ainda não usado: aqui ela voa sempre de frente;
  * - virada: as nove poses da virada (quadros 1 a 9), tocadas uma vez de cada
  *   vez.
  *
- * Ela usa a tira de frente indo para um lado e a de costas indo para o outro
- * (FRENTE_INDO_PARA_A_DIREITA manda qual é qual).
- *
  * O voo é o de antes das poses do giro: ela flutua de um lado para o outro da
  * tela e sobe e desce, numa soma de senoides (dá um caminho orgânico, não um
- * vaivém de metrônomo). A cada travessia (~10s) ela troca de lado e vira: aí
- * entra a tira das nove poses, tocada uma vez, na ordem 9-8-7-6-5-4-3-2-1
- * quando ela está indo para a direita e na ordem 1-2-3-4-5-6-7-8-9 quando está
- * indo para a esquerda.
+ * vaivém de metrônomo), mais para a direita do que para a esquerda. A cada dez
+ * segundos ela dá o giro: aí entra a tira das nove poses, tocada uma vez, na
+ * ordem 9-8-7-6-5-4-3-2-1 quando ela está indo para a direita e na ordem
+ * 1-2-3-4-5-6-7-8-9 quando está indo para a esquerda. Fora do giro ela voa de
+ * frente nos dois sentidos.
  *
  * O balão mora no mesmo grupo (para acompanhar), mas é posicionado a cada
  * quadro com duas regras: fica sempre ACIMA do desenho dela, com folga, e
@@ -35,9 +33,10 @@ import tiraVirar from '@/assets/pixie/tiras/pixie-virar.png';
  */
 
 /* O vaivém: ela flutua de um lado para o outro e sobe e desce. */
-const AMPLITUDE_X = 0.34; // metade do caminho horizontal, em fração da largura
+const BASE_X = 0.68; // ela passeia do meio para a direita
+const AMPLITUDE_X = 0.22; // metade do caminho horizontal, em fração da largura
 const FREQ_X = Math.PI / 10; // rad/s: uma travessia a cada 10s
-const AMPLITUDE_X2 = 0.07; // segunda senoide, para o caminho não ser robótico
+const AMPLITUDE_X2 = 0.05; // segunda senoide, para o caminho não ser robótico
 const FREQ_X2 = Math.PI / 20; // metade da frequência: não cria troca de lado extra
 const FASE_X2 = 1.2;
 
@@ -47,19 +46,15 @@ const FREQ_Y = 1.35; // rad/s: um sobe e desce a cada 4,6s
 const AMPLITUDE_Y2 = 0.012;
 const FREQ_Y2 = 2.3;
 
-/* De que lado ela fica quando vai para a direita: frente = 11 a 16,
-   costas = 17 a 19. Trocando este valor, as duas tiras se invertem. */
-const FRENTE_INDO_PARA_A_DIREITA = true;
-
-/* A virada: ela roda as nove poses uma vez sempre que troca de lado. O vaivém
-   faz uma travessia a cada ~10s, então na prática a virada entra a cada 10s. */
+/* A virada: a cada dez segundos ela roda as nove poses uma vez, no ar. Não é
+   presa à troca de lado: indo para a esquerda ela também vai de frente. */
+const VIRADA_CADA = 10;
 const VIRADA_DURACAO = 0.8; // tem de casar com a animação do CSS
 
 /* Tamanho de um quadro na folha e o quanto ele cresce na tela. */
 const QUADRO_LARG = 120;
 const QUADRO_ALT = 96;
 const QUADROS = 6; // bote das asas de frente
-const QUADROS_COSTAS = 3; // bote das asas de costas
 /* 0,72 deixa o desenho no mesmo tamanho de antes na tela. */
 const ESCALA = 0.72;
 const LARGURA = QUADRO_LARG * ESCALA;
@@ -95,10 +90,7 @@ const ESTILOS = `
   from { background-position-x: 0; }
   to { background-position-x: -${QUADRO_LARG * QUADROS * ESCALA}px; }
 }
-@keyframes pixie-costas {
-  from { background-position-x: 0; }
-  to { background-position-x: -${QUADRO_LARG * QUADROS_COSTAS * ESCALA}px; }
-}
+
 @keyframes pixie-virar-ida {
   from { background-position-x: 0; }
   to { background-position-x: -${VIRADA_LARGURA * VIRADA_QUADROS}px; }
@@ -115,7 +107,7 @@ const ESTILOS = `
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.pixie-frente, .pixie-costas, .pixie-virar {
+.pixie-frente, .pixie-virar {
   position: absolute;
   background-repeat: no-repeat;
   filter: drop-shadow(0 0 7px rgba(240, 148, 58, 0.6)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
@@ -126,12 +118,6 @@ const ESTILOS = `
   background-size: ${LARGURA * QUADROS}px ${ALTURA}px;
   animation: pixie-frente 0.6s steps(${QUADROS}) infinite;
 }
-.pixie-costas {
-  inset: 0;
-  background-image: url(${tiraCostas});
-  background-size: ${LARGURA * QUADROS_COSTAS}px ${ALTURA}px;
-  animation: pixie-costas ${0.1 * QUADROS_COSTAS}s steps(${QUADROS_COSTAS}) infinite;
-}
 .pixie-virar {
   inset: 0;
   background-image: url(${tiraVirar});
@@ -140,7 +126,7 @@ const ESTILOS = `
 }
 .pixie-pisca { animation: pixie-pisca 2.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .pixie-frente, .pixie-costas, .pixie-virar { animation: none !important; }
+  .pixie-frente, .pixie-virar { animation: none !important; }
   .pixie-pisca { animation: none !important; opacity: 0.5; }
 }
 `;
@@ -170,7 +156,6 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
   const grupoRef = useRef(null);
   const corpoRef = useRef(null);
   const asaRef = useRef(null);
-  const costasRef = useRef(null);
   const virarRef = useRef(null);
   const balaoRef = useRef(null);
   const pontaRef = useRef(null);
@@ -199,9 +184,7 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
 
     const semMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
     const inicio = performance.now();
-    let camada = null;
-    let direcaoAnterior = null;
-    let virandoAte = -1;
+    let virando = null;
     let raf = 0;
 
     const desenhar = (agora) => {
@@ -211,8 +194,8 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
       const alturaTela = window.innerHeight;
 
       const fracaoX = semMovimento
-        ? 0.5
-        : 0.5 + AMPLITUDE_X * Math.sin(t * FREQ_X) + AMPLITUDE_X2 * Math.sin(t * FREQ_X2 + FASE_X2);
+        ? BASE_X
+        : BASE_X + AMPLITUDE_X * Math.sin(t * FREQ_X) + AMPLITUDE_X2 * Math.sin(t * FREQ_X2 + FASE_X2);
       const fracaoY = semMovimento
         ? BASE_Y
         : BASE_Y + AMPLITUDE_Y * Math.sin(t * FREQ_Y) + AMPLITUDE_Y2 * Math.sin(t * FREQ_Y2);
@@ -223,13 +206,9 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
         AMPLITUDE_X2 * FREQ_X2 * Math.cos(t * FREQ_X2 + FASE_X2);
       const paraDireita = velocidadeX >= 0;
 
-      /* A virada entra na troca de lado (que o vaivém faz a cada ~10s), para
-         ela nunca trocar de frente para costas no meio de um quadro. */
-      if (direcaoAnterior !== null && paraDireita !== direcaoAnterior) {
-        virandoAte = t + VIRADA_DURACAO;
-      }
-      direcaoAnterior = paraDireita;
-      const estaVirando = t < virandoAte;
+      /* A cada dez segundos, as nove poses uma vez. */
+      const ciclo = semMovimento ? VIRADA_CADA : t % VIRADA_CADA;
+      const estaVirando = ciclo < VIRADA_DURACAO;
 
       const { largura: larguraBalao, altura: alturaBalao } = medidaRef.current;
 
@@ -241,18 +220,15 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
 
       grupo.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
 
-      /* Qual tira está na tela: a virada enquanto ela vira, senão o bote das
-         asas do lado para onde ela está indo. */
-      const deCostas = !semMovimento && paraDireita !== FRENTE_INDO_PARA_A_DIREITA;
-      const novaCamada = estaVirando ? 'virar' : deCostas ? 'costas' : 'frente';
+      /* Ela voa sempre de frente (a tira do bote das asas 11 a 16), para os
+         dois lados. Só sai dessa tira na hora do giro.
 
-      /* Indo para a direita a tira da virada roda de trás para frente, indo
+         Indo para a direita a tira da virada roda de trás para frente, indo
          para a esquerda de frente para trás. */
-      if (novaCamada !== camada) {
-        camada = novaCamada;
-        if (asaRef.current) asaRef.current.style.display = camada === 'frente' ? 'block' : 'none';
-        if (costasRef.current) costasRef.current.style.display = camada === 'costas' ? 'block' : 'none';
-        if (virarRef.current) virarRef.current.style.display = camada === 'virar' ? 'block' : 'none';
+      if (estaVirando !== virando) {
+        virando = estaVirando;
+        if (asaRef.current) asaRef.current.style.display = estaVirando ? 'none' : 'block';
+        if (virarRef.current) virarRef.current.style.display = estaVirando ? 'block' : 'none';
       }
       if (virarRef.current) {
         virarRef.current.style.animationName = paraDireita ? 'pixie-virar-volta' : 'pixie-virar-ida';
@@ -311,7 +287,6 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
           }}
         >
           <div ref={asaRef} className="pixie-frente" />
-          <div ref={costasRef} className="pixie-costas" style={{ display: 'none' }} />
           <div ref={virarRef} className="pixie-virar" style={{ display: 'none' }} />
         </div>
 
