@@ -40,6 +40,9 @@ const bloco = {
 
 const emailValido = (valor) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(valor || '').trim());
 
+/** Margem pra não brigar com o relógio enquanto a pessoa salva. */
+const TOLERANCIA_PASSADO_MS = 5 * 60 * 1000;
+
 const atHour = (data, hora) => {
   const base = new Date(data);
   base.setHours(hora, 0, 0, 0);
@@ -168,6 +171,11 @@ export default function ModalConvidar({ modelos = [], onFechar, onEnviar }) {
       if (!turno.inicio || !turno.fim) return `Informe início e fim do turno ${numero}.`;
       if (turno.fim.getTime() <= turno.inicio.getTime()) {
         return `O fim do turno ${numero} precisa ser depois do início.`;
+      }
+      /* A conta pode demorar a ser criada: turno que começa no passado não
+         entra, senão nasceria marcado e sem nenhum registro de ponto. */
+      if (turno.inicio.getTime() < Date.now() - TOLERANCIA_PASSADO_MS) {
+        return `O turno ${numero} não pode começar no passado. Escolha uma data daqui pra frente.`;
       }
       if (turno.recorrente && sortDays(turno.dias).length === 0) {
         return `Marque ao menos um dia da semana no turno ${numero} (ou deixe como turno único).`;

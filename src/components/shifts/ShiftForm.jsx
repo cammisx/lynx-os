@@ -23,6 +23,9 @@ const atHour = (date, hour) => {
   return base;
 };
 
+/** Margem pra não brigar com o relógio enquanto a pessoa salva. */
+const TOLERANCIA_PASSADO_MS = 5 * 60 * 1000;
+
 export default function ShiftForm({
   users,
   models,
@@ -144,6 +147,14 @@ export default function ShiftForm({
     }
     if (fim.getTime() <= inicio.getTime()) {
       setError('O fim precisa ser depois do início.');
+      return;
+    }
+
+    /* Turno marcado no passado nasce sem registro nenhum. Ao editar, o que
+       já começou pode continuar como está: só barra quando o início muda. */
+    const inicioMudou = !shift || new Date(shift.inicio).getTime() !== inicio.getTime();
+    if (inicioMudou && inicio.getTime() < Date.now() - TOLERANCIA_PASSADO_MS) {
+      setError('O turno não pode começar no passado. Escolha um horário daqui pra frente.');
       return;
     }
 

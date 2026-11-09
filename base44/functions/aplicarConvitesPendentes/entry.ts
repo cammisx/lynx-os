@@ -65,6 +65,24 @@ const mensagemNovoTurno = (turno: any, dias: number[]) => {
   )}${ate}.`;
 };
 
+/** Recado no sino de todo admin: o convite entrou, mas sobrou pendência. */
+const avisarAdmins = async (base44: any, titulo: string, mensagem: string) => {
+  const admins = (await paginado(base44.asServiceRole.entities.User, { role: 'admin' })).filter(
+    (pessoa: any) => pessoa?.id
+  );
+  for (const admin of admins) {
+    await base44.asServiceRole.entities.Notificacao.create({
+      usuario_id: admin.id,
+      titulo,
+      mensagem,
+      tipo: 'convite',
+      status: 'pendente',
+      lida: false,
+      criado_por_automacao: false,
+    }).catch(() => null);
+  }
+};
+
 const nomeDe = (usuario: any) =>
   usuario?.nome_exibicao || usuario?.full_name || usuario?.email || '';
 
@@ -107,6 +125,7 @@ Deno.serve(async (req: Request) => {
       const nomeConvite = String(convite.nome || '').trim();
       const nome = nomeConvite || nomeDe(usuario);
       const erros: string[] = [];
+      const ignorados: string[] = [];
 
       try {
         const patch: any = {};
@@ -153,6 +172,18 @@ Deno.serve(async (req: Request) => {
         const turnosDoConvite = Array.isArray(convite.turnos) ? convite.turnos : [];
         for (const turno of turnosDoConvite) {
           if (!turno?.inicio || !turno?.fim) continue;
+
+          // Turno não nasce no passado: ficaria marcado sem nenhum registro.
+          const inicioMs = new Date(turno.inicio).getTime();
+          if (Number.isNaN(inicioMs) || inicioMs <= Date.now()) {
+            ignorados.push(
+              `${turno.modelo_nome ? `em ${turno.modelo_nome}: ` : ''}início ${dataCurta(
+                turno.inicio
+              )} às ${horaCurta(turno.inicio)} já passou`
+            );
+            continue;
+          }
+
           const dias = Array.isArray(turno.dias_semana)
             ? turno.dias_semana.map(Number).filter((dia: number) => dia >= 0 && dia <= 6)
             : [];
@@ -188,17 +219,33 @@ Deno.serve(async (req: Request) => {
           }
         }
 
+        const pendencias = [
+          ...ignorados.map((item) => `Turno não criado: ${item}`),
+          ...erros,
+        ].join(' | ');
+
         await base44.asServiceRole.entities.ConviteChatter.update(convite.id, {
           status: 'aplicado',
           aplicado_em: new Date().toISOString(),
-          erro: erros.join(' | '),
+          erro: pendencias,
         });
+
+        if (ignorados.length) {
+          await avisarAdmins(
+            base44,
+            'Convite aplicado com turno de fora',
+            `${nome} entrou, mas ${ignorados.length} turno(s) do convite não foram criados: ${ignorados.join(
+              '; '
+            )}. Marque a escala de novo com data futura.`
+          );
+        }
         aplicados.push({
           email,
           nome,
           cargo: convite.cargo || 'user',
           modelos: vinculos.length,
-          turnos: turnosDoConvite.length,
+          turnos: turnosDoConvite.length - ignorados.length,
+          turnos_ignorados: ignorados.length,
         });
       } catch (falha: any) {
         const mensagem = String(falha?.message || falha || 'Falha ao aplicar convite');
