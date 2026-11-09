@@ -183,7 +183,7 @@ export default function QuemEhEssePokemon({ recordeExterno = 0, aoRecorde }) {
             marginRight: 'auto',
           }}
         >
-          Quem é esse Pokémon?
+          QUEM É ESSE POKÉMON?
         </span>
         <div style={contadorStyle}>
           <span style={numeroStyle}>{acertos}</span>
