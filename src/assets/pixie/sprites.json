@@ -1,0 +1,2928 @@
+[
+ {
+  "nome": "dourada-frente-01",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   0,
+   0,
+   26,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-02",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   26,
+   0,
+   52,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-03",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   52,
+   0,
+   78,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-04",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   78,
+   0,
+   104,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-05",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   104,
+   0,
+   130,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-06",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   130,
+   0,
+   156,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-07",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   156,
+   0,
+   182,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-08",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   182,
+   0,
+   208,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-09",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   208,
+   0,
+   234,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-10",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   234,
+   0,
+   260,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-11",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   260,
+   0,
+   286,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-12",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   286,
+   0,
+   312,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-13",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   312,
+   0,
+   338,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-14",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   338,
+   0,
+   364,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-15",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   364,
+   0,
+   390,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-16",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   390,
+   0,
+   416,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-17",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   416,
+   0,
+   442,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-18",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   442,
+   0,
+   468,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-19",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   468,
+   0,
+   494,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-20",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   494,
+   0,
+   520,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-21",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   520,
+   0,
+   546,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-22",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   546,
+   0,
+   572,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-23",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   572,
+   0,
+   598,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-24",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   598,
+   0,
+   624,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-25",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   624,
+   0,
+   650,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-26",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   650,
+   0,
+   676,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-27",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   676,
+   0,
+   702,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-28",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   702,
+   0,
+   728,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-29",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   728,
+   0,
+   754,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-30",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   754,
+   0,
+   780,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-31",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   780,
+   0,
+   806,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-32",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   806,
+   0,
+   832,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-33",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   832,
+   0,
+   858,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-34",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   858,
+   0,
+   884,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-35",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   884,
+   0,
+   910,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-36",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   910,
+   0,
+   936,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-37",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   936,
+   0,
+   962,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-38",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   962,
+   0,
+   988,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-frente-39",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   988,
+   0,
+   1014,
+   22
+  ]
+ },
+ {
+  "nome": "dourada-perfil-01",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   0,
+   23,
+   26,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-02",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   26,
+   23,
+   52,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-03",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   52,
+   23,
+   78,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-04",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   78,
+   23,
+   104,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-05",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   104,
+   23,
+   130,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-06",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   130,
+   23,
+   156,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-07",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   156,
+   23,
+   182,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-08",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   182,
+   23,
+   208,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-09",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   208,
+   23,
+   234,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-10",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   234,
+   23,
+   260,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-11",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   260,
+   23,
+   286,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-12",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   286,
+   23,
+   312,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-13",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   312,
+   23,
+   338,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-14",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   338,
+   23,
+   364,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-15",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   364,
+   23,
+   390,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-16",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   390,
+   23,
+   416,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-17",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   416,
+   23,
+   442,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-18",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   442,
+   23,
+   468,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-19",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   468,
+   23,
+   494,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-20",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   494,
+   23,
+   520,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-21",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   520,
+   23,
+   546,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-22",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   546,
+   23,
+   572,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-23",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   572,
+   23,
+   598,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-24",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   598,
+   23,
+   624,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-25",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   624,
+   23,
+   650,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-26",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   650,
+   23,
+   676,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-27",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   676,
+   23,
+   702,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-28",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   702,
+   23,
+   728,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-29",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   728,
+   23,
+   754,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-30",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   754,
+   23,
+   780,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-31",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   780,
+   23,
+   806,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-32",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   806,
+   23,
+   832,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-33",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   832,
+   23,
+   858,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-34",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   858,
+   23,
+   884,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-35",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   884,
+   23,
+   910,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-36",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   910,
+   23,
+   936,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-37",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   936,
+   23,
+   962,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-38",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   962,
+   23,
+   988,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-perfil-39",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   988,
+   23,
+   1014,
+   46
+  ]
+ },
+ {
+  "nome": "dourada-giro-01",
+  "largura": 20,
+  "altura": 26,
+  "caixa": [
+   0,
+   49,
+   20,
+   75
+  ]
+ },
+ {
+  "nome": "dourada-giro-02",
+  "largura": 20,
+  "altura": 26,
+  "caixa": [
+   20,
+   49,
+   40,
+   75
+  ]
+ },
+ {
+  "nome": "dourada-giro-03",
+  "largura": 20,
+  "altura": 26,
+  "caixa": [
+   40,
+   49,
+   60,
+   75
+  ]
+ },
+ {
+  "nome": "dourada-giro-04",
+  "largura": 20,
+  "altura": 26,
+  "caixa": [
+   60,
+   49,
+   80,
+   75
+  ]
+ },
+ {
+  "nome": "dourada-giro-05",
+  "largura": 20,
+  "altura": 29,
+  "caixa": [
+   80,
+   50,
+   100,
+   79
+  ]
+ },
+ {
+  "nome": "verde-frente-01",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   0,
+   97,
+   26,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-02",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   26,
+   97,
+   52,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-03",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   52,
+   97,
+   78,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-04",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   78,
+   97,
+   104,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-05",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   104,
+   97,
+   130,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-06",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   130,
+   97,
+   156,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-07",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   156,
+   97,
+   182,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-08",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   182,
+   97,
+   208,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-09",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   208,
+   97,
+   234,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-10",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   234,
+   97,
+   260,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-11",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   260,
+   97,
+   286,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-12",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   286,
+   97,
+   312,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-13",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   312,
+   97,
+   338,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-14",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   338,
+   97,
+   364,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-15",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   364,
+   97,
+   390,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-16",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   390,
+   97,
+   416,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-17",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   416,
+   97,
+   442,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-18",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   442,
+   97,
+   468,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-19",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   468,
+   97,
+   494,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-20",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   494,
+   97,
+   520,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-21",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   520,
+   97,
+   546,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-22",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   546,
+   97,
+   572,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-23",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   572,
+   97,
+   598,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-24",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   598,
+   97,
+   624,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-25",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   624,
+   97,
+   650,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-26",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   650,
+   97,
+   676,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-27",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   676,
+   97,
+   702,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-28",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   702,
+   97,
+   728,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-29",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   728,
+   97,
+   754,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-30",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   754,
+   97,
+   780,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-31",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   780,
+   97,
+   806,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-32",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   806,
+   97,
+   832,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-33",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   832,
+   97,
+   858,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-34",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   858,
+   97,
+   884,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-35",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   884,
+   97,
+   910,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-36",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   910,
+   97,
+   936,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-37",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   936,
+   97,
+   962,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-38",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   962,
+   97,
+   988,
+   119
+  ]
+ },
+ {
+  "nome": "verde-frente-39",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   988,
+   97,
+   1014,
+   119
+  ]
+ },
+ {
+  "nome": "verde-perfil-01",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   0,
+   120,
+   26,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-02",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   26,
+   120,
+   52,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-03",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   52,
+   120,
+   78,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-04",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   78,
+   120,
+   104,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-05",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   104,
+   120,
+   130,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-06",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   130,
+   120,
+   156,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-07",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   156,
+   120,
+   182,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-08",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   182,
+   120,
+   208,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-09",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   208,
+   120,
+   234,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-10",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   234,
+   120,
+   260,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-11",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   260,
+   120,
+   286,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-12",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   286,
+   120,
+   312,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-13",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   312,
+   120,
+   338,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-14",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   338,
+   120,
+   364,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-15",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   364,
+   120,
+   390,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-16",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   390,
+   120,
+   416,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-17",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   416,
+   120,
+   442,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-18",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   442,
+   120,
+   468,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-19",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   468,
+   120,
+   494,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-20",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   494,
+   120,
+   520,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-21",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   520,
+   120,
+   546,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-22",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   546,
+   120,
+   572,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-23",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   572,
+   120,
+   598,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-24",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   598,
+   120,
+   624,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-25",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   624,
+   120,
+   650,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-26",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   650,
+   120,
+   676,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-27",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   676,
+   120,
+   702,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-28",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   702,
+   120,
+   728,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-29",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   728,
+   120,
+   754,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-30",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   754,
+   120,
+   780,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-31",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   780,
+   120,
+   806,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-32",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   806,
+   120,
+   832,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-33",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   832,
+   120,
+   858,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-34",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   858,
+   120,
+   884,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-35",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   884,
+   120,
+   910,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-36",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   910,
+   120,
+   936,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-37",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   936,
+   120,
+   962,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-38",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   962,
+   120,
+   988,
+   143
+  ]
+ },
+ {
+  "nome": "verde-perfil-39",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   988,
+   120,
+   1014,
+   143
+  ]
+ },
+ {
+  "nome": "verde-giro-01",
+  "largura": 21,
+  "altura": 26,
+  "caixa": [
+   0,
+   146,
+   21,
+   172
+  ]
+ },
+ {
+  "nome": "verde-giro-02",
+  "largura": 21,
+  "altura": 26,
+  "caixa": [
+   21,
+   146,
+   42,
+   172
+  ]
+ },
+ {
+  "nome": "verde-giro-03",
+  "largura": 20,
+  "altura": 26,
+  "caixa": [
+   42,
+   146,
+   62,
+   172
+  ]
+ },
+ {
+  "nome": "verde-giro-04",
+  "largura": 21,
+  "altura": 29,
+  "caixa": [
+   62,
+   147,
+   83,
+   176
+  ]
+ },
+ {
+  "nome": "azul-frente-01",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   0,
+   198,
+   26,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-02",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   26,
+   198,
+   52,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-03",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   52,
+   198,
+   78,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-04",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   78,
+   198,
+   104,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-05",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   104,
+   198,
+   130,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-06",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   130,
+   198,
+   156,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-07",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   156,
+   198,
+   182,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-08",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   182,
+   198,
+   208,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-09",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   208,
+   198,
+   234,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-10",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   234,
+   198,
+   260,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-11",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   260,
+   198,
+   286,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-12",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   286,
+   198,
+   312,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-13",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   312,
+   198,
+   338,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-14",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   338,
+   198,
+   364,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-15",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   364,
+   198,
+   390,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-16",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   390,
+   198,
+   416,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-17",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   416,
+   198,
+   442,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-18",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   442,
+   198,
+   468,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-19",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   468,
+   198,
+   494,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-20",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   494,
+   198,
+   520,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-21",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   520,
+   198,
+   546,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-22",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   546,
+   198,
+   572,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-23",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   572,
+   198,
+   598,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-24",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   598,
+   198,
+   624,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-25",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   624,
+   198,
+   650,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-26",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   650,
+   198,
+   676,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-27",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   676,
+   198,
+   702,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-28",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   702,
+   198,
+   728,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-29",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   728,
+   198,
+   754,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-30",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   754,
+   198,
+   780,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-31",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   780,
+   198,
+   806,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-32",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   806,
+   198,
+   832,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-33",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   832,
+   198,
+   858,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-34",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   858,
+   198,
+   884,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-35",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   884,
+   198,
+   910,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-36",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   910,
+   198,
+   936,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-37",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   936,
+   198,
+   962,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-38",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   962,
+   198,
+   988,
+   220
+  ]
+ },
+ {
+  "nome": "azul-frente-39",
+  "largura": 26,
+  "altura": 22,
+  "caixa": [
+   988,
+   198,
+   1014,
+   220
+  ]
+ },
+ {
+  "nome": "azul-perfil-01",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   0,
+   221,
+   26,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-02",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   26,
+   221,
+   52,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-03",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   52,
+   221,
+   78,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-04",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   78,
+   221,
+   104,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-05",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   104,
+   221,
+   130,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-06",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   130,
+   221,
+   156,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-07",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   156,
+   221,
+   182,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-08",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   182,
+   221,
+   208,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-09",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   208,
+   221,
+   234,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-10",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   234,
+   221,
+   260,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-11",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   260,
+   221,
+   286,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-12",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   286,
+   221,
+   312,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-13",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   312,
+   221,
+   338,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-14",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   338,
+   221,
+   364,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-15",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   364,
+   221,
+   390,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-16",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   390,
+   221,
+   416,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-17",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   416,
+   221,
+   442,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-18",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   442,
+   221,
+   468,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-19",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   468,
+   221,
+   494,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-20",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   494,
+   221,
+   520,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-21",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   520,
+   221,
+   546,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-22",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   546,
+   221,
+   572,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-23",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   572,
+   221,
+   598,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-24",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   598,
+   221,
+   624,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-25",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   624,
+   221,
+   650,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-26",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   650,
+   221,
+   676,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-27",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   676,
+   221,
+   702,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-28",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   702,
+   221,
+   728,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-29",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   728,
+   221,
+   754,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-30",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   754,
+   221,
+   780,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-31",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   780,
+   221,
+   806,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-32",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   806,
+   221,
+   832,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-33",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   832,
+   221,
+   858,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-34",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   858,
+   221,
+   884,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-35",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   884,
+   221,
+   910,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-36",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   910,
+   221,
+   936,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-37",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   936,
+   221,
+   962,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-38",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   962,
+   221,
+   988,
+   244
+  ]
+ },
+ {
+  "nome": "azul-perfil-39",
+  "largura": 26,
+  "altura": 23,
+  "caixa": [
+   988,
+   221,
+   1014,
+   244
+  ]
+ },
+ {
+  "nome": "azul-giro-01",
+  "largura": 20,
+  "altura": 26,
+  "caixa": [
+   0,
+   247,
+   20,
+   273
+  ]
+ },
+ {
+  "nome": "azul-giro-02",
+  "largura": 20,
+  "altura": 26,
+  "caixa": [
+   20,
+   247,
+   40,
+   273
+  ]
+ },
+ {
+  "nome": "azul-giro-03",
+  "largura": 20,
+  "altura": 26,
+  "caixa": [
+   40,
+   247,
+   60,
+   273
+  ]
+ },
+ {
+  "nome": "azul-giro-04",
+  "largura": 20,
+  "altura": 26,
+  "caixa": [
+   60,
+   247,
+   80,
+   273
+  ]
+ },
+ {
+  "nome": "azul-giro-05",
+  "largura": 20,
+  "altura": 29,
+  "caixa": [
+   80,
+   248,
+   100,
+   277
+  ]
+ },
+ {
+  "nome": "brilho-01",
+  "largura": 28,
+  "altura": 64,
+  "caixa": [
+   31,
+   300,
+   59,
+   364
+  ]
+ },
+ {
+  "nome": "brilho-02",
+  "largura": 29,
+  "altura": 67,
+  "caixa": [
+   70,
+   300,
+   99,
+   367
+  ]
+ },
+ {
+  "nome": "brilho-03",
+  "largura": 29,
+  "altura": 72,
+  "caixa": [
+   109,
+   300,
+   138,
+   372
+  ]
+ },
+ {
+  "nome": "brilho-04",
+  "largura": 33,
+  "altura": 73,
+  "caixa": [
+   149,
+   301,
+   182,
+   374
+  ]
+ },
+ {
+  "nome": "brilho-05",
+  "largura": 35,
+  "altura": 76,
+  "caixa": [
+   191,
+   302,
+   226,
+   378
+  ]
+ },
+ {
+  "nome": "brilho-06",
+  "largura": 32,
+  "altura": 69,
+  "caixa": [
+   233,
+   301,
+   265,
+   370
+  ]
+ },
+ {
+  "nome": "brilho-07",
+  "largura": 15,
+  "altura": 4,
+  "caixa": [
+   269,
+   368,
+   284,
+   372
+  ]
+ },
+ {
+  "nome": "brilho-08",
+  "largura": 28,
+  "altura": 66,
+  "caixa": [
+   297,
+   300,
+   325,
+   366
+  ]
+ },
+ {
+  "nome": "brilho-09",
+  "largura": 30,
+  "altura": 63,
+  "caixa": [
+   336,
+   300,
+   366,
+   363
+  ]
+ },
+ {
+  "nome": "brilho-10",
+  "largura": 28,
+  "altura": 64,
+  "caixa": [
+   375,
+   299,
+   403,
+   363
+  ]
+ },
+ {
+  "nome": "brilho-11",
+  "largura": 29,
+  "altura": 67,
+  "caixa": [
+   413,
+   297,
+   442,
+   364
+  ]
+ },
+ {
+  "nome": "brilho-12",
+  "largura": 30,
+  "altura": 70,
+  "caixa": [
+   451,
+   298,
+   481,
+   368
+  ]
+ },
+ {
+  "nome": "brilho-13",
+  "largura": 34,
+  "altura": 73,
+  "caixa": [
+   487,
+   296,
+   521,
+   369
+  ]
+ },
+ {
+  "nome": "brilho-14",
+  "largura": 35,
+  "altura": 76,
+  "caixa": [
+   528,
+   299,
+   563,
+   375
+  ]
+ },
+ {
+  "nome": "brilho-15",
+  "largura": 31,
+  "altura": 69,
+  "caixa": [
+   573,
+   298,
+   604,
+   367
+  ]
+ },
+ {
+  "nome": "brilho-16",
+  "largura": 28,
+  "altura": 66,
+  "caixa": [
+   613,
+   302,
+   641,
+   368
+  ]
+ },
+ {
+  "nome": "brilho-17",
+  "largura": 14,
+  "altura": 5,
+  "caixa": [
+   654,
+   295,
+   668,
+   300
+  ]
+ },
+ {
+  "nome": "brilho-18",
+  "largura": 31,
+  "altura": 65,
+  "caixa": [
+   670,
+   296,
+   701,
+   361
+  ]
+ }
+]
