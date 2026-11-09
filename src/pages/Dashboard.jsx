@@ -31,6 +31,7 @@ import usePresencaApp from '@/hooks/usePresencaApp';
 import useAvisarTurnosPendentes from '@/hooks/useAvisarTurnosPendentes';
 import useVersaoPublicada from '@/hooks/useVersaoPublicada';
 import { sincronizarAdminsUmaVez } from '@/lib/admins';
+import useAplicarConvite from '@/hooks/useAplicarConvite';
 import { useIsMobile } from '@/hooks/use-mobile';
 import MobileShell from '@/components/mobile/MobileShell';
 
@@ -54,6 +55,8 @@ export default function Dashboard() {
   const telaPequena = useIsMobile();
   // Carrega o perfil (tema, nome, foto, fundo) antes de tudo aparecer na tela.
   const perfil = usePerfil(user);
+  // Convite pendente vira cargo, modelos e turnos no primeiro acesso.
+  useAplicarConvite(user);
 
   /* Ordem dos ícones da barra: entra pelo perfil e volta para ele quando muda. */
   const salvarBarra = useCallback(

@@ -1,12 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import Window from '@/components/Window';
-import { PlusIcon, UsersIcon } from '@/components/icons';
+import { CloseIcon, PencilIcon, PlusIcon, TrashIcon, UsersIcon } from '@/components/icons';
 import ModalConvidar from '@/components/chatters/ModalConvidar';
+import ModalExcluirAcesso from '@/components/chatters/ModalExcluirAcesso';
+import FichaChatterModal from '@/components/chatters/FichaChatterModal';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/lib/AuthContext';
 import { ehAdmin } from '@/lib/chat';
 import { guardarNomePendente, nomePendente, normalizarEmail, tirarNomePendente } from '@/lib/convites';
+import {
+  aplicarConvitesPendentes,
+  cancelarConvite,
+  criarConvite,
+  enviarConviteBase44,
+  listarConvitesPendentes,
+  removerAcesso,
+} from '@/lib/convitesChatter';
+import { emitChattersChanged, emitModelsChanged } from '@/lib/desktopEvents';
 import { cargoDaPessoa, fotoDaPessoa, iniciaisDe, nomeDaPessoa } from '@/lib/perfilLogica';
 import { listarPerfis, mapaDePerfis } from '@/lib/perfis';
 
@@ -48,12 +59,27 @@ const avatar = {
   overflow: 'hidden',
 };
 
+const botaoIcone = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 24,
+  height: 24,
+  borderRadius: 7,
+  border: '1px solid color-mix(in srgb, var(--c2) 16%, transparent)',
+  background: 'transparent',
+  color: 'var(--c2)',
+  cursor: 'pointer',
+  padding: 0,
+  flexShrink: 0,
+};
+
 /**
- * Chatters: a relação de todo mundo que tem conta no app.
+ * Chatters: quem tem conta no app.
  *
- * Só leitura por enquanto: nome de exibição, e-mail e cargo de cada pessoa,
- * com busca por nome ou e-mail. As ações daqui (comissões, edição) voltam
- * quando a tela for definida.
+ * Convite completo (cargo, modelos com ID e turnos), ficha de cadastro por
+ * pessoa e remoção de acesso. O convite pendente aparece com o selo de quem
+ * ainda não criou a conta.
  */
 export default function ChattersWindow({ onClose }) {
   const pequeno = useIsMobile();
@@ -61,11 +87,16 @@ export default function ChattersWindow({ onClose }) {
   const admin = ehAdmin(user);
   const [usuarios, setUsuarios] = useState([]);
   const [perfis, setPerfis] = useState(new Map());
+  const [modelos, setModelos] = useState([]);
+  const [convites, setConvites] = useState([]);
   const [busca, setBusca] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
   const [convidando, setConvidando] = useState(false);
+  const [fichaAberta, setFichaAberta] = useState(null);
+  const [excluindo, setExcluindo] = useState(null);
   const [aviso, setAviso] = useState('');
+  const jaAplicou = useRef(false);
 
   /* Nome digitado num convite anterior, esperando a pessoa aparecer no app. */
   const aplicarNomesPendentes = async (listaUsuarios) => {
@@ -99,6 +130,13 @@ export default function ChattersWindow({ onClose }) {
       const comNomes = await aplicarNomesPendentes(asList(listaUsuarios));
       setUsuarios(comNomes);
       setPerfis(mapaDePerfis(listaPerfis));
+      /* Modelos só o admin enxerga (RLS), e só ele convida. */
+      if (admin) {
+        setModelos(asList(await base44.entities.Modelo.list().catch(() => [])));
+      }
+      if (admin) {
+        setConvites(await listarConvitesPendentes().catch(() => []));
+      }
       setErro('');
     } catch (falha) {
       console.warn('[Chatters] carregar', falha);
@@ -112,15 +150,31 @@ export default function ChattersWindow({ onClose }) {
     carregar();
   }, [carregar]);
 
+  /* Convite pendente + conta já criada? A função aplica cargo, modelos e turnos. */
+  useEffect(() => {
+    if (!admin || jaAplicou.current || carregando || !convites.length) return;
+    jaAplicou.current = true;
+    aplicarConvitesPendentes()
+      .then(async (resultado) => {
+        if (!resultado?.aplicados) return;
+        emitChattersChanged();
+        emitModelsChanged();
+        setAviso(
+          `${resultado.aplicados} convite(s) aplicados agora: cargo, modelos e turnos de quem já criou a conta.`
+        );
+        await carregar();
+      })
+      .catch((falha) => console.warn('[Chatters] aplicar convites', falha));
+  }, [admin, carregando, convites, carregar]);
+
   /**
-   * Convite: o Base44 manda o e-mail (base44.users.inviteUser) e o nome é
-   * aplicado no usuário na hora, se ele já existir na lista. Se ainda não
-   * existir, fica guardado e entra sozinho no próximo carregamento.
+   * Convite: o Base44 manda o e-mail com o cargo certo e o convite completo
+   * fica guardado para nascer junto com a conta.
    */
-  const convidar = async ({ nome, email }) => {
+  const convidar = async ({ nome, email, cargo, modelos: vinculos, turnos }) => {
     const alvo = normalizarEmail(email);
     try {
-      await base44.users.inviteUser(alvo, 'user');
+      await enviarConviteBase44(alvo, cargo);
     } catch (falha) {
       console.warn('[Chatters] convite recusado', falha);
       const mensagem =
@@ -128,23 +182,78 @@ export default function ChattersWindow({ onClose }) {
       return { erro: `${mensagem} (confira se o e-mail está certo e se você é admin)` };
     }
 
-    setAviso(`Convite enviado para ${nome} (${alvo}).`);
+    try {
+      await criarConvite({
+        nome,
+        email: alvo,
+        cargo,
+        modelos: vinculos,
+        turnos,
+        convidadoPor: user?.id || '',
+      });
+    } catch (falha) {
+      console.warn('[Chatters] convite não ficou guardado', falha);
+      return {
+        erro: 'O e-mail do convite saiu, mas não consegui guardar os modelos e turnos. Abra o convite de novo.',
+      };
+    }
+
+    /* Pessoa que já tem conta: aplica na hora em vez de esperar o próximo login. */
+    let aplicado = false;
     try {
       const achados = asList(await base44.entities.User.filter({ email: alvo }));
       const alvoUser = achados[0];
       if (alvoUser?.id) {
-        await base44.entities.User.update(alvoUser.id, { nome_exibicao: nome });
+        if (nome) await base44.entities.User.update(alvoUser.id, { nome_exibicao: nome });
         tirarNomePendente(alvo);
+        const resultado = await aplicarConvitesPendentes();
+        aplicado = Boolean(resultado?.aplicados);
       } else {
         guardarNomePendente(alvo, nome);
       }
     } catch (falha) {
-      console.warn('[Chatters] nome do convite ficou pendente', falha);
+      console.warn('[Chatters] aplicação imediata', falha);
       guardarNomePendente(alvo, nome);
     }
 
+    setAviso(
+      aplicado
+        ? `Convite enviado para ${nome} (${alvo}) e já aplicado: a pessoa tem conta.`
+        : `Convite enviado para ${nome} (${alvo}). Modelos e turnos entram quando ela criar a conta.`
+    );
     await carregar();
     return { ok: true };
+  };
+
+  const cancelar = async (convite) => {
+    try {
+      await cancelarConvite(convite.id, 'Cancelado pelo admin');
+      setConvites((prev) => prev.filter((item) => item.id !== convite.id));
+      setAviso(`Convite de ${convite.email} cancelado.`);
+    } catch (falha) {
+      console.warn('[Chatters] cancelar convite', falha);
+      setErro('Não consegui cancelar esse convite.');
+    }
+  };
+
+  const excluir = async (motivo) => {
+    if (!excluindo?.id) return { erro: 'Ninguém selecionado.' };
+    try {
+      const resultado = await removerAcesso(excluindo.id, motivo);
+      const resumo = resultado?.resumo || {};
+      setAviso(
+        `Acesso de ${resumo.nome || excluindo.email} removido. Modelos: ${resumo.modelos || 0} · Turnos cancelados: ${
+          resumo.turnos_cancelados || 0
+        }${resultado?.apagado === false ? ' · o cadastro do usuário não foi apagado, confira no painel' : ''}.`
+      );
+      emitChattersChanged();
+      emitModelsChanged();
+      await carregar();
+      return { ok: true };
+    } catch (falha) {
+      console.warn('[Chatters] remover acesso', falha);
+      return { erro: falha?.message || 'Não consegui remover o acesso agora.' };
+    }
   };
 
   const lista = useMemo(() => {
@@ -214,7 +323,7 @@ export default function ChattersWindow({ onClose }) {
               }}
             >
               <PlusIcon size={12} />
-              Convidar chatter
+              Convidar
             </button>
           )}
         </div>
@@ -222,6 +331,50 @@ export default function ChattersWindow({ onClose }) {
         {aviso ? <span style={{ fontSize: 10.5, color: 'var(--c1)' }}>{aviso}</span> : null}
 
         {erro ? <span style={{ fontSize: 10.5, color: 'var(--erro)' }}>{erro}</span> : null}
+
+        {admin && convites.length > 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 5,
+              padding: '7px 9px',
+              borderRadius: 9,
+              border: '1px dashed color-mix(in srgb, var(--c1) 30%, transparent)',
+              background: 'color-mix(in srgb, var(--c1) 6%, transparent)',
+            }}
+          >
+            <span style={{ fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--c1)' }}>
+              Convites esperando a conta
+            </span>
+            {convites.map((convite) => (
+              <div key={convite.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontSize: 10.5,
+                    color: 'var(--c3)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {convite.nome || convite.email}
+                  <span style={{ color: 'var(--c2)' }}> · {convite.cargo === 'admin' ? 'admin' : 'chatter'}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => cancelar(convite)}
+                  aria-label={`Cancelar convite de ${convite.email}`}
+                  style={botaoIcone}
+                >
+                  <CloseIcon size={10} />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         <div
           className="glass-scroll"
@@ -315,13 +468,58 @@ export default function ChattersWindow({ onClose }) {
               >
                 {usuario.cargo}
               </span>
+
+              {admin ? (
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => setFichaAberta(usuario)}
+                    aria-label={`Abrir a ficha de ${usuario.nome}`}
+                    title="Ficha de cadastro"
+                    style={botaoIcone}
+                  >
+                    <PencilIcon size={11} />
+                  </button>
+                  {usuario.id !== user?.id ? (
+                    <button
+                      type="button"
+                      onClick={() => setExcluindo(usuario)}
+                      aria-label={`Remover o acesso de ${usuario.nome}`}
+                      title="Remover acesso"
+                      style={{ ...botaoIcone, color: 'var(--erro)' }}
+                    >
+                      <TrashIcon size={11} />
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
       </div>
 
       {convidando ? (
-        <ModalConvidar onFechar={() => setConvidando(false)} onEnviar={convidar} />
+        <ModalConvidar
+          modelos={modelos}
+          onFechar={() => setConvidando(false)}
+          onEnviar={convidar}
+        />
+      ) : null}
+
+      {fichaAberta ? (
+        <FichaChatterModal
+          usuario={fichaAberta}
+          onFechar={() => setFichaAberta(null)}
+          onSalvo={() => emitChattersChanged()}
+        />
+      ) : null}
+
+      {excluindo ? (
+        <ModalExcluirAcesso
+          usuario={excluindo}
+          onFechar={() => setExcluindo(null)}
+          onConfirmar={excluir}
+        />
       ) : null}
     </Window>
   );

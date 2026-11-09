@@ -1,0 +1,52 @@
+{
+  "name": "FichaChatter",
+  "type": "object",
+  "properties": {
+    "usuario_id": { "type": "string" },
+    "usuario_email": { "type": "string" },
+    "nome_completo": {
+      "type": "string",
+      "description": "Nome civil, diferente do nome de exibicao escolhido pela pessoa"
+    },
+    "data_nascimento": { "type": "string", "format": "date" },
+    "rg": { "type": "string", "description": "RG brasileiro so com numeros na origem, exibido com pontos e traco" },
+    "cpf": { "type": "string", "description": "CPF brasileiro so com numeros na origem, exibido com pontos e traco" },
+    "telefone": { "type": "string", "description": "Telefone com DDD" },
+    "cep": { "type": "string" },
+    "rua": { "type": "string" },
+    "numero": { "type": "string" },
+    "complemento": { "type": "string" },
+    "bairro": { "type": "string" },
+    "cidade": { "type": "string" },
+    "estado": { "type": "string" },
+    "documentos": {
+      "type": "array",
+      "description": "Arquivos no armazenamento privado: guarda so o file_uri, o link e gerado na hora do download",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string" },
+          "file_uri": { "type": "string" },
+          "tamanho": { "type": "number" },
+          "enviado_em": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "contratos": {
+      "type": "array",
+      "description": "Contratos assinados, tambem no armazenamento privado",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string" },
+          "file_uri": { "type": "string" },
+          "tamanho": { "type": "number" },
+          "enviado_em": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "anotacoes": { "type": "string" },
+    "atualizado_por": { "type": "string" }
+  },
+  "required": ["usuario_id"]
+}

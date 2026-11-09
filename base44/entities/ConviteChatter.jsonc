@@ -1,0 +1,60 @@
+{
+  "name": "ConviteChatter",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "E-mail de quem foi convidado (sempre em minusculas)"
+    },
+    "nome": {
+      "type": "string",
+      "description": "Nome de exibicao digitado no convite"
+    },
+    "cargo": {
+      "type": "string",
+      "enum": ["admin", "user"],
+      "default": "user",
+      "description": "Cargo que o convite cria: admin ou chatter"
+    },
+    "modelos": {
+      "type": "array",
+      "description": "Modelos em que a pessoa entra ao criar a conta, com o ID de centavos de cada uma",
+      "items": {
+        "type": "object",
+        "properties": {
+          "modelo_id": { "type": "string" },
+          "modelo_nome": { "type": "string" },
+          "identificador": { "type": "string" }
+        }
+      }
+    },
+    "turnos": {
+      "type": "array",
+      "description": "Turnos que nascem junto com a conta: unico na data ou toda semana ate uma data",
+      "items": {
+        "type": "object",
+        "properties": {
+          "modelo_id": { "type": "string" },
+          "modelo_nome": { "type": "string" },
+          "inicio": { "type": "string", "format": "date-time" },
+          "fim": { "type": "string", "format": "date-time" },
+          "recorrente": { "type": "boolean" },
+          "dias_semana": { "type": "array", "items": { "type": "number" } },
+          "repetir_ate": { "type": "string", "format": "date" }
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pendente", "aplicando", "aplicado", "cancelado"],
+      "default": "pendente",
+      "description": "pendente espera a conta existir; aplicado ja virou chatter, modelos e turnos"
+    },
+    "aplicado_em": { "type": "string", "format": "date-time" },
+    "cancelado_motivo": { "type": "string" },
+    "erro": { "type": "string" },
+    "convidado_por": { "type": "string" },
+    "convidado_em": { "type": "string", "format": "date-time" }
+  },
+  "required": ["email"]
+}
