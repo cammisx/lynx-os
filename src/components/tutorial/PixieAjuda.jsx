@@ -8,6 +8,7 @@ import {
   DESPEDIDA,
   SAUDACAO,
   SEM_TUTORIAL,
+  SOBRE_PIXIE,
   alvoDoPonto,
   falaDoElemento,
   falaDoPonto,
@@ -43,6 +44,8 @@ export default function PixieAjuda() {
   const [menu, setMenu] = useState(null);
   /* Terminada a explicação, ela fica por aí sem balão e sem pegar a tela. */
   const [descansando, setDescansando] = useState(false);
+  /* Quando a pessoa clica nela em vez de apontar um lugar: ela se explica. */
+  const [sobre, setSobre] = useState(null);
   const tour = useTourMesa({
     aoTerminar: () => {
       setEstado(null);
@@ -58,6 +61,7 @@ export default function PixieAjuda() {
         const lugar = alvo ? lugarDoElemento(alvo) : lugarDoElemento(alvoDoPonto(x, y));
         setMenu(null);
         setDescansando(false);
+        setSobre(null);
         setSaindo(false);
 
         /* A mesa não tem fala curta: chamada ali, ela conta a área de
@@ -79,13 +83,13 @@ export default function PixieAjuda() {
   /* Cada fala tem seu tempo: esperando ela pode ficar mais. No passeio e no
      descanso quem manda é o passo (ou a pessoa), não esse relógio. */
   useEffect(() => {
-    if (!estado || tour.emTour || descansando) return undefined;
+    if (!estado || tour.emTour || descansando || sobre !== null) return undefined;
     const t = setTimeout(
       () => setSaindo(true),
       estado.apontando ? TEMPO_ESPERANDO : TEMPO_COM_TUTORIAL
     );
     return () => clearTimeout(t);
-  }, [estado, tour.emTour, descansando]);
+  }, [estado, tour.emTour, descansando, sobre]);
 
   useEffect(() => {
     if (!saindo) return undefined;
@@ -100,17 +104,45 @@ export default function PixieAjuda() {
     const tecla = (evento) => {
       if (evento.key !== 'Escape') return;
       if (tour.emTour) tour.parar();
+      else if (sobre !== null) setSobre(null);
       else if (descansando) setDescansando(false);
       else if (estado) setSaindo(true);
     };
     window.addEventListener('keydown', tecla);
     return () => window.removeEventListener('keydown', tecla);
-  }, [estado, descansando, tour]);
+  }, [estado, descansando, sobre, tour]);
 
-  const naTela = tour.emTour || descansando || Boolean(estado);
+  const naTela = tour.emTour || descansando || sobre !== null || Boolean(estado);
   if (!naTela) return null;
 
-  const fala = tour.emTour ? tour.fala : descansando ? null : estado?.fala;
+  const fala = tour.emTour
+    ? tour.fala
+    : descansando
+      ? null
+      : sobre !== null
+        ? SOBRE_PIXIE[sobre]
+        : estado?.fala;
+
+  /* Próxima fala sobre ela mesma; na última, volta a perguntar o que a pessoa
+     precisa. */
+  const avancarSobre = () => {
+    if (sobre + 1 < SOBRE_PIXIE.length) {
+      setSobre(sobre + 1);
+      return;
+    }
+    setSobre(null);
+    setEstado({ fala: SAUDACAO, apontando: true });
+  };
+
+  /* Explica o lugar em que a pessoa clicou (ou a área de trabalho inteira). */
+  const explicarLugar = (x, y) => {
+    if (lugarDoElemento(alvoDoPonto(x, y)) === 'mesa') {
+      setEstado(null);
+      tour.iniciar();
+      return;
+    }
+    setEstado({ fala: falaDoPonto(x, y) || SEM_TUTORIAL, apontando: false });
+  };
 
   const itensDoMenu = [
     {
@@ -119,6 +151,7 @@ export default function PixieAjuda() {
       acao: () => {
         setMenu(null);
         setDescansando(false);
+        setSobre(null);
         setSaindo(false);
         setEstado({ fala: CHAMADO_PARA_PERGUNTAR, apontando: true });
       },
@@ -155,30 +188,39 @@ export default function PixieAjuda() {
         <GuiaPixie
           texto={fala}
           esconderBalao={!fala}
-          capturarClique={tour.emTour || (Boolean(estado?.apontando) && !saindo)}
-          aoClique={(evento) => {
+          capturarClique={
+            tour.emTour || sobre !== null || (Boolean(estado?.apontando) && !saindo)
+          }
+          aoClique={(evento, naPixie) => {
+            const x = evento?.clientX ?? 0;
+            const y = evento?.clientY ?? 0;
             if (tour.emTour) {
               tour.avancar();
               return;
             }
-            /* Parada em silêncio: só o clique nela reage. */
-            if (descansando) {
-              setMenu({ x: evento?.clientX ?? 0, y: evento?.clientY ?? 0 });
+            /* Falando dela mesma: o clique nela passa a fala, o clique na tela
+               volta a explicar o que a pessoa apontou. */
+            if (sobre !== null) {
+              if (naPixie) {
+                avancarSobre();
+                return;
+              }
+              setSobre(null);
+              explicarLugar(x, y);
               return;
             }
-            if (!estado?.apontando) {
-              setMenu({ x: evento?.clientX ?? 0, y: evento?.clientY ?? 0 });
+            /* Parada em silêncio: só o clique nela reage, abrindo o menu. */
+            if (descansando || !estado?.apontando) {
+              setMenu({ x, y });
               return;
             }
-            const x = evento?.clientX ?? 0;
-            const y = evento?.clientY ?? 0;
-            /* Apontou a mesa: a explicação dela é o passeio inteiro. */
-            if (lugarDoElemento(alvoDoPonto(x, y)) === 'mesa') {
+            /* Esperando um pedido: clique nela é pedido para ela se explicar. */
+            if (naPixie) {
               setEstado(null);
-              tour.iniciar();
+              setSobre(0);
               return;
             }
-            setEstado({ fala: falaDoPonto(x, y) || SEM_TUTORIAL, apontando: false });
+            explicarLugar(x, y);
           }}
           aoMenu={({ x, y }) => setMenu({ x, y })}
         />

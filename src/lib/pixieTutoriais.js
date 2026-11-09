@@ -15,8 +15,14 @@
  * passeio inteiro (TOUR_MESA), que ela conta quando é chamada ali.
  */
 
-export const SAUDACAO =
-  'Oi! Ainda não tenho tutorial dessa parte. Clique no lugar que você quer que eu explique.';
+export const SAUDACAO = 'Com o que posso te ajudar hoje? Clique num lugar que eu te explico.';
+
+/* Quem ela é, para quando a pessoa clica nela em vez de apontar um lugar. */
+export const SOBRE_PIXIE = [
+  'Eu sou a Pixie! Apareço quando você me chama com o botão direito e explico o pedaço da tela que você apontar.',
+  'Clique num ícone, numa janela, num widget ou na área de trabalho e eu conto o que tem ali. Na mesa eu conto a área de trabalho inteira.',
+  'E o meu menu tem três coisas: perguntar outro lugar, agradecer e me despedir. Quando quiser, é só me chamar de novo.',
+];
 
 export const SEM_TUTORIAL = 'Ainda não tenho tutorial dessa parte. Quer apontar outro lugar?';
 

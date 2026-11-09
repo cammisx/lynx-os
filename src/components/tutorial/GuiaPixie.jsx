@@ -288,7 +288,7 @@ export default function GuiaPixie({
           clique não chega no desktop, só avança a fala dela. */}
       {capturarClique ? (
         <div
-          onClick={aoClique || undefined}
+          onClick={aoClique ? (evento) => aoClique(evento, false) : undefined}
           style={{ position: 'fixed', inset: 0, pointerEvents: 'auto', cursor: 'default' }}
         />
       ) : null}
@@ -333,7 +333,7 @@ export default function GuiaPixie({
               evento.stopPropagation();
               aoMenu?.({ x: evento.clientX, y: evento.clientY });
             }}
-            onClick={aoClique || undefined}
+            onClick={aoClique ? (evento) => aoClique(evento, true) : undefined}
             style={{
               position: 'absolute',
               inset: -8,
