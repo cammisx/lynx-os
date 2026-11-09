@@ -6,13 +6,17 @@ import { useEffect, useRef } from 'react';
  * O desenho vem da folha de sprites que a Chloë mandou (ver
  * scripts/extrair-pixie.py): três quadros do bote das asas, já com o fundo
  * preto virando transparência. A tira é animada por background-position em
- * steps, então não tem nada de canvas rodando.
+ * steps, então não tem canvas rodando por trás.
  *
- * Ela passeia sozinha pela área de trabalho numa senoide lenta e o balão de
- * fala vai junto, porque mora dentro do mesmo grupo que se move. Nada aqui
- * captura clique (a camada é pointer-events: none): o desktop atrás continua
- * sendo o de verdade. Com "reduzir movimento" ligado, ela fica parada e sem
- * asas batendo.
+ * Ela passeia sozinha pela área de trabalho numa senoide lenta. O balão mora
+ * no mesmo grupo (para acompanhar), mas é posicionado a cada quadro com duas
+ * regras: fica sempre ACIMA do desenho dela, com folga, e nunca encosta na
+ * borda da tela — se ela chega perto do lado, o balão desliza e a pontinha
+ * continua apontando para ela.
+ *
+ * Nada aqui captura clique (a camada é pointer-events: none): o desktop atrás
+ * continua sendo o de verdade. Com "reduzir movimento" ligado, ela fica
+ * parada e as asas não batem.
  */
 
 const DESLOCAMENTO_X = 0.34; // metade do caminho horizontal, em fração da tela
@@ -29,32 +33,10 @@ const ESCALA = 3;
 const LARGURA = QUADRO_LARG * ESCALA;
 const ALTURA = QUADRO_ALT * ESCALA;
 
-const ESTILOS = `
-@keyframes pixie-quadros {
-  from { background-position-x: 0; }
-  to { background-position-x: -${QUADRO_LARG * QUADROS * ESCALA}px; }
-}
-@keyframes pixie-pisca {
-  0%, 100% { opacity: 0; transform: scale(0.4); }
-  45% { opacity: 0.9; transform: scale(1); }
-}
-@keyframes pixie-balao {
-  from { opacity: 0; transform: translate(-50%, -66px) scale(0.94); }
-  to { opacity: 1; transform: translate(-50%, -78px) scale(1); }
-}
-.pixie-corpo {
-  background-image: url(/tutorial/pixie-dourada.png);
-  background-repeat: no-repeat;
-  background-size: ${LARGURA * QUADROS}px ${ALTURA}px;
-  animation: pixie-quadros 0.42s steps(${QUADROS}) infinite;
-  filter: drop-shadow(0 0 7px rgba(240, 148, 58, 0.6)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
-}
-.pixie-pisca { animation: pixie-pisca 2.6s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) {
-  .pixie-corpo { animation: none !important; }
-  .pixie-pisca { animation: none !important; opacity: 0.5; }
-}
-`;
+/* Onde o desenho dela começa e termina em relação ao ponto do caminho. */
+const CORPO_TOPO = -ALTURA + 6;
+const FOLGA_DO_BALAO = 8; // espaço entre o balão e o topo do desenho
+const MARGEM_DA_TELA = 8;
 
 /* Cada brilhinho: tamanho, onde fica em volta dela, em que compasso pisca. */
 const PISCADAS = [
@@ -69,6 +51,33 @@ const PISCADAS = [
   { tamanho: 3, x: -30, y: -34, duracao: 1.05, atraso: 0.9 },
   { tamanho: 4, x: 20, y: 8, duracao: 1.25, atraso: 0.45 },
 ];
+
+const ESTILOS = `
+@keyframes pixie-quadros {
+  from { background-position-x: 0; }
+  to { background-position-x: -${QUADRO_LARG * QUADROS * ESCALA}px; }
+}
+@keyframes pixie-pisca {
+  0%, 100% { opacity: 0; transform: scale(0.4); }
+  45% { opacity: 0.9; transform: scale(1); }
+}
+@keyframes pixie-balao {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.pixie-corpo {
+  background-image: url(/tutorial/pixie-dourada.png);
+  background-repeat: no-repeat;
+  background-size: ${LARGURA * QUADROS}px ${ALTURA}px;
+  animation: pixie-quadros 0.42s steps(${QUADROS}) infinite;
+  filter: drop-shadow(0 0 7px rgba(240, 148, 58, 0.6)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+}
+.pixie-pisca { animation: pixie-pisca 2.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .pixie-corpo { animation: none !important; }
+  .pixie-pisca { animation: none !important; opacity: 0.5; }
+}
+`;
 
 /** Estrelinha de quatro pontas: o brilho que sobra no caminho dela. */
 const Estrela = ({ tamanho, atraso, x, y, duracao }) => (
@@ -89,9 +98,31 @@ const Estrela = ({ tamanho, atraso, x, y, duracao }) => (
   />
 );
 
+const limitar = (valor, minimo, maximo) => Math.min(Math.max(valor, minimo), Math.max(minimo, maximo));
+
 export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
   const grupoRef = useRef(null);
   const corpoRef = useRef(null);
+  const balaoRef = useRef(null);
+  const pontaRef = useRef(null);
+  const medidaRef = useRef({ largura: 0, altura: 0 });
+
+  /* O balão muda de tamanho com a fonte do sistema: mede de novo ao montar,
+     quando a fonte carrega e quando a janela muda. */
+  useEffect(() => {
+    const balao = balaoRef.current;
+    if (!balao) return undefined;
+
+    const medir = () => {
+      const caixa = balao.getBoundingClientRect();
+      medidaRef.current = { largura: caixa.width, altura: caixa.height };
+    };
+
+    medir();
+    window.addEventListener('resize', medir);
+    document.fonts?.ready?.then(medir).catch(() => {});
+    return () => window.removeEventListener('resize', medir);
+  }, []);
 
   useEffect(() => {
     const grupo = grupoRef.current;
@@ -104,13 +135,21 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
 
     const desenhar = (agora) => {
       const t = (agora - inicio) / 1000;
-      const largura = window.innerWidth;
-      const altura = window.innerHeight;
+      const larguraTela = window.innerWidth;
+      const alturaTela = window.innerHeight;
 
-      const x = semMovimento ? 0.5 : 0.5 + DESLOCAMENTO_X * Math.sin(t * VELOCIDADE_X);
-      const y = semMovimento ? BASE_Y : BASE_Y + DESLOCAMENTO_Y * Math.sin(t * VELOCIDADE_Y + 0.8);
+      const fracaoX = semMovimento ? 0.5 : 0.5 + DESLOCAMENTO_X * Math.sin(t * VELOCIDADE_X);
+      const fracaoY = semMovimento ? BASE_Y : BASE_Y + DESLOCAMENTO_Y * Math.sin(t * VELOCIDADE_Y + 0.8);
 
-      grupo.style.transform = `translate3d(${(x * largura).toFixed(1)}px, ${(y * altura).toFixed(1)}px, 0)`;
+      const { largura: larguraBalao, altura: alturaBalao } = medidaRef.current;
+
+      /* Ela nunca sobe tanto que o balão saia por cima, nem desce para fora. */
+      const alturaNecessaria = FOLGA_DO_BALAO - CORPO_TOPO + alturaBalao + MARGEM_DA_TELA;
+      const limiteBaixo = alturaTela - MARGEM_DA_TELA - ALTURA / 2;
+      const x = fracaoX * larguraTela;
+      const y = limitar(fracaoY * alturaTela, alturaNecessaria, limiteBaixo);
+
+      grupo.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
 
       /* Vira para o lado do caminho. O balão fica de fora para o texto não
          aparecer espelhado. */
@@ -118,6 +157,22 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
       if (direcao !== lado && corpoRef.current) {
         lado = direcao;
         corpoRef.current.style.transform = `scaleX(${direcao})`;
+      }
+
+      /* O balão acompanha, mas preso dentro da tela: o deslocamento lateral
+         só compensa o quanto ela passou das bordas. */
+      const balao = balaoRef.current;
+      if (balao && larguraBalao > 0) {
+        const meio = larguraBalao / 2;
+        const centro = limitar(x, meio + MARGEM_DA_TELA, larguraTela - meio - MARGEM_DA_TELA);
+        const desvio = centro - x;
+        balao.style.transform = `translate(${desvio.toFixed(1)}px, ${(CORPO_TOPO - FOLGA_DO_BALAO).toFixed(1)}px) translate(-50%, -100%)`;
+
+        /* A pontinha segue apontando para ela, sem sair do balão. */
+        if (pontaRef.current) {
+          const alvo = limitar(meio - desvio, 16, larguraBalao - 16);
+          pontaRef.current.style.left = `${alvo.toFixed(1)}px`;
+        }
       }
 
       raf = requestAnimationFrame(desenhar);
@@ -150,24 +205,26 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
             width: LARGURA,
             height: ALTURA,
             marginLeft: -LARGURA / 2,
-            marginTop: -ALTURA + 6,
+            marginTop: CORPO_TOPO,
             transition: 'transform 0.35s ease',
           }}
         >
           <div className="pixie-corpo" style={{ width: LARGURA, height: ALTURA }} />
         </div>
 
-        {/* balão de fala */}
+        {/* balão de fala: acima do desenho e dentro da tela */}
         <div
+          ref={balaoRef}
           style={{
             position: 'absolute',
             left: 0,
             top: 0,
-            transform: 'translate(-50%, -78px)',
+            maxWidth: 'calc(100vw - 16px)',
             padding: '8px 13px',
             borderRadius: 12,
-            whiteSpace: 'nowrap',
             fontSize: 12,
+            lineHeight: 1.35,
+            textAlign: 'center',
             letterSpacing: '0.01em',
             color: 'var(--c3)',
             fontFamily: 'var(--font-main)',
@@ -181,13 +238,13 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
         >
           {texto}
           <span
+            ref={pontaRef}
             style={{
               position: 'absolute',
-              left: '50%',
               top: '100%',
               width: 0,
               height: 0,
-              transform: 'translateX(-50%)',
+              marginLeft: -6,
               borderLeft: '6px solid transparent',
               borderRight: '6px solid transparent',
               borderTop: '7px solid color-mix(in srgb, var(--c1) 34%, transparent)',
