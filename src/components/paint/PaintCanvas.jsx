@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { base44 } from '@/api/base44Client';
 import MenuFlutuante from '@/components/desktop/MenuFlutuante';
 import { CloseIcon } from '@/components/icons';
 import { MODAL_CAIXA } from '@/lib/modalStyles';
@@ -25,6 +26,7 @@ import {
   hsvParaHex,
   normalizarRetangulo,
   novoId,
+  paraArquivo,
   preencherArea,
   reduzirCanvas,
 } from '@/lib/paint';
@@ -39,6 +41,11 @@ import {
  * O menu do botão direito é o mesmo da área de trabalho: salvar, limpar,
  * enviar para o chat e fixar na mesa. No celular ele abre pelo botão "⋮".
  */
+
+/* Teto de caracteres da miniatura embutida no registro. O banco recusa campos
+   acima de ~24 mil caracteres, então 12 mil deixa folga para o resto do
+   registro. Acima disso a imagem sobe para o armazenamento e vai como link. */
+const TETO_MINIATURA_EMBUTIDA = 12000;
 
 const BOTAO = {
   display: 'inline-flex',
@@ -609,13 +616,25 @@ export default function PaintCanvas() {
   const fixarNaMesa = async () => {
     setOcupado('fixando');
     try {
-      /* A miniatura vai embutida no registro: não depende de upload nem de
-         link que expira, então a imagem nunca abre quebrada na mesa. */
+      /* A miniatura tenta ir embutida no registro (não depende de upload). Só
+         que campo de texto tem teto de tamanho: foto aberta no editor gera
+         base64 grande demais e o banco recusa. Nesse caso a imagem sobe para o
+         armazenamento e o registro guarda o link. */
       const miniatura = reduzirCanvas(desenhoComposto(), 720);
-      const dados = miniatura.toDataURL('image/jpeg', 0.82);
-      if (!dados || dados.length < 200) throw new Error('miniatura vazia');
+      let url = miniatura.toDataURL('image/jpeg', 0.82);
+      if (!url || url.length < 200) throw new Error('miniatura vazia');
+
+      if (url.length > TETO_MINIATURA_EMBUTIDA) {
+        const blob = await canvasParaBlob(miniatura, 'image/jpeg');
+        const envio = await base44.integrations.Core.UploadFile({
+          file: paraArquivo(blob, 'desenho.jpg'),
+        });
+        if (!envio?.file_url) throw new Error('o upload da miniatura não devolveu o link');
+        url = envio.file_url;
+      }
+
       const resultado = await fixar({
-        url: dados,
+        url,
         largura: tamanho.largura,
         altura: tamanho.altura,
         nome: 'Desenho',
