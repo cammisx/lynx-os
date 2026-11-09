@@ -999,3 +999,9 @@ body {
     -webkit-tap-highlight-color: transparent;
   }
 }
+
+/* Item do menu que o tutorial manda olhar: pulsa devagar para chamar o olho. */
+@keyframes menu-destaque {
+  0%, 100% { box-shadow: 0 0 8px color-mix(in srgb, var(--c1) 35%, transparent); }
+  50% { box-shadow: 0 0 16px color-mix(in srgb, var(--c1) 70%, transparent); }
+}

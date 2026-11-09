@@ -56,9 +56,11 @@ export const falaDoElemento = (elemento) => {
   return falaDoLugar(lugarDoElemento(elemento));
 };
 
-/* O tutorial do ponto onde a pessoa clicou, sem contar a camada da pixie. */
-export const falaDoPonto = (x, y) => {
+/* O que está no ponto clicado, ignorando a camada da pixie. */
+export const alvoDoPonto = (x, y) => {
   const pilha = document.elementsFromPoint?.(x, y) || [];
-  const alvo = pilha.find((elemento) => !elemento.closest?.('[data-pixie]'));
-  return falaDoElemento(alvo);
+  return pilha.find((elemento) => !elemento.closest?.('[data-pixie]')) || null;
 };
+
+/* O tutorial do ponto onde a pessoa clicou. */
+export const falaDoPonto = (x, y) => falaDoElemento(alvoDoPonto(x, y));

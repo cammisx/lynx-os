@@ -5,7 +5,14 @@ import MenuFlutuante from '@/components/desktop/MenuFlutuante';
 import { useAuth } from '@/lib/AuthContext';
 import { salvarPerfil } from '@/lib/perfilUsuario';
 import { assinarChamadoPixie, marcarTutorialPixieVisto } from '@/lib/pixie';
-import { SEM_TUTORIAL, falaDoElemento, falaDoPonto } from '@/lib/pixieTutoriais';
+import {
+  SEM_TUTORIAL,
+  alvoDoPonto,
+  falaDoElemento,
+  falaDoPonto,
+  lugarDoElemento,
+} from '@/lib/pixieTutoriais';
+import { TOUR_MESA, executarAcaoDoTour } from '@/lib/pixieTourMesa';
 
 /**
  * O roteiro do tutorial da rota /tutorial.
@@ -24,8 +31,14 @@ import { SEM_TUTORIAL, falaDoElemento, falaDoPonto } from '@/lib/pixieTutoriais'
  * cai no desktop). No passo do nome não: a pessoa precisa do campo livre.
  *
  * O clique direito nela abre o menu dela: "Perguntar" (ela espera a pessoa
- * apontar um lugar da tela e comenta o que é) e "Pular tutorial" (ela se
- * despede e sai da tela).
+ * apontar um lugar da tela e comenta o que é), "Agradecer" e "Se despedir"
+ * (as duas fecham ela e a pessoa fica na mesa).
+ *
+ * No último passo, clicar na área de trabalho começa o passeio da mesa
+ * (TOUR_MESA): ela explica o desktop, abre o menu do botão direito com
+ * Preferências em destaque, abre a janela de Configurações e conta o que dá
+ * para personalizar. Cada passo sai com um clique ou sozinho depois de um
+ * tempo, para ninguém ficar preso.
  */
 
 const FALAS = {
@@ -48,6 +61,7 @@ const CHAMADO_PARA_PERGUNTAR = 'Sobre o que você quer saber? Clique no lugar.';
 const AGRADECIMENTO = 'Eu que agradeço! Qualquer coisa, é só me chamar com o botão direito.';
 const DESPEDIDA = 'Até logo! Se precisar, é só me chamar com o botão direito!';
 const ESPERA_DA_DESPEDIDA = 2600; // tempo para ler a despedida antes de sair
+const ESPERA_DO_TOUR = 8000; // sem clique, o passeio da mesa segue sozinho
 
 /* Depois dela, o sistema é da pessoa: a rota inicial, com a mesa à vontade. */
 const ROTA_DEPOIS = '/';
@@ -62,6 +76,10 @@ export default function TutorialRoteiro() {
   const [apontando, setApontando] = useState(false);
   const [menu, setMenu] = useState(null);
   const [saida, setSaida] = useState(null);
+  /* Passo do passeio da mesa (null = fora dele) e a marca de já ter passado
+     por ele inteiro: depois disso, clicar na mesa não repete o passeio. */
+  const [tour, setTour] = useState(null);
+  const [tourVisto, setTourVisto] = useState(false);
   const [encerrado, setEncerrado] = useState(false);
   const campoRef = useRef(null);
 
@@ -96,19 +114,49 @@ export default function TutorialRoteiro() {
 
   const fala = useMemo(() => {
     if (saida) return saida;
+    if (tour !== null) return TOUR_MESA[tour]?.fala || FALAS[passo];
     if (resposta) return resposta;
     if (apontando) return CHAMADO_PARA_PERGUNTAR;
     return FALAS[passo];
-  }, [saida, resposta, apontando, passo]);
+  }, [saida, tour, resposta, apontando, passo]);
+
+  /* Cada passo do passeio pode abrir menu/janela e sai no clique ou no tempo. */
+  useEffect(() => {
+    if (tour === null || saida) return undefined;
+    const passoDoTour = TOUR_MESA[tour];
+    if (!passoDoTour) return undefined;
+    if (passoDoTour.acao) executarAcaoDoTour(passoDoTour.acao);
+    const t = setTimeout(() => avancarTour(), ESPERA_DO_TOUR);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tour, saida]);
+
+  /* O passeio termina e ela volta a ficar disponível, com a janela aberta. */
+  function avancarTour() {
+    setTour((atual) => {
+      if (atual === null) return null;
+      const proximo = atual + 1;
+      if (proximo < TOUR_MESA.length) return proximo;
+      setTourVisto(true);
+      return null;
+    });
+  }
 
   /* O clique na tela: aponta o lugar, fecha uma resposta antiga ou segue o
      roteiro. O menu aberto não deixa o clique vazar para cá. */
   const aoCliqueNaTela = (evento) => {
     if (saida) return;
 
+    const x = evento?.clientX ?? 0;
+    const y = evento?.clientY ?? 0;
+
+    /* No passeio da mesa o clique é o "continua". */
+    if (tour !== null) {
+      avancarTour();
+      return;
+    }
     if (apontando) {
-      const apontado =
-        falaDoPonto(evento?.clientX ?? 0, evento?.clientY ?? 0) || SEM_TUTORIAL;
+      const apontado = falaDoPonto(x, y) || SEM_TUTORIAL;
       setApontando(false);
       setResposta(apontado);
       return;
@@ -118,9 +166,16 @@ export default function TutorialRoteiro() {
       return;
     }
     /* No último passo do roteiro ela já está explicando: um clique normal
-       vira "me conta o que é isso aqui" em vez de não fazer nada. */
+       vira "me conta o que é isso aqui" em vez de não fazer nada. Na área de
+       trabalho, o clique começa o passeio (ela abre menu e janela junto). */
     if (passo === 'atalho') {
-      setResposta(falaDoPonto(evento?.clientX ?? 0, evento?.clientY ?? 0) || SEM_TUTORIAL);
+      if (lugarDoElemento(alvoDoPonto(x, y)) === 'mesa' && !tourVisto) {
+        setResposta(null);
+        setApontando(false);
+        setTour(0);
+        return;
+      }
+      setResposta(falaDoPonto(x, y) || SEM_TUTORIAL);
       return;
     }
     const proximo = PROXIMO[passo];
@@ -131,7 +186,11 @@ export default function TutorialRoteiro() {
     !encerrado &&
     !saida &&
     !menu &&
-    (apontando || Boolean(resposta) || passo === 'atalho' || SAI_NO_CLIQUE.includes(passo));
+    (apontando ||
+      tour !== null ||
+      Boolean(resposta) ||
+      passo === 'atalho' ||
+      SAI_NO_CLIQUE.includes(passo));
 
   const enviarNome = async (evento) => {
     evento.preventDefault();
@@ -154,6 +213,7 @@ export default function TutorialRoteiro() {
     setMenu(null);
     setApontando(false);
     setResposta(null);
+    setTour(null);
     marcarTutorialPixieVisto();
     setSaida(fala);
   };

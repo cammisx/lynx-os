@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import MenuFlutuante from './MenuFlutuante';
 import { itemChamarPixie } from '@/lib/pixie';
+import { assinarFecharMenu, consumirDestaqueMenu } from '@/lib/menuContexto';
 
 /**
  * Menu de botão direito do app inteiro, no lugar do menu do navegador.
@@ -216,18 +217,31 @@ export function MenuContextoProvider({ children }) {
         itemChamarPixie({ x: evento.clientX, y: evento.clientY, alvo: evento.target }),
       ];
       evento.preventDefault();
-      setMenu({ x: evento.clientX, y: evento.clientY, itens });
+      const destaque = consumirDestaqueMenu();
+      setMenu({ x: evento.clientX, y: evento.clientY, itens, destaque });
     };
 
     document.addEventListener('contextmenu', aoAbrir);
-    return () => document.removeEventListener('contextmenu', aoAbrir);
+    /* Quem abriu o menu por código também pode fechá-lo (o tutorial faz isso
+       ao trocar o menu pela janela de Configurações). */
+    const parar = assinarFecharMenu(() => setMenu(null));
+    return () => {
+      document.removeEventListener('contextmenu', aoAbrir);
+      parar();
+    };
   }, []);
 
   return (
     <MenuContextoTela.Provider value={{ registrar }}>
       {children}
       {menu ? (
-        <MenuFlutuante x={menu.x} y={menu.y} itens={menu.itens} onFechar={() => setMenu(null)} />
+        <MenuFlutuante
+          x={menu.x}
+          y={menu.y}
+          itens={menu.itens}
+          destaque={menu.destaque}
+          onFechar={() => setMenu(null)}
+        />
       ) : null}
     </MenuContextoTela.Provider>
   );

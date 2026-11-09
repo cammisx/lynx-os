@@ -24,9 +24,10 @@ const zoomDaRaiz = () => {
  * sair da tela.
  *
  * Cada item é { id, rotulo, atalho, perigo, desabilitado, acao } ou
- * { separador: true }.
+ * { separador: true }. Com `destaque` (o id de um item) aquele item ganha
+ * moldura dourada e pulsa: é o "olha aqui" do tutorial.
  */
-export default function MenuFlutuante({ x = 0, y = 0, ancora = null, itens = [], onFechar }) {
+export default function MenuFlutuante({ x = 0, y = 0, ancora = null, itens = [], destaque = null, onFechar }) {
   const caixaRef = useRef(null);
   const fecharRef = useRef(onFechar);
   fecharRef.current = onFechar;
@@ -156,6 +157,7 @@ export default function MenuFlutuante({ x = 0, y = 0, ancora = null, itens = [],
             />
           );
         }
+        const destacado = Boolean(destaque) && item.id === destaque;
         return (
           <button
             key={item.id || `${item.rotulo}-${indice}`}
@@ -175,9 +177,17 @@ export default function MenuFlutuante({ x = 0, y = 0, ancora = null, itens = [],
               width: '100%',
               minHeight: 29,
               padding: '0 9px',
-              border: 'none',
+              border: destacado
+                ? '1px solid color-mix(in srgb, var(--c1) 80%, transparent)'
+                : '1px solid transparent',
               borderRadius: 8,
-              background: 'transparent',
+              background: destacado
+                ? 'color-mix(in srgb, var(--c1) 20%, transparent)'
+                : 'transparent',
+              boxShadow: destacado
+                ? '0 0 12px color-mix(in srgb, var(--c1) 45%, transparent)'
+                : 'none',
+              animation: destacado ? 'menu-destaque 2.2s ease-in-out infinite' : 'none',
               color: item.desabilitado
                 ? 'color-mix(in srgb, var(--c2) 55%, transparent)'
                 : item.perigo
@@ -190,12 +200,16 @@ export default function MenuFlutuante({ x = 0, y = 0, ancora = null, itens = [],
             }}
             onMouseEnter={(evento) => {
               if (item.desabilitado) return;
-              evento.currentTarget.style.background = item.perigo
+              evento.currentTarget.style.background = destacado
+                ? 'color-mix(in srgb, var(--c1) 30%, transparent)'
+                : item.perigo
                 ? 'color-mix(in srgb, var(--erro) 16%, transparent)'
                 : 'color-mix(in srgb, var(--c1) 16%, transparent)';
             }}
             onMouseLeave={(evento) => {
-              evento.currentTarget.style.background = 'transparent';
+              evento.currentTarget.style.background = destacado
+                ? 'color-mix(in srgb, var(--c1) 20%, transparent)'
+                : 'transparent';
             }}
           >
             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
