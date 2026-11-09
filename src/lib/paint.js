@@ -19,6 +19,7 @@ export const CORES = [
 ];
 
 export const FERRAMENTAS = [
+  { id: 'selecionar', rotulo: 'Selecionar' },
   { id: 'pincel', rotulo: 'Pincel' },
   { id: 'borracha', rotulo: 'Borracha' },
   { id: 'balde', rotulo: 'Balde' },
@@ -257,3 +258,26 @@ export const contraste = (hex) => {
   const luz = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return luz > 0.62 ? '#111111' : '#ffffff';
 };
+
+/** Cópia reduzida do canvas, para caber na mesa sem pesar o banco. */
+export const reduzirCanvas = (canvas, maxLado = 720) => {
+  const maior = Math.max(canvas.width, canvas.height);
+  if (maior <= maxLado) return canvas;
+  const escala = maxLado / maior;
+  const copia = criarCanvas(
+    Math.max(1, Math.round(canvas.width * escala)),
+    Math.max(1, Math.round(canvas.height * escala))
+  );
+  const ctx = copia.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(canvas, 0, 0, copia.width, copia.height);
+  return copia;
+};
+
+/** Retângulo normalizado (largura e altura sempre positivas). */
+export const normalizarRetangulo = (a, b) => ({
+  x: Math.min(a.x, b.x),
+  y: Math.min(a.y, b.y),
+  w: Math.abs(b.x - a.x),
+  h: Math.abs(b.y - a.y),
+});

@@ -25,6 +25,10 @@ const ALCAS = [
 
 const limitar = (valor, minimo, maximo) => Math.min(Math.max(minimo, valor), Math.max(minimo, maximo));
 
+/* O registro no banco guarda a imagem em `desenho_url`; `url` é o formato
+   antigo de quem foi fixado antes da mudança para o banco. */
+const imagemDe = (desenho) => desenho?.desenho_url || desenho?.url || '';
+
 export default function DesenhoFixo({ desenho, onMover, onRedimensionar, onDesafixar }) {
   const { avisar, Aviso } = useAviso();
   const [menu, setMenu] = useState(null);
@@ -35,7 +39,7 @@ export default function DesenhoFixo({ desenho, onMover, onRedimensionar, onDesaf
 
   const salvar = async () => {
     try {
-      await baixarJpg(desenho.url, desenho.nome || 'desenho');
+      await baixarJpg(imagemDe(desenho), desenho.nome || 'desenho');
       avisar('Desenho salvo em .jpg');
     } catch (falha) {
       console.warn('[Desenho] salvar', falha);
@@ -45,7 +49,7 @@ export default function DesenhoFixo({ desenho, onMover, onRedimensionar, onDesaf
 
   const prepararEnvio = async () => {
     try {
-      const blob = await urlParaBlob(desenho.url);
+      const blob = await urlParaBlob(imagemDe(desenho));
       setEnvio({ blob });
     } catch (falha) {
       console.warn('[Desenho] enviar', falha);
@@ -159,7 +163,7 @@ export default function DesenhoFixo({ desenho, onMover, onRedimensionar, onDesaf
         }}
       >
         <img
-          src={desenho.url}
+          src={imagemDe(desenho)}
           alt={desenho.nome || 'Desenho fixado'}
           draggable={false}
           style={{

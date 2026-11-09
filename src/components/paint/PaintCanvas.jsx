@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import MenuFlutuante from '@/components/desktop/MenuFlutuante';
 import { CloseIcon } from '@/components/icons';
 import { MODAL_CAIXA } from '@/lib/modalStyles';
@@ -24,9 +23,10 @@ import {
   criarCanvas,
   hexParaHsv,
   hsvParaHex,
+  normalizarRetangulo,
   novoId,
-  paraArquivo,
   preencherArea,
+  reduzirCanvas,
 } from '@/lib/paint';
 
 /**
@@ -76,7 +76,10 @@ export default function PaintCanvas() {
   const chaveCores = `lynx:paint:cores:${user?.id || 'anon'}`;
 
   const [tamanho, setTamanho] = useState({ largura: 900, altura: 620 });
-  const [camadas, setCamadas] = useState(() => [camadaNova('Fundo', '#ffffff', 900, 620)]);
+  const [camadas, setCamadas] = useState(() => [
+    camadaNova('Fundo', '#ffffff', 900, 620),
+    camadaNova('Camada 1', null, 900, 620),
+  ]);
   const [ativaId, setAtivaId] = useState(() => '');
   const [ferramenta, setFerramenta] = useState('pincel');
   const [cor, setCor] = useState('#111111');
@@ -94,13 +97,17 @@ export default function PaintCanvas() {
   const [novoAberto, setNovoAberto] = useState(false);
   const [envio, setEnvio] = useState(null);
   const [ocupado, setOcupado] = useState('');
+  const [selecao, setSelecao] = useState(null);
   const [, setVersao] = useState(0);
 
+  const raizRef = useRef(null);
   const telaRef = useRef(null);
   const previewRef = useRef(null);
+  const selecaoRef = useRef(null);
   const areaRef = useRef(null);
+  const clipboard = useRef(null);
   const entradaArquivo = useRef(null);
-  const desenho = useRef({ ativo: false, inicio: null, anterior: null, antes: null });
+  const desenho = useRef({ ativo: false, inicio: null, anterior: null, antes: null, selecionando: false });
   const historia = useRef({ passos: [], indice: -1 });
 
   const camadaAtiva = camadas.find((item) => item.id === ativaId) || camadas[camadas.length - 1] || null;
@@ -134,6 +141,15 @@ export default function PaintCanvas() {
   useEffect(() => {
     recompor();
   }, [recompor, camadas, tamanho]);
+
+  /* Põe o foco no editor ao abrir, para os atalhos funcionarem de primeira.
+     Só não rouba o foco de quem está digitando em outro lugar. */
+  useEffect(() => {
+    const ativo = document.activeElement;
+    const digitando =
+      ativo && (/^(INPUT|TEXTAREA|SELECT)$/.test(ativo.tagName) || ativo.isContentEditable);
+    if (!digitando) raizRef.current?.focus?.();
+  }, []);
 
   /* As cores que a pessoa salva ficam guardadas no aparelho dela. */
   useEffect(() => {
@@ -192,12 +208,16 @@ export default function PaintCanvas() {
     setVersao((n) => n + 1);
   };
 
+  /* Todo desenho novo nasce com o fundo e uma camada vazia por cima, que é
+     onde a pessoa desenha: o fundo fica intocado. */
   const reiniciar = (largura, altura, comFundo = '#ffffff') => {
     const base = camadaNova('Fundo', comFundo, largura, altura);
+    const cima = camadaNova('Camada 1', null, largura, altura);
     historia.current = { passos: [], indice: -1 };
     setTamanho({ largura, altura });
-    setCamadas([base]);
-    setAtivaId(base.id);
+    setCamadas([base, cima]);
+    setAtivaId(cima.id);
+    setSelecao(null);
     setZoom(1);
     setVersao((n) => n + 1);
   };
@@ -271,6 +291,18 @@ export default function PaintCanvas() {
 
     const pos = ponto(evento);
 
+    if (ferramenta === 'selecionar') {
+      desenho.current = {
+        ativo: true,
+        inicio: pos,
+        anterior: pos,
+        antes: null,
+        selecionando: true,
+      };
+      trocarSelecao({ x: pos.x, y: pos.y, w: 0, h: 0 });
+      return;
+    }
+
     if (ferramenta === 'conta-gotas') {
       const composta = compor(mapa(), tamanho.largura, tamanho.altura);
       const amostra = corDoPixel(composta, pos.x, pos.y);
@@ -312,6 +344,12 @@ export default function PaintCanvas() {
     if (!camadaAtiva) return;
     const pos = ponto(evento);
 
+    if (estado.selecionando) {
+      desenho.current.anterior = pos;
+      trocarSelecao(normalizarRetangulo(estado.inicio, pos));
+      return;
+    }
+
     if (['linha', 'retangulo', 'elipse'].includes(ferramenta)) {
       desenho.current.anterior = pos;
       const preview = previewRef.current;
@@ -332,6 +370,14 @@ export default function PaintCanvas() {
     const estado = desenho.current;
     if (!estado.ativo) return;
     desenho.current = { ativo: false, inicio: null, anterior: null, antes: null };
+
+    if (estado.selecionando) {
+      const area = estado.inicio && estado.anterior
+        ? normalizarRetangulo(estado.inicio, estado.anterior)
+        : null;
+      trocarSelecao(area && area.w >= 4 && area.h >= 4 ? area : null);
+      return;
+    }
     if (!camadaAtiva) {
       recompor();
       return;
@@ -390,6 +436,129 @@ export default function PaintCanvas() {
     definirCor(hsvParaHex(h, s, valor));
   };
 
+  /* ---------- seleção, copiar e colar ---------- */
+
+  const desenharSelecao = (area) => {
+    const tela = selecaoRef.current;
+    if (!tela) return;
+    const ctx = tela.getContext('2d');
+    ctx.clearRect(0, 0, tela.width, tela.height);
+    if (!area || area.w < 1 || area.h < 1) return;
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+    ctx.strokeRect(area.x + 0.5, area.y + 0.5, area.w - 1, area.h - 1);
+    ctx.lineDashOffset = 5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+    ctx.strokeRect(area.x + 0.5, area.y + 0.5, area.w - 1, area.h - 1);
+    ctx.restore();
+  };
+
+  const trocarSelecao = (area) => {
+    setSelecao(area);
+    desenharSelecao(area);
+  };
+
+  const selecionarTudo = () => {
+    setFerramenta('selecionar');
+    trocarSelecao({ x: 0, y: 0, w: tamanho.largura, h: tamanho.altura });
+  };
+
+  const copiarSelecao = () => {
+    if (!selecao || selecao.w < 2 || selecao.h < 2) {
+      avisar('Marque uma área antes de copiar.');
+      return false;
+    }
+    const composta = compor(mapa(), tamanho.largura, tamanho.altura);
+    const pedaco = criarCanvas(Math.round(selecao.w), Math.round(selecao.h));
+    pedaco
+      .getContext('2d')
+      .drawImage(composta, selecao.x, selecao.y, selecao.w, selecao.h, 0, 0, pedaco.width, pedaco.height);
+    clipboard.current = pedaco;
+    return true;
+  };
+
+  const recortarSelecao = () => {
+    if (!copiarSelecao() || !camadaAtiva) return;
+    const ctx = camadaAtiva.canvas.getContext('2d');
+    const antes = ctx.getImageData(0, 0, camadaAtiva.canvas.width, camadaAtiva.canvas.height);
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(selecao.x, selecao.y, selecao.w, selecao.h);
+    ctx.restore();
+    guardarPasso(
+      camadaAtiva.id,
+      antes,
+      ctx.getImageData(0, 0, camadaAtiva.canvas.width, camadaAtiva.canvas.height)
+    );
+    recompor();
+    avisar('Área recortada');
+  };
+
+  const colarSelecao = () => {
+    const pedaco = clipboard.current;
+    if (!pedaco) {
+      avisar('Copie uma área antes de colar.');
+      return;
+    }
+    if (!camadaAtiva) return;
+    const ctx = camadaAtiva.canvas.getContext('2d');
+    const antes = ctx.getImageData(0, 0, camadaAtiva.canvas.width, camadaAtiva.canvas.height);
+    const destino = selecao ? { x: selecao.x, y: selecao.y } : { x: 12, y: 12 };
+    ctx.drawImage(pedaco, destino.x, destino.y);
+    guardarPasso(
+      camadaAtiva.id,
+      antes,
+      ctx.getImageData(0, 0, camadaAtiva.canvas.width, camadaAtiva.canvas.height)
+    );
+    setFerramenta('selecionar');
+    trocarSelecao({ x: destino.x, y: destino.y, w: pedaco.width, h: pedaco.height });
+    recompor();
+    avisar('Área colada');
+  };
+
+  /* Atalhos de teclado: só valem com o foco dentro do Paint. */
+  useEffect(() => {
+    const atalhos = (evento) => {
+      if (!(evento.ctrlKey || evento.metaKey) || evento.altKey) return;
+      const alvo = evento.target;
+      if (
+        alvo &&
+        (/^(INPUT|TEXTAREA|SELECT)$/.test(alvo.tagName) || alvo.isContentEditable)
+      ) {
+        return;
+      }
+      const raiz = raizRef.current;
+      if (!raiz || !(raiz === document.activeElement || raiz.contains(document.activeElement))) return;
+
+      const tecla = String(evento.key || '').toLowerCase();
+      if (tecla === 'z') {
+        evento.preventDefault();
+        desfazer();
+      } else if (tecla === 'y') {
+        evento.preventDefault();
+        refazer();
+      } else if (tecla === 'a') {
+        evento.preventDefault();
+        selecionarTudo();
+      } else if (tecla === 'c') {
+        evento.preventDefault();
+        copiarSelecao();
+      } else if (tecla === 'x') {
+        evento.preventDefault();
+        recortarSelecao();
+      } else if (tecla === 'v') {
+        evento.preventDefault();
+        colarSelecao();
+      }
+    };
+
+    window.addEventListener('keydown', atalhos);
+    return () => window.removeEventListener('keydown', atalhos);
+  }, [selecao, camadas, ativaId, tamanho]);
+
   /* ---------- menu do botão direito ---------- */
 
   const abrirMenu = (evento) => {
@@ -415,9 +584,11 @@ export default function PaintCanvas() {
 
   const limparTudo = () => {
     const base = camadaNova('Fundo', '#ffffff', tamanho.largura, tamanho.altura);
+    const cima = camadaNova('Camada 1', null, tamanho.largura, tamanho.altura);
     historia.current = { passos: [], indice: -1 };
-    setCamadas([base]);
-    setAtivaId(base.id);
+    setCamadas([base, cima]);
+    setAtivaId(cima.id);
+    setSelecao(null);
     setConfirmarLimpar(false);
     setVersao((n) => n + 1);
   };
@@ -438,12 +609,13 @@ export default function PaintCanvas() {
   const fixarNaMesa = async () => {
     setOcupado('fixando');
     try {
-      const blob = await canvasParaBlob(desenhoComposto());
-      const arquivo = paraArquivo(blob, 'desenho.png');
-      const resposta = await base44.integrations.Core.UploadFile({ file: arquivo });
-      if (!resposta?.file_url) throw new Error('upload sem url');
+      /* A miniatura vai embutida no registro: não depende de upload nem de
+         link que expira, então a imagem nunca abre quebrada na mesa. */
+      const miniatura = reduzirCanvas(desenhoComposto(), 720);
+      const dados = miniatura.toDataURL('image/jpeg', 0.82);
+      if (!dados || dados.length < 200) throw new Error('miniatura vazia');
       const resultado = await fixar({
-        url: resposta.file_url,
+        url: dados,
         largura: tamanho.largura,
         altura: tamanho.altura,
         nome: 'Desenho',
@@ -482,6 +654,11 @@ export default function PaintCanvas() {
       acao: fixarNaMesa,
     },
     { separador: true },
+    { id: 'selecionar-tudo', rotulo: 'Selecionar tudo', atalho: 'Ctrl+A', acao: selecionarTudo },
+    { id: 'copiar', rotulo: 'Copiar seleção', atalho: 'Ctrl+C', acao: copiarSelecao },
+    { id: 'recortar', rotulo: 'Recortar seleção', atalho: 'Ctrl+X', acao: recortarSelecao },
+    { id: 'colar', rotulo: 'Colar', atalho: 'Ctrl+V', acao: colarSelecao },
+    { separador: true },
     { id: 'limpar', rotulo: 'Limpar tudo', perigo: true, acao: () => setConfirmarLimpar(true) },
   ];
 
@@ -495,12 +672,15 @@ export default function PaintCanvas() {
       imagem.onload = () => {
         const largura = imagem.naturalWidth;
         const altura = imagem.naturalHeight;
-        const base = camadaNova('Imagem', null, largura, altura);
-        base.canvas.getContext('2d').drawImage(imagem, 0, 0);
+        const fundo = camadaNova('Fundo', '#ffffff', largura, altura);
+        const foto = camadaNova('Imagem', null, largura, altura);
+        foto.canvas.getContext('2d').drawImage(imagem, 0, 0);
+        const cima = camadaNova('Camada 1', null, largura, altura);
         historia.current = { passos: [], indice: -1 };
         setTamanho({ largura, altura });
-        setCamadas([base]);
-        setAtivaId(base.id);
+        setCamadas([fundo, foto, cima]);
+        setAtivaId(cima.id);
+        setSelecao(null);
         setZoom(1);
         setVersao((n) => n + 1);
         avisar('Imagem aberta no editor');
@@ -554,7 +734,21 @@ export default function PaintCanvas() {
   const zoomSeguro = (valor) => Math.min(4, Math.max(0.25, Number(valor.toFixed(2))));
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+    <div
+      ref={raizRef}
+      tabIndex={0}
+      onPointerDownCapture={() => {
+        const raiz = raizRef.current;
+        if (raiz && !raiz.contains(document.activeElement)) raiz.focus();
+      }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
+        outline: 'none',
+      }}
+    >
       {/* barra de ferramentas */}
       <div
         style={{
@@ -948,12 +1142,7 @@ export default function PaintCanvas() {
                 height: '100%',
                 display: 'block',
                 touchAction: 'none',
-                cursor:
-                  ferramenta === 'mao'
-                    ? 'grab'
-                    : ferramenta === 'conta-gotas'
-                      ? 'crosshair'
-                      : 'crosshair',
+                cursor: ferramenta === 'selecionar' ? 'cell' : 'crosshair',
                 imageRendering: zoom >= 3 ? 'pixelated' : 'auto',
               }}
             />
@@ -961,6 +1150,19 @@ export default function PaintCanvas() {
               ref={previewRef}
               width={tamanho.largura}
               height={tamanho.altura}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+              }}
+            />
+            <canvas
+              ref={selecaoRef}
+              width={tamanho.largura}
+              height={tamanho.altura}
+              aria-hidden="true"
               style={{
                 position: 'absolute',
                 inset: 0,
