@@ -33,18 +33,18 @@ import tiraVirar from '@/assets/pixie/tiras/pixie-virar.png';
  */
 
 /* O vaivém: ela flutua de um lado para o outro e sobe e desce. */
-const BASE_X = 0.68; // ela passeia do meio para a direita
-const AMPLITUDE_X = 0.22; // metade do caminho horizontal, em fração da largura
-const FREQ_X = Math.PI / 12; // rad/s: uma travessia a cada 12s
-const AMPLITUDE_X2 = 0.05; // segunda senoide, para o caminho não ser robótico
-const FREQ_X2 = Math.PI / 20; // metade da frequência: não cria troca de lado extra
+const BASE_X = 0.68; // ela fica do meio para a direita
+const AMPLITUDE_X = 0.075; // ela quase não anda de lado: dá para acertar o clique
+const FREQ_X = Math.PI / 16; // rad/s: bem devagar
+const AMPLITUDE_X2 = 0.02; // segunda senoide, para o caminho não ser robótico
+const FREQ_X2 = Math.PI / 24;
 const FASE_X2 = 1.2;
 
 const BASE_Y = 0.62;
-const AMPLITUDE_Y = 0.045; // quanto sobe e desce, em fração da altura da tela
-const FREQ_Y = 1.12; // rad/s: um sobe e desce a cada 5,6s
-const AMPLITUDE_Y2 = 0.012;
-const FREQ_Y2 = 1.9;
+const AMPLITUDE_Y = 0.028; // quanto sobe e desce, em fração da altura da tela
+const FREQ_Y = 0.9; // rad/s
+const AMPLITUDE_Y2 = 0.008;
+const FREQ_Y2 = 1.5;
 
 /* A virada: a cada dez segundos ela roda as nove poses uma vez, no ar. Não é
    presa à troca de lado: indo para a esquerda ela também vai de frente. */
@@ -157,6 +157,7 @@ export default function GuiaPixie({
   children = null,
   capturarClique = false,
   aoClique = null,
+  aoMenu = null,
 }) {
   const grupoRef = useRef(null);
   const corpoRef = useRef(null);
@@ -270,7 +271,11 @@ export default function GuiaPixie({
   }, []);
 
   return (
-    <div aria-live="polite" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9500 }}>
+    <div
+      aria-live="polite"
+      data-pixie="true"
+      style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9500 }}
+    >
       <style>{ESTILOS}</style>
 
       {/* Enquanto o roteiro espera um clique, a tela toda vira o botão: o
@@ -308,6 +313,25 @@ export default function GuiaPixie({
         >
           <div ref={asaRef} className="pixie-frente" />
           <div ref={virarRef} className="pixie-virar" style={{ display: 'none' }} />
+
+          {/* A área do clique direito: um pouco maior que o desenho, senão é
+              difícil acertar num bicho que mexe. O menu é dela mesma, então o
+              menu do sistema não entra no lugar. */}
+          <div
+            data-menu-own="true"
+            onContextMenu={(evento) => {
+              evento.preventDefault();
+              evento.stopPropagation();
+              aoMenu?.({ x: evento.clientX, y: evento.clientY });
+            }}
+            onClick={aoClique || undefined}
+            style={{
+              position: 'absolute',
+              inset: -8,
+              pointerEvents: 'auto',
+              cursor: aoMenu || aoClique ? 'pointer' : 'default',
+            }}
+          />
         </div>
 
         {/* balão de fala: acima do desenho e dentro da tela */}

@@ -259,6 +259,7 @@ export default function ClockPanel({
   return createPortal(
     <div
       ref={panelRef}
+      data-relogio="true"
       style={{
         position: 'fixed',
         ...(pequeno

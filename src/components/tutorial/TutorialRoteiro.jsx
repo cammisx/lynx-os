@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import GuiaPixie from '@/components/tutorial/GuiaPixie';
+import MenuFlutuante from '@/components/desktop/MenuFlutuante';
 import { useAuth } from '@/lib/AuthContext';
 import { salvarPerfil } from '@/lib/perfilUsuario';
 
@@ -18,6 +19,10 @@ import { salvarPerfil } from '@/lib/perfilUsuario';
  *
  * Nos passos que saem com um clique, a tela inteira vira o botão (o clique não
  * cai no desktop). No passo do nome não: a pessoa precisa do campo livre.
+ *
+ * O clique direito nela abre o menu dela: "Perguntar" (ela espera a pessoa
+ * apontar um lugar da tela e comenta o que é) e "Pular tutorial" (ela se
+ * despede e sai da tela).
  */
 
 const FALAS = {
@@ -36,11 +41,47 @@ const PROXIMO = {
   apresentacao: 'atalho',
 };
 
+const CHAMADO_PARA_PERGUNTAR = 'Sobre o que você quer saber? Clique no lugar.';
+const DESPEDIDA = 'Ok, se precisar, é só me chamar com o botão direito!';
+const ESPERA_DA_DESPEDIDA = 2600; // tempo para ler a despedida antes de sair
+
+/**
+ * O que ela responde depende do lugar da tela que a pessoa apontou. As falas
+ * abaixo são provisórias: é só trocar o texto na chave do lugar.
+ */
+const RESPOSTAS = {
+  barra:
+    'Essa é a barra de tarefas: cada ícone abre uma janela. Clique direito num ícone para fixar ou tirar ele da barra.',
+  relogio: 'No relógio ficam seus turnos, o ponto do dia e a agenda da semana.',
+  janela: 'Para minimizar é o traço; para fechar, o X. A janela anda se você arrastar pela barra de cima.',
+  chat: 'O chat fica aqui do lado: canal geral, os canais das modelos e os privados.',
+  mesa: 'Aqui é a mesa. Clique direito nela para abrir as preferências, trocar o tema e abrir as janelas.',
+  fora: 'Essa parte eu ainda não conheço. Quer apontar outro lugar?',
+};
+
+/* O lugar da tela embaixo do clique, sem contar a camada da pixie. */
+const lugarApontado = (x, y) => {
+  const pilha = document.elementsFromPoint?.(x, y) || [];
+  const alvo = pilha.find((elemento) => !elemento.closest?.('[data-pixie]'));
+  if (!alvo) return 'fora';
+  if (alvo.closest('[data-relogio]')) return 'relogio';
+  if (alvo.closest('.chat-painel')) return 'chat';
+  if (alvo.closest('[data-janela]')) return 'janela';
+  if (alvo.closest('.taskbar')) return 'barra';
+  if (alvo.closest('[data-desktop]')) return 'mesa';
+  return 'fora';
+};
+
 export default function TutorialRoteiro() {
   const { user } = useAuth();
   const [passo, setPasso] = useState('boasVindas');
   const [nome, setNome] = useState(() => user?.nome_exibicao || '');
   const [enviando, setEnviando] = useState(false);
+  const [resposta, setResposta] = useState(null);
+  const [apontando, setApontando] = useState(false);
+  const [menu, setMenu] = useState(null);
+  const [saindo, setSaindo] = useState(false);
+  const [encerrado, setEncerrado] = useState(false);
   const campoRef = useRef(null);
 
   /* O campo do nome ganha o foco sozinho quando aparece. */
@@ -50,10 +91,40 @@ export default function TutorialRoteiro() {
     return () => clearTimeout(t);
   }, [passo]);
 
-  const avancarNoClique = () => {
+  /* Depois da despedida ela sai da tela. */
+  useEffect(() => {
+    if (!saindo) return undefined;
+    const t = setTimeout(() => setEncerrado(true), ESPERA_DA_DESPEDIDA);
+    return () => clearTimeout(t);
+  }, [saindo]);
+
+  const fala = useMemo(() => {
+    if (saindo) return DESPEDIDA;
+    if (resposta) return resposta;
+    if (apontando) return CHAMADO_PARA_PERGUNTAR;
+    return FALAS[passo];
+  }, [saindo, resposta, apontando, passo]);
+
+  /* O clique na tela: aponta o lugar, fecha uma resposta antiga ou segue o
+     roteiro. O menu aberto não deixa o clique vazar para cá. */
+  const aoCliqueNaTela = (evento) => {
+    if (saindo) return;
+
+    if (apontando) {
+      setApontando(false);
+      setResposta(RESPOSTAS[lugarApontado(evento?.clientX ?? 0, evento?.clientY ?? 0)]);
+      return;
+    }
+    if (resposta) {
+      setResposta(null);
+      return;
+    }
     const proximo = PROXIMO[passo];
     if (proximo) setPasso(proximo);
   };
+
+  const capturarClique =
+    !encerrado && !saindo && !menu && (apontando || Boolean(resposta) || SAI_NO_CLIQUE.includes(passo));
 
   const enviarNome = async (evento) => {
     evento.preventDefault();
@@ -71,77 +142,104 @@ export default function TutorialRoteiro() {
     setPasso('apresentacao');
   };
 
+  const itensDoMenu = [
+    {
+      id: 'perguntar',
+      rotulo: 'Perguntar',
+      acao: () => {
+        setResposta(null);
+        setApontando(true);
+      },
+    },
+    { separador: true },
+    { id: 'pular', rotulo: 'Pular tutorial', acao: () => setSaindo(true) },
+  ];
+
+  if (encerrado) return null;
+
   return (
-    <GuiaPixie
-      texto={FALAS[passo]}
-      capturarClique={SAI_NO_CLIQUE.includes(passo)}
-      aoClique={avancarNoClique}
-    >
-      {passo === 'nome' ? (
-        <form
-          onSubmit={enviarNome}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            marginTop: 8,
-            pointerEvents: 'auto',
-          }}
-        >
-          <input
-            ref={campoRef}
-            value={nome}
-            onChange={(evento) => setNome(evento.target.value)}
-            placeholder="Seu nome"
-            maxLength={24}
-            aria-label="Como devo te chamar?"
+    <>
+      <GuiaPixie
+        texto={fala}
+        capturarClique={capturarClique}
+        aoClique={aoCliqueNaTela}
+        aoMenu={({ x, y }) => setMenu({ x, y })}
+      >
+        {passo === 'nome' && !saindo && !resposta && !apontando ? (
+          <form
+            onSubmit={enviarNome}
             style={{
-              flex: 1,
-              minWidth: 0,
-              width: 148,
-              padding: '6px 10px',
-              borderRadius: 9,
-              fontSize: 12,
-              letterSpacing: '0.01em',
-              color: 'var(--c3)',
-              fontFamily: 'var(--font-main)',
-              textAlign: 'center',
-              background: 'color-mix(in srgb, var(--c8) 70%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--c1) 34%, transparent)',
-              outline: 'none',
-            }}
-          />
-          <button
-            type="submit"
-            disabled={!nome.trim() || enviando}
-            aria-label="Enviar nome"
-            style={{
-              flexShrink: 0,
-              width: 28,
-              height: 28,
-              display: 'grid',
-              placeItems: 'center',
-              borderRadius: 9,
-              cursor: nome.trim() && !enviando ? 'pointer' : 'default',
-              opacity: nome.trim() && !enviando ? 1 : 0.4,
-              color: 'var(--c1)',
-              background: 'color-mix(in srgb, var(--c1) 18%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--c1) 45%, transparent)',
-              transition: 'opacity 0.15s, background 0.15s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              marginTop: 8,
+              pointerEvents: 'auto',
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M4 12h14M12 6l6 6-6 6"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        </form>
+            <input
+              ref={campoRef}
+              value={nome}
+              onChange={(evento) => setNome(evento.target.value)}
+              placeholder="Seu nome"
+              maxLength={24}
+              aria-label="Como devo te chamar?"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                width: 148,
+                padding: '6px 10px',
+                borderRadius: 9,
+                fontSize: 12,
+                letterSpacing: '0.01em',
+                color: 'var(--c3)',
+                fontFamily: 'var(--font-main)',
+                textAlign: 'center',
+                background: 'color-mix(in srgb, var(--c8) 70%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--c1) 34%, transparent)',
+                outline: 'none',
+              }}
+            />
+            <button
+              type="submit"
+              disabled={!nome.trim() || enviando}
+              aria-label="Enviar nome"
+              style={{
+                flexShrink: 0,
+                width: 28,
+                height: 28,
+                display: 'grid',
+                placeItems: 'center',
+                borderRadius: 9,
+                cursor: nome.trim() && !enviando ? 'pointer' : 'default',
+                opacity: nome.trim() && !enviando ? 1 : 0.4,
+                color: 'var(--c1)',
+                background: 'color-mix(in srgb, var(--c1) 18%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--c1) 45%, transparent)',
+                transition: 'opacity 0.15s, background 0.15s',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M4 12h14M12 6l6 6-6 6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </form>
+        ) : null}
+      </GuiaPixie>
+
+      {menu ? (
+        <MenuFlutuante
+          x={menu.x}
+          y={menu.y}
+          itens={itensDoMenu}
+          onFechar={() => setMenu(null)}
+        />
       ) : null}
-    </GuiaPixie>
+    </>
   );
 }

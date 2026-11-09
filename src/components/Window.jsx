@@ -316,6 +316,7 @@ export default function Window({ title, icon: Icon, onClose, children, width = 6
 
   return createPortal(
     <div
+      data-janela="true"
       onMouseDown={() => janela.onFocus && janela.onFocus()}
       style={{
         position: 'fixed',
