@@ -3,10 +3,10 @@ import { useEffect, useRef } from 'react';
 /**
  * A pixie que guia o tutorial da rota /tutorial.
  *
- * O desenho vem da folha de sprites que a Chloë mandou (ver
- * scripts/extrair-pixie.py): o bote das asas na primeira fileira e, na
- * segunda, as poses dela virando — a pirueta. Tudo com o fundo preto virando
- * transparência, animado por background-position em steps (nada de canvas).
+ * O desenho vem dos sprites que a Chloë mandou, um arquivo por quadro (em
+ * src/assets/pixie, montados por scripts/montar-pixie.py): a tira do corpo
+ * traz o bote das asas, animado por background-position em steps (nada de
+ * canvas).
  *
  * O voo é uma soma de duas senoides (dá um caminho de oito, não um vaivém
  * robótico) com o ritmo variando devagar: ela acelera, quase para, segue.
@@ -44,21 +44,22 @@ const INCLINACAO_GANHO = 0.7;
 
 /* Pirueta. */
 const PIRUETA_CADA = 8.5; // segundos entre uma e outra
-const PIRUETA_DURACAO = 0.52; // os quatro quadros
+const PIRUETA_DURACAO = 0.52; // quanto tempo ela passa girando
 const PIRUETA_SALTO = 9; // px que ela sobe no meio do giro
 
 /* Tamanho de um quadro na folha e o quanto ele cresce na tela. */
-const QUADRO_LARG = 26;
-const QUADRO_ALT = 24;
-const QUADROS = 3;
-const ESCALA = 3;
+const QUADRO_LARG = 104;
+const QUADRO_ALT = 96;
+const QUADROS = 9;
+/* 0,75 deixa o desenho no mesmo tamanho de antes na tela (78x72). */
+const ESCALA = 0.75;
 const LARGURA = QUADRO_LARG * ESCALA;
 const ALTURA = QUADRO_ALT * ESCALA;
 
-/* A pirueta usa um quadro maior (34x28), com folga para a pose inteira. */
-const GIRO_QUADROS = 4;
-const GIRO_LARG = 34;
-const GIRO_ALT = 28;
+/* A pirueta usa a mesma tira enquanto as poses do giro não chegam. */
+const GIRO_QUADROS = 9;
+const GIRO_LARG = 104;
+const GIRO_ALT = 96;
 const GIRO_LARGURA = GIRO_LARG * ESCALA;
 const GIRO_ALTURA = GIRO_ALT * ESCALA;
 
@@ -107,16 +108,16 @@ const ESTILOS = `
 }
 .pixie-corpo {
   inset: 0;
-  background-image: url(/tutorial/pixie-dourada.png);
+  background-image: url(/tutorial/pixie-corpo.png);
   background-size: ${LARGURA * QUADROS}px ${ALTURA}px;
-  animation: pixie-quadros 0.42s steps(${QUADROS}) infinite;
+  animation: pixie-quadros 0.9s steps(${QUADROS}) infinite;
 }
 .pixie-giro {
   left: ${(LARGURA - GIRO_LARGURA) / 2}px;
   top: ${(ALTURA - GIRO_ALTURA) / 2}px;
   width: ${GIRO_LARGURA}px;
   height: ${GIRO_ALTURA}px;
-  background-image: url(/tutorial/pixie-giro-dourada.png);
+  background-image: url(/tutorial/pixie-giro.png);
   background-size: ${GIRO_LARGURA * GIRO_QUADROS}px ${GIRO_ALTURA}px;
   animation: pixie-giro ${PIRUETA_DURACAO}s steps(${GIRO_QUADROS}) 1;
 }
