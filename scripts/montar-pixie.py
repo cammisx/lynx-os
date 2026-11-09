@@ -1,51 +1,39 @@
-"""Monta as duas tiras da pixie do tutorial, quadro a quadro.
+"""Monta as tiras da pixie do tutorial a partir dos sprites soltos.
 
 Roda com: python3 scripts/montar-pixie.py
 
-Os quadros ficam soltos em src/assets/pixie/quadros, no tamanho alto (4x da
-folha), e daqui saem as tiras que o GuiaPixie anima trocando a posicao do
-fundo (steps):
+Cada sprite foi exportado separado, numerado pela Chloë (src/assets/pixie/NN.png).
+Aqui eles entram na ordem em que ela mandou e viram uma tira horizontal, que o
+GuiaPixie anima trocando a posição do fundo (steps).
 
-  voo-01..26   o bote das asas: 26 quadros que fecham o ciclo (o 26 emenda
-               no 1 sem pulo). E a fileira do perfil da folha, do quadro 1
-               ao 26: dali para a frente a folha muda de animacao e a tinta
-               do desenho salta, por isso para no 26.
-  giro-01..04  as quatro poses da pirueta.
+- corpo: os quadros do bote das asas, um atrás do outro.
+- giro: as poses da pirueta (por enquanto a mesma tira do corpo).
 
-Toda tira sai com 104x96 por quadro, que o tutorial exibe a 0,75 (78x72).
+Todas as imagens são normalizadas para 104x96 (o mesmo quadro de 105x96 que
+ela mandou, menos 1px de largura para o passo do CSS cair em número inteiro).
 """
 from PIL import Image
-import glob
 import os
 
-PASTA = "src/assets/pixie/quadros"
-SAIDA = "public/tutorial"
+PASTA = "src/assets/pixie"
 LARG, ALT = 104, 96
 
+# ordem dos quadros do bote das asas
+CORPO = [11, 12, 13, 14, 15, 16, 17, 18, 19]
+# ordem das poses da pirueta (ainda não chegaram: usa o corpo)
+GIRO = [11, 12, 13, 14, 15, 16, 17, 18, 19]
 
-def montar(arquivos, destino, encaixar=False):
-    """Junta os quadros lado a lado. Com encaixar, a pose nao e esticada:
-    fica centralizada embaixo, que e o certo para as poses do giro."""
-    tira = Image.new("RGBA", (LARG * len(arquivos), ALT), (0, 0, 0, 0))
-    for indice, caminho in enumerate(arquivos):
-        quadro = Image.open(caminho).convert("RGBA")
-        if encaixar:
-            escala = min(LARG / quadro.width, ALT / quadro.height)
-            desenho = quadro.resize(
-                (max(1, round(quadro.width * escala)), max(1, round(quadro.height * escala))),
-                Image.LANCZOS,
-            )
-            quadro = Image.new("RGBA", (LARG, ALT), (0, 0, 0, 0))
-            quadro.alpha_composite(desenho, ((LARG - desenho.width) // 2, ALT - desenho.height))
-        else:
-            quadro = quadro.resize((LARG, ALT), Image.LANCZOS)
+
+def montar(numeros, destino):
+    tira = Image.new("RGBA", (LARG * len(numeros), ALT), (0, 0, 0, 0))
+    for indice, numero in enumerate(numeros):
+        caminho = os.path.join(PASTA, f"{numero}.png")
+        quadro = Image.open(caminho).convert("RGBA").resize((LARG, ALT), Image.LANCZOS)
         tira.alpha_composite(quadro, (indice * LARG, 0))
     tira.save(destino, optimize=True)
-    print(f"{destino}: {tira.width}x{tira.height}, {len(arquivos)} quadros")
+    print(f"{destino}: {tira.width}x{tira.height}, {len(numeros)} quadros")
 
 
 if __name__ == "__main__":
-    voo = sorted(glob.glob(os.path.join(PASTA, "voo-*.png")))
-    giro = sorted(glob.glob(os.path.join(PASTA, "giro-*.png")))
-    montar(voo, os.path.join(SAIDA, "pixie-corpo.png"))
-    montar(giro, os.path.join(SAIDA, "pixie-giro.png"), encaixar=True)
+    montar(CORPO, "public/tutorial/pixie-corpo.png")
+    montar(GIRO, "public/tutorial/pixie-giro.png")

@@ -44,20 +44,20 @@ const INCLINACAO_GANHO = 0.7;
 
 /* Pirueta. */
 const PIRUETA_CADA = 8.5; // segundos entre uma e outra
-const PIRUETA_DURACAO = 0.52; // quanto tempo ela passa girando (4 poses)
+const PIRUETA_DURACAO = 0.52; // quanto tempo ela passa girando
 const PIRUETA_SALTO = 9; // px que ela sobe no meio do giro
 
 /* Tamanho de um quadro na folha e o quanto ele cresce na tela. */
 const QUADRO_LARG = 104;
 const QUADRO_ALT = 96;
-const QUADROS = 26;
+const QUADROS = 9;
 /* 0,75 deixa o desenho no mesmo tamanho de antes na tela (78x72). */
 const ESCALA = 0.75;
 const LARGURA = QUADRO_LARG * ESCALA;
 const ALTURA = QUADRO_ALT * ESCALA;
 
-/* A pirueta: as quatro poses do giro, no mesmo tamanho de quadro. */
-const GIRO_QUADROS = 4;
+/* A pirueta usa a mesma tira enquanto as poses do giro não chegam. */
+const GIRO_QUADROS = 9;
 const GIRO_LARG = 104;
 const GIRO_ALT = 96;
 const GIRO_LARGURA = GIRO_LARG * ESCALA;
@@ -110,7 +110,7 @@ const ESTILOS = `
   inset: 0;
   background-image: url(/tutorial/pixie-corpo.png);
   background-size: ${LARGURA * QUADROS}px ${ALTURA}px;
-  animation: pixie-quadros 1.2s steps(${QUADROS}) infinite;
+  animation: pixie-quadros 0.9s steps(${QUADROS}) infinite;
 }
 .pixie-giro {
   left: ${(LARGURA - GIRO_LARGURA) / 2}px;
