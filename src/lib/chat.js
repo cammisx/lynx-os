@@ -170,6 +170,20 @@ export const naoLidasDoCanal = (mensagens, membro, usuarioId) => {
   }).length;
 };
 
+/**
+ * Canais de grupo em que a pessoa ainda não tem registro de leitura.
+ *
+ * Grupo mostra o histórico para quem chega depois, mas não cobra esse histórico
+ * no badge: o registro nasce com a data do primeiro carregamento e só o que
+ * chegar de novo conta. Conversa direta fica de fora.
+ */
+export const canaisSemLeitura = (canais, membros) => {
+  const comRegistro = new Set((membros || []).map((membro) => membro.canal_id));
+  return (canais || []).filter(
+    (canal) => canal?.id && !comRegistro.has(canal.id) && canal.tipo !== CANAL_PRIVADO
+  );
+};
+
 export const previewDaMensagem = (mensagem) => {
   if (!mensagem) return '';
   if (mensagem.apagada) return 'mensagem apagada';

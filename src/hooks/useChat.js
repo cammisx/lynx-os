@@ -11,6 +11,7 @@ import {
   chaveDeDedupe,
   ehAdmin,
   mensagemVisivel,
+  canaisSemLeitura,
   naoLidasDoCanal,
   ordemDosCanais,
   paraData,
@@ -404,6 +405,42 @@ export default function useChat() {
     }
   }, [euId, garantirCanais, juntarPrivadosRepetidos, arquivarCanaisOrfaos]);
 
+  /**
+   * Quem entra agora não herda o histórico como não lido.
+   *
+   * Canal de grupo (Geral, canal de modelo e grupo com gente dentro) mostra
+   * tudo o que já foi conversado, mas o registro de leitura nasce no primeiro
+   * carregamento: o que já existia entra como lido e só o que chegar depois
+   * conta no badge. Conversa direta fica de fora, porque o que mandaram para a
+   * pessoa antes do primeiro login é novo de verdade.
+   */
+  const garantirLeituraInicial = useCallback(
+    async (listaCanais, listaMembros) => {
+      if (!euId) return listaMembros;
+      const faltando = canaisSemLeitura(listaCanais, listaMembros);
+      if (!faltando.length) return listaMembros;
+
+      const quando = agora();
+      const criados = await Promise.all(
+        faltando.map((canal) =>
+          base44.entities.ChatMembro.create({
+            canal_id: canal.id,
+            usuario_id: euId,
+            ultima_leitura_em: quando,
+            arquivado: false,
+          })
+            .then((novo) => asList([novo])[0] || null)
+            .catch((falha) => {
+              console.warn('[Chat] não consegui marcar a entrada no canal', canal.id, falha);
+              return null;
+            })
+        )
+      );
+      return [...listaMembros, ...criados.filter(Boolean)];
+    },
+    [euId]
+  );
+
   const carregar = useCallback(async () => {
     if (!euId) return;
     setErro('');
@@ -434,6 +471,10 @@ export default function useChat() {
       const canaisPermitidos = canaisProntos.filter((canal) =>
         canalVisivel(canal, user, modelosCarregados)
       );
+      const membrosComLeitura = await garantirLeituraInicial(
+        canaisPermitidos,
+        membrosCarregados
+      );
       const minhasMensagens = await carregarMensagens(canaisPermitidos);
 
       setPessoas(pessoasCarregadas);
@@ -441,7 +482,7 @@ export default function useChat() {
       setModelosConferidos(conferido);
       modelosConferidosRef.current = conferido;
       setCanais(canaisProntos);
-      setMembros(membrosCarregados);
+      setMembros(membrosComLeitura);
       setMensagens(minhasMensagens);
     } catch (falha) {
       console.error('[Chat] falha ao carregar', falha);
@@ -455,6 +496,7 @@ export default function useChat() {
     carregarPessoas,
     garantirCanais,
     carregarMensagens,
+    garantirLeituraInicial,
     juntarPrivadosRepetidos,
     arquivarCanaisOrfaos,
   ]);

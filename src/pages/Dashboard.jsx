@@ -35,7 +35,7 @@ import useAvisarTurnosPendentes from '@/hooks/useAvisarTurnosPendentes';
 import useVersaoPublicada from '@/hooks/useVersaoPublicada';
 import { sincronizarAdminsUmaVez } from '@/lib/admins';
 import useAplicarConvite from '@/hooks/useAplicarConvite';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile, MOBILE_BREAKPOINT } from '@/hooks/use-mobile';
 import MobileShell from '@/components/mobile/MobileShell';
 import TutorialRoteiro from '@/components/tutorial/TutorialRoteiro';
 import PixieAjuda from '@/components/tutorial/PixieAjuda';
@@ -71,10 +71,19 @@ export default function Dashboard({ tutorial = false }) {
      qualquer aparelho; o navegador guarda uma cópia de reserva).
      No celular não: lá não tem botão direito nem a Pixie na tela. */
   useEffect(() => {
-    if (tutorial || telaPequena !== false) return;
     /* Enquanto a conta não chegou, o campo do User ainda não pode responder:
        decidir agora mandaria de volta quem já viu o tutorial. */
     if (isLoadingAuth || !user) return;
+    /* O tamanho da tela é lido do navegador, e não do primeiro render do
+       useIsMobile: ele começa respondendo "desktop" e por isso mandava o
+       celular para o /tutorial antes de saber que era celular. */
+    const celular = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`).matches;
+    /* No celular não tem tutorial: nem botão direito, nem Pixie na tela. */
+    if (tutorial) {
+      if (celular) navegar('/', { replace: true });
+      return;
+    }
+    if (celular) return;
     if (!tutorialPixieDesktopVisto(user)) navegar('/tutorial', { replace: true });
   }, [tutorial, telaPequena, navegar, user, isLoadingAuth]);
 
