@@ -8,10 +8,8 @@ import { useEffect, useRef } from 'react';
  * traz o bote das asas, animado por background-position em steps (nada de
  * canvas).
  *
- * O voo é uma soma de duas senoides (dá um caminho de oito, não um vaivém
- * robótico) com o ritmo variando devagar: ela acelera, quase para, segue.
- * Ela também se inclina para o lado do movimento e, a cada alguns segundos,
- * dá uma pirueta no ar.
+ * O voo é o de antes das poses do giro: ela não gira nem passeia pela tela,
+ * só bate as asas e sobe e desce devagar, num vaivém de senoide.
  *
  * O balão mora no mesmo grupo (para acompanhar), mas é posicionado a cada
  * quadro com duas regras: fica sempre ACIMA do desenho dela, com folga, e
@@ -19,33 +17,13 @@ import { useEffect, useRef } from 'react';
  * e a pontinha continua apontando para ela.
  *
  * Nada aqui captura clique (a camada é pointer-events: none). Com "reduzir
- * movimento" ligado, ela fica parada e não pisca nem gira.
+ * movimento" ligado, ela fica parada e não pisca.
  */
 
-/* Caminho do voo. */
-const AMPLITUDE_X = 0.3;
-const AMPLITUDE_X2 = 0.045;
-const FREQ_X = 0.16;
-const FREQ_X2 = 0.53;
+/* O vaivém: ela fica no meio da tela e sobe e desce numa senoide lenta. */
 const BASE_Y = 0.62;
-const AMPLITUDE_Y = 0.055;
-const AMPLITUDE_Y2 = 0.018;
-const FREQ_Y = 0.37;
-const FREQ_Y2 = 0.83;
-
-/* Ritmo: 0,35 é o passo mínimo, o resto vem e vai com a senoide. */
-const RITMO_MIN = 0.35;
-const RITMO_EXTRA = 1.15;
-const FREQ_RITMO = 0.23;
-
-/* Inclinação ao voar. */
-const INCLINACAO_MAX = 12;
-const INCLINACAO_GANHO = 0.7;
-
-/* Pirueta. */
-const PIRUETA_CADA = 8.5; // segundos entre uma e outra
-const PIRUETA_DURACAO = 0.52; // quanto tempo ela passa girando (4 poses)
-const PIRUETA_SALTO = 9; // px que ela sobe no meio do giro
+const AMPLITUDE_Y = 0.045; // quanto sobe e desce, em fração da altura da tela
+const VELOCIDADE_Y = 1.35; // radianos por segundo: um sobe e desce a cada 4,6s
 
 /* Tamanho de um quadro na folha e o quanto ele cresce na tela. */
 const QUADRO_LARG = 104;
@@ -56,17 +34,9 @@ const ESCALA = 0.75;
 const LARGURA = QUADRO_LARG * ESCALA;
 const ALTURA = QUADRO_ALT * ESCALA;
 
-/* A pirueta: as quatro poses do giro, no mesmo tamanho de quadro. */
-const GIRO_QUADROS = 4;
-const GIRO_LARG = 104;
-const GIRO_ALT = 96;
-const GIRO_LARGURA = GIRO_LARG * ESCALA;
-const GIRO_ALTURA = GIRO_ALT * ESCALA;
-
-/* Onde o desenho dela começa e termina em relação ao ponto do caminho.
-   TOPO_VISUAL já desconta o quanto ela cresce ao inclinar e ao girar. */
+/* Onde o desenho dela começa e termina em relação ao ponto do caminho. */
 const CORPO_TOPO = -ALTURA + 6;
-const TOPO_VISUAL = CORPO_TOPO - 18;
+const TOPO_VISUAL = CORPO_TOPO;
 const FOLGA_DO_BALAO = 8;
 const MARGEM_DA_TELA = 8;
 
@@ -89,10 +59,6 @@ const ESTILOS = `
   from { background-position-x: 0; }
   to { background-position-x: -${QUADRO_LARG * QUADROS * ESCALA}px; }
 }
-@keyframes pixie-giro {
-  from { background-position-x: 0; }
-  to { background-position-x: -${GIRO_LARGURA * GIRO_QUADROS}px; }
-}
 @keyframes pixie-pisca {
   0%, 100% { opacity: 0; transform: scale(0.4); }
   45% { opacity: 0.9; transform: scale(1); }
@@ -101,7 +67,7 @@ const ESTILOS = `
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.pixie-corpo, .pixie-giro {
+.pixie-corpo {
   position: absolute;
   background-repeat: no-repeat;
   filter: drop-shadow(0 0 7px rgba(240, 148, 58, 0.6)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
@@ -112,18 +78,9 @@ const ESTILOS = `
   background-size: ${LARGURA * QUADROS}px ${ALTURA}px;
   animation: pixie-quadros 0.9s steps(${QUADROS}) infinite;
 }
-.pixie-giro {
-  left: ${(LARGURA - GIRO_LARGURA) / 2}px;
-  top: ${(ALTURA - GIRO_ALTURA) / 2}px;
-  width: ${GIRO_LARGURA}px;
-  height: ${GIRO_ALTURA}px;
-  background-image: url(/tutorial/pixie-giro.png);
-  background-size: ${GIRO_LARGURA * GIRO_QUADROS}px ${GIRO_ALTURA}px;
-  animation: pixie-giro ${PIRUETA_DURACAO}s steps(${GIRO_QUADROS}) 1;
-}
 .pixie-pisca { animation: pixie-pisca 2.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .pixie-corpo, .pixie-giro { animation: none !important; }
+  .pixie-corpo { animation: none !important; }
   .pixie-pisca { animation: none !important; opacity: 0.5; }
 }
 `;
@@ -152,8 +109,6 @@ const limitar = (valor, minimo, maximo) => Math.min(Math.max(valor, minimo), Mat
 export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
   const grupoRef = useRef(null);
   const corpoRef = useRef(null);
-  const asaRef = useRef(null);
-  const giroRef = useRef(null);
   const balaoRef = useRef(null);
   const pontaRef = useRef(null);
   const medidaRef = useRef({ largura: 0, altura: 0 });
@@ -181,71 +136,25 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
 
     const semMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
     const inicio = performance.now();
-    let anterior = null;
-    let caminho = 0; // "tempo" do voo, que acelera e desacelera
-    let piruetando = null;
     let raf = 0;
 
     const desenhar = (agora) => {
       const t = (agora - inicio) / 1000;
-      const dt = anterior === null ? 0 : Math.min(0.05, (agora - anterior) / 1000);
-      anterior = agora;
 
       const larguraTela = window.innerWidth;
       const alturaTela = window.innerHeight;
 
-      /* O caminho anda mais devagar em alguns trechos, como quem voa sem pressa. */
-      const ritmo = RITMO_MIN + RITMO_EXTRA * Math.max(0, Math.sin(t * FREQ_RITMO));
-      caminho += semMovimento ? 0 : dt * ritmo;
-
-      const fracaoX = semMovimento
-        ? 0.5
-        : 0.5 + AMPLITUDE_X * Math.sin(caminho * FREQ_X) + AMPLITUDE_X2 * Math.sin(caminho * FREQ_X2 + 1.7);
-      const fracaoY = semMovimento
-        ? BASE_Y
-        : BASE_Y + AMPLITUDE_Y * Math.sin(caminho * FREQ_Y + 0.8) + AMPLITUDE_Y2 * Math.sin(caminho * FREQ_Y2);
-
-      /* Velocidade vertical: inclina o corpo para o lado de onde ela vai. */
-      const velocidadeY =
-        AMPLITUDE_Y * FREQ_Y * Math.cos(caminho * FREQ_Y + 0.8) +
-        AMPLITUDE_Y2 * FREQ_Y2 * Math.cos(caminho * FREQ_Y2);
-      const inclinacao = semMovimento
-        ? 0
-        : limitar(velocidadeY * alturaTela * INCLINACAO_GANHO, -INCLINACAO_MAX, INCLINACAO_MAX);
-
-      /* De vez em quando, uma pirueta no ar. */
-      const ciclo = semMovimento ? PIRUETA_CADA : t % PIRUETA_CADA;
-      const girando = ciclo < PIRUETA_DURACAO;
-      const progresso = girando ? ciclo / PIRUETA_DURACAO : 0;
-      const salto = girando ? Math.sin(Math.PI * progresso) : 0;
+      const fracaoY = semMovimento ? BASE_Y : BASE_Y + AMPLITUDE_Y * Math.sin(t * VELOCIDADE_Y);
 
       const { largura: larguraBalao, altura: alturaBalao } = medidaRef.current;
 
       /* Ela nunca sobe tanto que o balão saia por cima, nem desce para fora. */
-      const alturaNecessaria =
-        FOLGA_DO_BALAO - TOPO_VISUAL + alturaBalao + MARGEM_DA_TELA + PIRUETA_SALTO;
+      const alturaNecessaria = FOLGA_DO_BALAO - TOPO_VISUAL + alturaBalao + MARGEM_DA_TELA;
       const limiteBaixo = alturaTela - MARGEM_DA_TELA - ALTURA / 2;
-      const x = fracaoX * larguraTela;
-      const y =
-        limitar(fracaoY * alturaTela, alturaNecessaria, limiteBaixo) - PIRUETA_SALTO * salto;
+      const x = larguraTela / 2;
+      const y = limitar(fracaoY * alturaTela, alturaNecessaria, limiteBaixo);
 
       grupo.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
-
-      /* Vira para o lado do caminho e sobe/desce o nariz conforme o voo. */
-      const direcao = Math.cos(caminho * FREQ_X) >= 0 ? 1 : -1;
-      const corpo = corpoRef.current;
-      if (corpo) {
-        const crescer = 1 + 0.07 * salto;
-        corpo.style.transform =
-          `scaleX(${direcao}) rotate(${inclinacao.toFixed(1)}deg) scale(${crescer.toFixed(3)})`;
-      }
-
-      /* Troca o bote das asas pela sequência da pirueta (só quando muda). */
-      if (girando !== piruetando) {
-        piruetando = girando;
-        if (asaRef.current) asaRef.current.style.display = girando ? 'none' : 'block';
-        if (giroRef.current) giroRef.current.style.display = girando ? 'block' : 'none';
-      }
 
       /* O balão acompanha, mas preso dentro da tela: o deslocamento lateral
          só compensa o quanto ela passou das bordas. */
@@ -253,7 +162,7 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
       if (balao && larguraBalao > 0) {
         const meio = larguraBalao / 2;
         const centro = limitar(x, meio + MARGEM_DA_TELA, larguraTela - meio - MARGEM_DA_TELA);
-        const desvio = centro - x;
+        const desvio = centro - x;/* ela mora no meio da tela: o desvio é zero, mas fica aqui para o balão continuar preso dentro dela */
         const alturaDoBalao = TOPO_VISUAL - FOLGA_DO_BALAO;
         balao.style.transform =
           `translate(${desvio.toFixed(1)}px, ${alturaDoBalao.toFixed(1)}px) translate(-50%, -100%)`;
@@ -299,8 +208,7 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
             willChange: 'transform',
           }}
         >
-          <div ref={asaRef} className="pixie-corpo" />
-          <div ref={giroRef} className="pixie-giro" style={{ display: 'none' }} />
+          <div className="pixie-corpo" />
         </div>
 
         {/* balão de fala: acima do desenho e dentro da tela */}
