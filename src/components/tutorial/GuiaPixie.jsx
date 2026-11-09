@@ -56,8 +56,22 @@ const ESTILOS = `
 }
 `;
 
+/* Cada brilhinho: tamanho, onde fica em volta dela, em que compasso pisca. */
+const PISCADAS = [
+  { tamanho: 7, x: -36, y: -20, duracao: 1.1, atraso: 0 },
+  { tamanho: 4, x: 26, y: -8, duracao: 0.9, atraso: 0.35 },
+  { tamanho: 5, x: -18, y: 12, duracao: 1.3, atraso: 0.6 },
+  { tamanho: 3, x: 31, y: 18, duracao: 1, atraso: 0.15 },
+  { tamanho: 5, x: -46, y: -4, duracao: 1.2, atraso: 0.8 },
+  { tamanho: 3, x: 12, y: -30, duracao: 0.95, atraso: 0.5 },
+  { tamanho: 4, x: -8, y: 26, duracao: 1.15, atraso: 0.25 },
+  { tamanho: 6, x: 40, y: -22, duracao: 1.35, atraso: 0.7 },
+  { tamanho: 3, x: -30, y: -34, duracao: 1.05, atraso: 0.9 },
+  { tamanho: 4, x: 20, y: 8, duracao: 1.25, atraso: 0.45 },
+];
+
 /** Estrelinha de quatro pontas: o brilho que sobra no caminho dela. */
-const Estrela = ({ tamanho, atraso, x, y }) => (
+const Estrela = ({ tamanho, atraso, x, y, duracao }) => (
   <span
     className="pixie-pisca"
     style={{
@@ -70,7 +84,7 @@ const Estrela = ({ tamanho, atraso, x, y }) => (
       clipPath:
         'polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%)',
       animationDelay: `${atraso}s`,
-      animationDuration: `${2.6 + atraso}s`,
+      animationDuration: `${duracao}s`,
     }}
   />
 );
@@ -122,10 +136,9 @@ export default function GuiaPixie({ texto = 'Boas vindas à Lynx' }) {
         style={{ position: 'absolute', left: 0, top: 0, width: 0, height: 0, willChange: 'transform' }}
       >
         {/* brilho que fica para trás */}
-        <Estrela tamanho={6} atraso={0} x={-34} y={-18} />
-        <Estrela tamanho={4} atraso={0.7} x={24} y={-6} />
-        <Estrela tamanho={5} atraso={1.4} x={-16} y={12} />
-        <Estrela tamanho={3} atraso={1.9} x={30} y={18} />
+        {PISCADAS.map((estrela) => (
+          <Estrela key={`${estrela.x}:${estrela.y}`} {...estrela} />
+        ))}
 
         {/* corpo, apoiado no ponto do caminho */}
         <div
