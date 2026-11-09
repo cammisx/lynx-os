@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { dourado, escuro } from '@/components/jogos/EstruturaJogo';
 
 /**
@@ -185,39 +185,182 @@ export function DpadVidro({ aoDirecao, aoAcao, rotuloAcao, desabilitado = false,
         <span />
       </div>
 
-      {aoAcao ? (
-        <button
-          type="button"
-          onPointerDown={(evento) => {
-            evento.preventDefault();
-            aoAcao();
-          }}
+      <BotaoAcao aoAcao={aoAcao} rotuloAcao={rotuloAcao} />
+    </div>
+  );
+}
+
+/** Botao redondo de acao (pausar, jogar) que fica ao lado do controle. */
+function BotaoAcao({ aoAcao, rotuloAcao }) {
+  if (!aoAcao) return null;
+  return (
+    <button
+      type="button"
+      onPointerDown={(evento) => {
+        evento.preventDefault();
+        aoAcao();
+      }}
+      style={{
+        width: 58,
+        height: 58,
+        borderRadius: '50%',
+        border: `1px solid ${dourado(40)}`,
+        background: dourado(16),
+        backdropFilter: 'blur(10px)',
+        color: 'var(--c1)',
+        fontFamily: 'var(--font-main)',
+        fontSize: 10,
+        fontWeight: 800,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em',
+        touchAction: 'none',
+        cursor: 'pointer',
+      }}
+    >
+      {rotuloAcao || 'acao'}
+    </button>
+  );
+}
+
+const JOYSTICK = 112;
+
+/**
+ * Joystick de vidro: arrasta a bolinha para qualquer lado e o jogo recebe a
+ * direcao. Vale para o dedo e para o mouse (pointer events), e a bolinha volta
+ * ao centro quando a mao solta.
+ */
+export function JoystickVidro({ aoDirecao, aoAcao, rotuloAcao, desabilitado = false, style }) {
+  const base = useRef(null);
+  const arrastando = useRef(false);
+  const [deslocamento, setDeslocamento] = useState({ x: 0, y: 0 });
+
+  const apontar = useCallback(
+    (evento) => {
+      const elemento = base.current;
+      if (!elemento) return;
+      const caixa = elemento.getBoundingClientRect();
+      const raio = caixa.width / 2;
+      const brutoX = evento.clientX - (caixa.left + raio);
+      const brutoY = evento.clientY - (caixa.top + raio);
+      const distancia = Math.hypot(brutoX, brutoY) || 1;
+      const limite = raio * 0.58;
+      const escala = distancia > limite ? limite / distancia : 1;
+      setDeslocamento({ x: brutoX * escala, y: brutoY * escala });
+
+      /* Zona morta no meio: encostar de leve nao vira o jogo. */
+      if (desabilitado || distancia < raio * 0.3) return;
+      const horizontal = Math.abs(brutoX) >= Math.abs(brutoY);
+      if (horizontal) aoDirecao?.(brutoX > 0 ? 'direita' : 'esquerda');
+      else aoDirecao?.(brutoY > 0 ? 'baixo' : 'cima');
+    },
+    [aoDirecao, desabilitado]
+  );
+
+  const soltar = () => {
+    arrastando.current = false;
+    setDeslocamento({ x: 0, y: 0 });
+  };
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 18,
+        padding: '4px 0 2px',
+        ...style,
+      }}
+    >
+      <div
+        ref={base}
+        role="presentation"
+        onPointerDown={(evento) => {
+          evento.preventDefault();
+          if (desabilitado) return;
+          arrastando.current = true;
+          evento.currentTarget.setPointerCapture?.(evento.pointerId);
+          apontar(evento);
+        }}
+        onPointerMove={(evento) => {
+          if (arrastando.current) apontar(evento);
+        }}
+        onPointerUp={soltar}
+        onPointerCancel={soltar}
+        onPointerLeave={() => {
+          if (arrastando.current) soltar();
+        }}
+        style={{
+          position: 'relative',
+          width: JOYSTICK,
+          height: JOYSTICK,
+          borderRadius: '50%',
+          border: `1px solid ${dourado(26)}`,
+          background: vidro(48),
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 8px 20px color-mix(in srgb, #000 35%, transparent)',
+          touchAction: 'none',
+          cursor: desabilitado ? 'default' : 'grab',
+          opacity: desabilitado ? 0.45 : 1,
+        }}
+      >
+        {[0, 90, 180, 270].map((giro) => (
+          <span
+            key={giro}
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: `translate(-50%, -50%) rotate(${giro}deg) translateY(-${JOYSTICK / 2 - 10}px)`,
+              color: escuro(45),
+              display: 'flex',
+            }}
+          >
+            {seta(0)}
+          </span>
+        ))}
+        <span
+          aria-hidden="true"
           style={{
-            width: 58,
-            height: 58,
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            width: 46,
+            height: 46,
+            marginLeft: -23,
+            marginTop: -23,
             borderRadius: '50%',
-            border: `1px solid ${dourado(40)}`,
-            background: dourado(16),
-            backdropFilter: 'blur(10px)',
+            border: `1px solid ${dourado(50)}`,
+            background: dourado(20),
             color: 'var(--c1)',
-            fontFamily: 'var(--font-main)',
-            fontSize: 10,
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-            touchAction: 'none',
-            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transform: `translate(${deslocamento.x}px, ${deslocamento.y}px)`,
+            transition: arrastando.current ? 'none' : 'transform 140ms ease',
+            boxShadow: '0 6px 16px color-mix(in srgb, #000 30%, transparent)',
           }}
         >
-          {rotuloAcao || 'acao'}
-        </button>
-      ) : null}
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: 'currentColor',
+              opacity: 0.85,
+            }}
+          />
+        </span>
+      </div>
+
+      <BotaoAcao aoAcao={aoAcao} rotuloAcao={rotuloAcao} />
     </div>
   );
 }
 
 /** Aviso curto em vidro, usado para "pausado" e "fim de jogo". */
-export function AvisoJogo({ titulo, texto, acoes = [], tom = 'normal' }) {
+export function AvisoJogo({ titulo, texto, extra = null, acoes = [], tom = 'normal' }) {
   return (
     <div
       style={{

@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BotaoVidro, MolduraJogo, PainelConfig, escuro } from '@/components/jogos/EstruturaJogo';
-import { AvisoJogo, DpadVidro, usePausaFora, useSwipe, useTeclado } from '@/components/jogos/ControlesJogo';
 import {
-  BORDA,
-  FUNDO,
-  LINHA_GRADE,
-  desenharCobra,
-  desenharItem,
-} from '@/components/jogos/desenhoSolicitacao';
+  AvisoJogo,
+  DpadVidro,
+  JoystickVidro,
+  usePausaFora,
+  useSwipe,
+  useTeclado,
+} from '@/components/jogos/ControlesJogo';
+import { PALETA, desenharCobra, desenharItem } from '@/components/jogos/desenhoSolicitacao';
+import PlacarTotal from '@/components/jogos/PlacarTotal';
+import useModoEscuro from '@/hooks/useModoEscuro';
 import {
-  INSTRUCAO_SOLICITACAO,
   ITENS,
-  TEXTO_INICIO_SOLICITACAO,
   PELES,
   TONS_PELE,
   fraseDoFim,
@@ -96,12 +97,23 @@ export default function JogoSolicitacaoMidia({
   valores,
   geral,
   recorde,
+  total = 0,
   aoRecorde,
+  aoTotal,
   aoMudar,
   aoVoltar,
   aoRestaurar,
   aoApagarRecordes,
 }) {
+  /* O tabuleiro desenha em canvas, entao as cores vem da paleta do modo. */
+  const modoEscuro = useModoEscuro();
+  const paleta = modoEscuro ? PALETA.escuro : PALETA.claro;
+  /* setas = direcional na tela; deslizar = so o dedo; joystick = bolinha. */
+  const controle =
+    valores.controle === 'joystick' || valores.controle === 'deslizar'
+      ? valores.controle
+      : 'setas';
+
   const grade = GRADE[valores.grade] || GRADE.media;
   const velocidade = VELOCIDADE[valores.velocidade] || VELOCIDADE.normal;
   const atravessa = valores.paredes === 'atravessa';
@@ -123,6 +135,22 @@ export default function JogoSolicitacaoMidia({
   recordeRef.current = recorde;
   const pontosRef = useRef(0);
 
+  /* Score total: cada partida entra UMA vez na soma, mesmo que a pessoa feche
+     a janela logo depois de perder. */
+  const totalRef = useRef(total);
+  totalRef.current = total;
+  const aoTotalRef = useRef(aoTotal);
+  aoTotalRef.current = aoTotal;
+  const partidaContada = useRef(false);
+  const somarNoTotal = useCallback((valor) => {
+    const numero = Math.round(Number(valor) || 0);
+    if (numero <= 0 || partidaContada.current) return;
+    partidaContada.current = true;
+    aoTotalRef.current?.((Number(totalRef.current) || 0) + numero);
+  }, []);
+  const somarRef = useRef(somarNoTotal);
+  somarRef.current = somarNoTotal;
+
   /* O tabuleiro ocupa o maior quadrado que cabe na janela: toda a largura que
      existe e a altura que sobra abaixo do topo (deixando espaco pro direcional).
      So o passo e inteiro, entao `lado` e sempre multiplo da grade. */
@@ -143,10 +171,10 @@ export default function JogoSolicitacaoMidia({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, lado, lado);
 
-      ctx.fillStyle = FUNDO;
+      ctx.fillStyle = paleta.fundo;
       ctx.fillRect(0, 0, lado, lado);
 
-      ctx.strokeStyle = LINHA_GRADE;
+      ctx.strokeStyle = paleta.grade;
       ctx.lineWidth = 1;
       for (let i = 1; i < grade; i += 1) {
         ctx.beginPath();
@@ -158,16 +186,17 @@ export default function JogoSolicitacaoMidia({
       }
 
       const estadoJogo = jogo.current;
-      estadoJogo.itens.forEach((item) => desenharItem(ctx, item, passo, agora));
+      estadoJogo.itens.forEach((item) => desenharItem(ctx, item, passo, agora, paleta));
       desenharCobra(ctx, estadoJogo.corpo, passo, pele, pelos);
     },
-    [grade, lado, passo, pele, pelos]
+    [grade, lado, passo, paleta, pele, pelos]
   );
 
   const reiniciar = useCallback(() => {
     jogo.current = criarPartida(grade);
     jogo.current.proximoNascimento = performance.now();
     pontosRef.current = 0;
+    partidaContada.current = false;
     setPontos(0);
     setFlutuantes([]);
     setEstado('pronto');
@@ -201,7 +230,7 @@ export default function JogoSolicitacaoMidia({
       observador?.disconnect();
       window.removeEventListener('resize', medir);
     };
-  }, []);
+  }, [controle]);
 
   const mostrarFlutuante = useCallback((item) => {
     const id = `${performance.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -220,7 +249,8 @@ export default function JogoSolicitacaoMidia({
     estadoJogo.parado = true;
     setEstado('fim');
     aoRecorde?.(estadoJogo.pontos);
-  }, [aoRecorde]);
+    somarNoTotal(estadoJogo.pontos);
+  }, [aoRecorde, somarNoTotal]);
 
   const avancar = useCallback(() => {
     const estadoJogo = jogo.current;
@@ -319,6 +349,8 @@ export default function JogoSolicitacaoMidia({
       const valor = pontosRef.current;
       const atual = recordeRef.current;
       if (valor > 0 && (atual == null || valor > atual)) registroRef.current?.(valor);
+      /* Fechar a janela no meio da partida ainda soma no score total. */
+      somarRef.current?.(valor);
     },
     []
   );
@@ -397,6 +429,16 @@ export default function JogoSolicitacaoMidia({
       ],
     },
     {
+      chave: 'controle',
+      rotulo: 'Controle',
+      tipo: 'select',
+      opcoes: [
+        { valor: 'setas', rotulo: 'Setas' },
+        { valor: 'deslizar', rotulo: 'Deslizar o dedo' },
+        { valor: 'joystick', rotulo: 'Joystick' },
+      ],
+    },
+    {
       chave: 'pele',
       rotulo: 'Tom de pele',
       tipo: 'cores',
@@ -422,7 +464,6 @@ export default function JogoSolicitacaoMidia({
             aoFechar={() => setPainel(false)}
             aoRestaurar={aoRestaurar}
             aoApagarRecordes={aoApagarRecordes}
-            nota={`${INSTRUCAO_SOLICITACAO} O recorde vale para a combinação de grade, velocidade e borda escolhida.`}
           />
         ) : null
       }
@@ -454,8 +495,8 @@ export default function JogoSolicitacaoMidia({
                 width: lado,
                 height: lado,
                 borderRadius: 12,
-                border: `1px solid ${BORDA}`,
-                background: FUNDO,
+                border: `1px solid ${paleta.borda}`,
+                background: paleta.fundo,
                 display: 'block',
               }}
             />
@@ -492,7 +533,7 @@ export default function JogoSolicitacaoMidia({
                 borderRadius: 12,
                 pointerEvents: 'none',
                 zIndex: 3,
-                background: 'color-mix(in srgb, #06040b 62%, transparent)',
+                background: paleta.veu,
                 animation: 'entraPlacar 180ms ease-out both',
               }}
             />
@@ -501,7 +542,7 @@ export default function JogoSolicitacaoMidia({
           {estado === 'pronto' ? (
             <AvisoJogo
               titulo="SOLICITAÇÃO DE MÍDIA"
-              texto={TEXTO_INICIO_SOLICITACAO}
+              extra={<PlacarTotal valor={total} />}
               acoes={[
                 <BotaoVidro key="ir" tom="principal" onClick={() => setEstado('jogando')}>
                   Começar
@@ -544,17 +585,17 @@ export default function JogoSolicitacaoMidia({
                   maxWidth: 280,
                   padding: '16px 18px',
                   borderRadius: 14,
-                  border: `1px solid ${BORDA}`,
-                  background: 'rgba(16,10,23,0.86)',
-                  boxShadow: '0 18px 40px rgba(0,0,0,0.45)',
+                  border: `1px solid ${paleta.borda}`,
+                  background: paleta.cartao,
+                  boxShadow: '0 18px 40px rgba(0,0,0,0.35)',
                   textAlign: 'center',
                   animation: 'entraPlacar 260ms ease-out both',
                 }}
               >
-                <span style={{ fontFamily: 'var(--font-main)', fontSize: 20, fontWeight: 800, color: '#ffffff', fontVariantNumeric: 'tabular-nums' }}>
+                <span style={{ fontFamily: 'var(--font-main)', fontSize: 20, fontWeight: 800, color: 'var(--c1)', fontVariantNumeric: 'tabular-nums' }}>
                   {pontos}
                 </span>
-                <span style={{ fontFamily: 'var(--font-main)', fontSize: 11, lineHeight: 1.5, color: 'rgba(255,255,255,0.82)' }}>
+                <span style={{ fontFamily: 'var(--font-main)', fontSize: 11, lineHeight: 1.5, color: 'var(--c2)' }}>
                   {fraseDoFim(pontos)}
                 </span>
                 <BotaoVidro tom="principal" onClick={reiniciar}>
@@ -566,14 +607,23 @@ export default function JogoSolicitacaoMidia({
           </div>
         </div>
 
-        {geral.direcional ? (
+        {controle === 'setas' || controle === 'joystick' ? (
           <div ref={peDirecional} style={{ marginTop: 'auto' }}>
-            <DpadVidro
-              aoDirecao={virar}
-              aoAcao={alternarPausa}
-              rotuloAcao={estado === 'jogando' ? 'pausar' : 'jogar'}
-              desabilitado={estado === 'fim'}
-            />
+            {controle === 'joystick' ? (
+              <JoystickVidro
+                aoDirecao={virar}
+                aoAcao={alternarPausa}
+                rotuloAcao={estado === 'jogando' ? 'pausar' : 'jogar'}
+                desabilitado={estado === 'fim'}
+              />
+            ) : (
+              <DpadVidro
+                aoDirecao={virar}
+                aoAcao={alternarPausa}
+                rotuloAcao={estado === 'jogando' ? 'pausar' : 'jogar'}
+                desabilitado={estado === 'fim'}
+              />
+            )}
           </div>
         ) : null}
       </div>

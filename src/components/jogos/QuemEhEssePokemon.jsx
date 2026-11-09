@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { carregarPokemons, sortearRodada, spriteDoPokemon } from '@/lib/pokemon';
+import useModoEscuro from '@/hooks/useModoEscuro';
 
 /* O recorde de verdade vive no perfil (campo jogos_config). O localStorage
    aqui e so uma copia local, para nao perder o numero se o banco falhar. */
@@ -54,6 +55,9 @@ const rotuloStyle = {
  * aparece. Teclado: 1-4 responde, Enter/Space vai pra próxima.
  */
 export default function QuemEhEssePokemon({ recordeExterno = 0, aoRecorde }) {
+  /* No escuro a silhueta preta sumiria no fundo: ela vira clara. */
+  const modoEscuro = useModoEscuro();
+  const silhueta = modoEscuro ? 'brightness(0) invert(0.94)' : 'brightness(0)';
   const [lista, setLista] = useState(null);
   const [erro, setErro] = useState('');
   const [tentativa, setTentativa] = useState(0);
@@ -234,7 +238,7 @@ export default function QuemEhEssePokemon({ recordeExterno = 0, aoRecorde }) {
             objectFit: 'contain',
             filter: revelado
               ? 'drop-shadow(0 8px 20px rgba(0,0,0,0.45))'
-              : 'brightness(0) drop-shadow(0 6px 16px rgba(0,0,0,0.5))',
+              : `${silhueta} drop-shadow(0 6px 16px ${modoEscuro ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.5)'})`,
             transform: revelado ? 'scale(1)' : 'scale(0.96)',
             transition: 'filter 320ms ease, transform 320ms ease',
             userSelect: 'none',

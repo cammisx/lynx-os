@@ -6,9 +6,30 @@
  * color-mix, e era exatamente isso que deixava a cobrinha antiga preta.
  */
 
-export const FUNDO = '#171021';
-export const LINHA_GRADE = 'rgba(255,255,255,0.045)';
-export const BORDA = 'rgba(214,178,94,0.28)';
+/* O tabuleiro acompanha o tema: a mesma peça muda de fundo no claro e no
+   escuro. Canvas não entende var(--cor), então as duas paletas moram aqui. */
+export const PALETA = {
+  escuro: {
+    fundo: '#171021',
+    grade: 'rgba(255,255,255,0.045)',
+    borda: 'rgba(214,178,94,0.28)',
+    aro: 'rgba(255,255,255,0.10)',
+    veu: 'rgba(6,4,11,0.62)',
+    cartao: 'rgba(16,10,23,0.88)',
+  },
+  claro: {
+    fundo: '#F7F2FB',
+    grade: 'rgba(38,16,52,0.07)',
+    borda: 'rgba(120,80,20,0.30)',
+    aro: 'rgba(38,16,52,0.14)',
+    veu: 'rgba(28,18,38,0.12)',
+    cartao: 'rgba(255,255,255,0.94)',
+  },
+};
+
+export const FUNDO = PALETA.escuro.fundo;
+export const LINHA_GRADE = PALETA.escuro.grade;
+export const BORDA = PALETA.escuro.borda;
 const TAU = Math.PI * 2;
 
 const caminho = (ctx, pontos) => {
@@ -173,7 +194,7 @@ export const EMOJI_ITEM = {
 const FONTE_EMOJI =
   '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif';
 
-export const desenharItem = (ctx, item, passo, agora) => {
+export const desenharItem = (ctx, item, passo, agora, paleta = PALETA.escuro) => {
   const x = item.x * passo + passo / 2;
   const y = item.y * passo + passo / 2;
   const restante = Math.max(0, Math.min(1, (item.expira - agora) / item.duracao));
@@ -183,7 +204,7 @@ export const desenharItem = (ctx, item, passo, agora) => {
   /* Aro do tempo que sobra. */
   ctx.beginPath();
   ctx.arc(x, y, passo * 0.485, 0, TAU);
-  ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+  ctx.strokeStyle = paleta.aro;
   ctx.lineWidth = Math.max(1, passo * 0.08);
   ctx.stroke();
   ctx.beginPath();

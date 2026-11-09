@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BotaoVidro, MolduraJogo, PainelConfig, dourado, escuro } from '@/components/jogos/EstruturaJogo';
 import { AvisoJogo, DpadVidro, useSwipe, useTeclado } from '@/components/jogos/ControlesJogo';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
-  INSTRUCAO_SEXTING,
   nomeDoPasso,
   rotuloDoBloco,
   sortearFrase,
@@ -111,7 +111,6 @@ const estiloCasa = (valor, n) => {
 
 export default function Jogo2048({
   valores,
-  geral,
   recorde,
   partida,
   vistos,
@@ -123,6 +122,11 @@ export default function Jogo2048({
   aoApagarRecordes,
 }) {
   const n = valores.tamanho;
+  const pequeno = useIsMobile();
+  /* 'setas' desenha o direcional na tela (mouse ou dedo). 'deslizar' esconde
+     as setas: no celular o jogo vira deslize, no computador so teclado. As
+     teclas funcionam nos dois modos. */
+  const controle = valores.controle === 'deslizar' ? 'deslizar' : 'setas';
 
   /* A partida salva so vale se for do mesmo tamanho de tabuleiro: um 4x4 nao
      pode aparecer num 6x6. */
@@ -342,6 +346,20 @@ export default function Jogo2048({
       tipo: 'segmentos',
       opcoes: [3, 4, 5, 6].map((valor) => ({ valor, rotulo: `${valor}x${valor}` })),
     },
+    {
+      chave: 'controle',
+      rotulo: 'Controle',
+      tipo: 'select',
+      opcoes: pequeno
+        ? [
+            { valor: 'setas', rotulo: 'Setas' },
+            { valor: 'deslizar', rotulo: 'Deslizar o dedo' },
+          ]
+        : [
+            { valor: 'setas', rotulo: 'Mouse' },
+            { valor: 'deslizar', rotulo: 'Teclado' },
+          ],
+    },
   ];
 
   /* Fonte presa ao bloco: o bloco nunca muda de tamanho, so o texto se ajusta
@@ -383,7 +401,6 @@ export default function Jogo2048({
             aoFechar={() => setPainel(false)}
             aoRestaurar={aoRestaurar}
             aoApagarRecordes={aoApagarRecordes}
-            nota={`${INSTRUCAO_SEXTING} Cada tamanho de tabuleiro tem o seu próprio recorde, e a partida em andamento volta quando você reabrir, em qualquer aparelho.`}
           />
         ) : null
       }
@@ -453,7 +470,7 @@ export default function Jogo2048({
               gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`,
               gridTemplateRows: `repeat(${n}, minmax(0, 1fr))`,
               gap: 6,
-              width: 'min(100%, 380px)',
+              width: `min(100%, ${controle === 'setas' ? 380 : 480}px)`,
               aspectRatio: '1 / 1',
               padding: 6,
               minHeight: 0,
@@ -507,7 +524,7 @@ export default function Jogo2048({
           ) : null}
         </div>
 
-        {geral.direcional ? (
+        {controle === 'setas' ? (
           <div style={{ marginTop: 'auto' }}>
             <DpadVidro aoDirecao={jogar} desabilitado={Boolean(fim)} />
           </div>

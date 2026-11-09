@@ -189,7 +189,8 @@ const rotulo = {
  * Painel de configuracoes em vidro, sobreposto ao jogo.
  *
  * Cada campo e declarado pelo jogo: `segmentos` (escolha entre poucos valores),
- * `cores` (igual ao segmentos, mas cada opcao e uma bolinha da propria cor, para
+ * `select` (lista fechada, para quando os nomes sao longos), `cores` (igual ao
+ * segmentos, mas cada opcao e uma bolinha da propria cor, para
  * quando o nome atrapalha, tipo tom de pele), `stepper` (numero com menos e mais)
  * e `toggle` (liga e desliga, com `inverter` para quando o ligado e o negativo,
  * tipo "depilado"). Aplicar e imediato, entao o jogo recomeca com a nova regra
@@ -336,6 +337,50 @@ function LinhaConfig({ campo, valor, aoMudar }) {
               </button>
             );
           })}
+        </div>
+      ) : null}
+      {campo.tipo === 'select' ? (
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', alignSelf: 'flex-start' }}>
+          <select
+            value={valor ?? ''}
+            onChange={(evento) => aoMudar(evento.target.value)}
+            aria-label={campo.rotulo}
+            style={{
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              height: 30,
+              minWidth: 176,
+              padding: '0 30px 0 10px',
+              borderRadius: 8,
+              border: `1px solid ${dourado(34)}`,
+              background: vidro(55),
+              color: 'var(--c3)',
+              fontFamily: 'var(--font-main)',
+              fontSize: 11.5,
+              fontWeight: 700,
+              cursor: 'pointer',
+              outline: 'none',
+            }}
+          >
+            {campo.opcoes.map((opcao) => (
+              <option
+                key={String(opcao.valor)}
+                value={opcao.valor}
+                style={{ background: 'var(--c8)', color: 'var(--c3)' }}
+              >
+                {opcao.rotulo}
+              </option>
+            ))}
+          </select>
+          <svg
+            width="9"
+            height="9"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            style={{ position: 'absolute', right: 11, pointerEvents: 'none', color: 'var(--c2)' }}
+          >
+            <path d="M5 9l7 7 7-7" stroke="currentColor" strokeWidth="2.6" fill="none" strokeLinecap="round" />
+          </svg>
         </div>
       ) : null}
       {campo.tipo === 'cores' ? (

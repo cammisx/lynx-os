@@ -29,6 +29,11 @@ export const GRADES = ['pequena', 'media', 'grande'];
 export const PAREDES = ['morte', 'atravessa'];
 export const DIFICULDADES = ['facil', 'medio', 'dificil', 'personalizado'];
 
+/** Como a pessoa controla o jogo: setas na tela (mouse ou dedo) ou deslize. */
+export const CONTROLES_TELA = ['setas', 'deslizar'];
+/** A cobrinha tambem aceita joystick. */
+export const CONTROLES_COBRA = ['setas', 'deslizar', 'joystick'];
+
 /** Tabuleiros classicos do campo minado. O personalizado usa os numeros soltos. */
 export const CAMPO_PRESETS = {
   facil: { largura: 9, altura: 9, minas: 10 },
@@ -46,8 +51,17 @@ export const JOGOS_PADRAO = {
   versao: VERSAO_JOGOS,
   /* `direcional`: mostra as setas de vidro na tela (util no celular). */
   geral: { direcional: true, pausarFora: true },
-  '2048': { tamanho: 4, partidas: {}, vistos: [] },
-  snake: { velocidade: 'normal', grade: 'media', paredes: 'morte', pele: 'morena', pelos: false },
+  '2048': { tamanho: 4, controle: 'setas', partidas: {}, vistos: [] },
+  snake: {
+    velocidade: 'normal',
+    grade: 'media',
+    paredes: 'morte',
+    pele: 'morena',
+    pelos: false,
+    controle: 'setas',
+    /* Score acumulado de todas as partidas, mostrado na tela de inicio. */
+    total: 0,
+  },
   campo: { dificuldade: 'facil', largura: 9, altura: 9, minas: 10 },
   recordes: {},
 };
@@ -165,6 +179,7 @@ export const normalizarJogos = (bruto) => {
     },
     '2048': {
       tamanho: inteiro(j2048.tamanho, LIMITES.tamanho2048, JOGOS_PADRAO['2048'].tamanho),
+      controle: escolha(j2048.controle, CONTROLES_TELA, JOGOS_PADRAO['2048'].controle),
       partidas: normalizarPartidas(j2048.partidas),
       vistos: normalizarVistos(j2048.vistos),
     },
@@ -175,6 +190,8 @@ export const normalizarJogos = (bruto) => {
       /* Pele e pelos sao so visual: nao entram na chave do recorde. */
       pele: escolha(snake.pele, TONS_PELE, JOGOS_PADRAO.snake.pele),
       pelos: typeof snake.pelos === 'boolean' ? snake.pelos : JOGOS_PADRAO.snake.pelos,
+      controle: escolha(snake.controle, CONTROLES_COBRA, JOGOS_PADRAO.snake.controle),
+      total: inteiro(snake.total, [0, 999999999], 0),
     },
     campo: normalizarCampo(base.campo),
     recordes: normalizarRecordes(base.recordes),
