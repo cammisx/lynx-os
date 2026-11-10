@@ -706,6 +706,7 @@ export default function ConfiguracoesWindow({ onClose }) {
         {aba === 'perfil' && (
           <div
             className="glass-scroll"
+            data-config-painel="perfil"
             style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}
           >
             <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
@@ -869,6 +870,7 @@ export default function ConfiguracoesWindow({ onClose }) {
         {aba === 'desempenho' && (
           <div
             className="glass-scroll"
+            data-config-painel="desempenho"
             style={{
               flex: 1,
               minHeight: 0,

@@ -16,6 +16,9 @@
 import { abrirConfigNaAba } from '@/lib/configAba';
 
 export const SELETOR_AVISOS = {
+  /* As abas que ela mostra depois dos sons, ainda na mesma janela. */
+  abaPerfil: '[data-config-painel="perfil"]',
+  abaDesempenho: '[data-config-painel="desempenho"]',
   sino: '[data-pixie-alvo="icone-notificacoes"]',
   painel: '[data-pixie-alvo="notificacoes"]',
   primeiraLinha: '[data-pixie-alvo="notificacao"]',
@@ -67,6 +70,8 @@ export const falaDoPasso = (indice, aberta) => {
 const ACOES = {
   /* A janela de Configurações já está aberta: isto troca a aba. */
   abaAvisos: () => abrirConfigNaAba('notificacoes'),
+  abaPerfil: () => abrirConfigNaAba('perfil'),
+  abaDesempenho: () => abrirConfigNaAba('desempenho'),
 };
 
 export const executarAcaoDeAvisos = (acao) => {
@@ -87,6 +92,16 @@ export const PASSEIO_AVISOS = [
   {
     area: 'audios',
     fala: 'O que você envia fica em Meus áudios, só para você, nos seus dois aparelhos. A chavinha compartilhado põe o áudio na galeria de todo mundo; os dos outros aparecem embaixo.',
+  },
+  {
+    acao: 'abaPerfil',
+    alvo: SELETOR_AVISOS.abaPerfil,
+    fala: 'Esta é a aba Perfil: sua foto, o nome que aparece no menu iniciar e no chat, e o subnick, aquela frase embaixo do nome no estilo MSN. O que mudar aqui vale quando você salvar.',
+  },
+  {
+    acao: 'abaDesempenho',
+    alvo: SELETOR_AVISOS.abaDesempenho,
+    fala: 'E esta é a aba Desempenho: se o computador engasgar, ligue o Modo leve e ele desliga o vidro fosco, os brilhos, as animações, a imagem do fundo e o pet de uma vez. Eu continuo aqui, só fico parada em vez de voar.',
   },
   {
     acao: 'garantirAviso',

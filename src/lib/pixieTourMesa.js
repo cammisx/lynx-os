@@ -71,7 +71,7 @@ export const TOUR_MESA = [
     area: 'pet',
   },
   {
-    fala: 'As outras abas guardam Perfil, Notificações e Chat. Quando terminar, é só fechar a janela.',
+    fala: 'As outras abas guardam Perfil, Notificações, Chat e Desempenho: eu passo por elas com você. Quando terminar, é só fechar a janela.',
   },
 ];
 
