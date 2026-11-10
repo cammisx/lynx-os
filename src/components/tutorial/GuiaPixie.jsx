@@ -247,6 +247,7 @@ export default function GuiaPixie({
   const pontaRef = useRef(null);
   const medidaRef = useRef({ largura: 0, altura: 0 });
   const livreRef = useRef(livre);
+  const paradaRef = useRef(parada);
   const ancoraRef = useRef(ancora);
   const posicaoRef = useRef(null);
 
@@ -257,6 +258,12 @@ export default function GuiaPixie({
   useEffect(() => {
     ancoraRef.current = ancora;
   }, [ancora]);
+
+  /* O medidor do balão roda fora do voo: ele precisa saber se ela está parada
+     para recolocar o balão quando o texto (ou a fonte) mudar de tamanho. */
+  useEffect(() => {
+    paradaRef.current = parada;
+  }, [parada]);
 
   /* O balão muda de tamanho com a fonte do sistema: mede ao montar, quando a
      fonte carrega e quando a janela muda. */
@@ -271,6 +278,11 @@ export default function GuiaPixie({
     const medir = () => {
       const caixa = balao.getBoundingClientRect();
       medidaRef.current = { largura: caixa.width, altura: caixa.height };
+      /* Parada, quem posiciona é o efeito do modo leve; aqui só refaz a conta
+         quando o balão muda de tamanho (texto novo, fonte carregando). */
+      if (paradaRef.current && posicaoRef.current) {
+        posicionarBalao(posicaoRef.current.x, posicaoRef.current.y);
+      }
     };
 
     medir();
@@ -285,6 +297,28 @@ export default function GuiaPixie({
     };
   }, [esconderBalao]);
 
+  /* O balão: logo acima dela e preso dentro da tela (o deslocamento lateral
+     só compensa o quanto ela passou das bordas). É a mesma conta nos dois
+     modos — voando e parada —, por isso mora aqui. */
+  const posicionarBalao = (x, y) => {
+    const balao = balaoRef.current;
+    if (!balao) return;
+    const { largura: larguraBalao } = medidaRef.current;
+    if (!larguraBalao) return;
+    const escala = escalaAtual();
+    const larguraTela = window.innerWidth;
+    const meio = larguraBalao / 2;
+    const centro = limitar(x, meio + MARGEM_DA_TELA, larguraTela - meio - MARGEM_DA_TELA);
+    const desvio = centro - x;
+    const alturaDoBalao = TOPO_VISUAL - FOLGA_DO_BALAO;
+    balao.style.transform = `translate(${(desvio / escala).toFixed(1)}px, ${alturaDoBalao.toFixed(1)}px) translate(-50%, -100%)`;
+
+    /* A pontinha segue apontando para ela, sem sair do balão. */
+    if (pontaRef.current) {
+      pontaRef.current.style.left = `${(limitar(meio - desvio, 16, larguraBalao - 16) / escala).toFixed(1)}px`;
+    }
+  };
+
   /* Modo leve ("Pixie parada"): sem voo, sem giro e sem corações. Ela fica
      parada no lugar de sempre — ou ao lado do alvo que estiver explicando —,
      e o balão continua funcionando normalmente. */
@@ -297,6 +331,16 @@ export default function GuiaPixie({
     const x = alvo ? alvo.x : BASE_X * window.innerWidth;
     const y = alvo ? alvo.y : BASE_Y * window.innerHeight;
     grupo.style.transform = `translate3d(${(x / escala).toFixed(1)}px, ${(y / escala).toFixed(1)}px, 0)`;
+    /* O voo some, mas os estilos que ele deixou ficam: se ela foi parada no
+       meio do giro, a tira da frente estava escondida. Aqui ela volta para a
+       pose de frente, parada. */
+    if (asaRef.current) asaRef.current.style.display = 'block';
+    if (virarRef.current) virarRef.current.style.display = 'none';
+
+    /* Parada, o balão não é posicionado pelo voo: sem esta chamada ele nascia
+       em cima do desenho. Guarda a posição para remedir quando o texto crescer. */
+    posicaoRef.current = { x, y };
+    posicionarBalao(x, y);
     return undefined;
   }, [parada, ancora]);
 
@@ -387,22 +431,7 @@ export default function GuiaPixie({
         virarRef.current.style.animationName = paraDireita ? 'pixie-virar-volta' : 'pixie-virar-ida';
       }
 
-      /* O balão acompanha, mas preso dentro da tela: o deslocamento lateral
-         só compensa o quanto ela passou das bordas. */
-      const balao = balaoRef.current;
-      if (balao && larguraBalao > 0) {
-        const meio = larguraBalao / 2;
-        const centro = limitar(x, meio + MARGEM_DA_TELA, larguraTela - meio - MARGEM_DA_TELA);
-        const desvio = centro - x;/* ela mora no meio da tela: o desvio é zero, mas fica aqui para o balão continuar preso dentro dela */
-        const alturaDoBalao = TOPO_VISUAL - FOLGA_DO_BALAO;
-        balao.style.transform =
-          `translate(${(desvio / escala).toFixed(1)}px, ${alturaDoBalao.toFixed(1)}px) translate(-50%, -100%)`;
-
-        /* A pontinha segue apontando para ela, sem sair do balão. */
-        if (pontaRef.current) {
-          pontaRef.current.style.left = `${(limitar(meio - desvio, 16, larguraBalao - 16) / escala).toFixed(1)}px`;
-        }
-      }
+      posicionarBalao(x, y);
 
       raf = requestAnimationFrame(desenhar);
     };
