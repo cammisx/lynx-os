@@ -98,13 +98,20 @@ export default function ClockPanel({
     return () => clearInterval(id);
   }, [open]);
 
-  /* O editor de turno precisa da lista de pessoas; só o admin chega nele. */
+  /* O editor de turno precisa da lista de pessoas; só o admin chega nele.
+     A dependência é o id (e não o objeto user inteiro): o perfil entrega um
+     objeto novo a cada render e, dependendo dele, essa busca entrava em laço,
+     buscando a lista, gravando o resultado e pedindo outro render sem parar. */
+  const admin = ehAdmin(user);
+  const userIdParaLista = user?.id || null;
   useEffect(() => {
-    if (!open || !ehAdmin(user)) return undefined;
+    if (!open || !admin) return undefined;
     let ativo = true;
     base44.entities.User.list()
       .then((resultado) => {
-        if (ativo) setUsuarios(asList(resultado));
+        if (!ativo) return;
+        const lista = asList(resultado);
+        setUsuarios((atuais) => (atuais.length === lista.length ? atuais : lista));
       })
       .catch(() => {
         if (ativo) setUsuarios([]);
@@ -112,7 +119,7 @@ export default function ClockPanel({
     return () => {
       ativo = false;
     };
-  }, [open, user]);
+  }, [open, admin, userIdParaLista]);
 
   useEffect(() => {
     if (!open) return undefined;
