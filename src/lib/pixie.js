@@ -63,6 +63,38 @@ export const limparPixieEmEspera = () => {
   }
 };
 
+/* ---------- dispensada: só volta quando a chamarem ---------- */
+
+const CHAVE_DISPENSADA = 'lynx:pixie-dispensada';
+
+/* "Agradecer e se despedir" tira ela da tela de verdade: a marca fica no
+   navegador para ela não voltar sozinha quando a página recarregar. */
+export const dispensarPixie = () => {
+  try {
+    window.localStorage.setItem(CHAVE_DISPENSADA, '1');
+  } catch {
+    /* sem armazenamento ela volta no próximo carregamento: nada quebra */
+  }
+  limparPixieEmEspera();
+};
+
+export const pixieDispensada = () => {
+  try {
+    return window.localStorage.getItem(CHAVE_DISPENSADA) === '1';
+  } catch {
+    return false;
+  }
+};
+
+/* Chamar Pixie a traz de volta e desfaz a marca. */
+export const chamarPixieDeVolta = () => {
+  try {
+    window.localStorage.removeItem(CHAVE_DISPENSADA);
+  } catch {
+    /* nada a fazer */
+  }
+};
+
 /* ---------- o tutorial da primeira vez ---------- */
 
 const CHAVE_VISTO = 'lynx:tutorial-pixie-visto';

@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { salvarPerfil } from '@/lib/perfilUsuario';
 import {
   assinarChamadoPixie,
+  dispensarPixie,
   marcarPixieEmEspera,
   salvarTutorialPixieVisto,
 } from '@/lib/pixie';
@@ -384,6 +385,8 @@ export default function TutorialRoteiro() {
     tour.parar();
     avisos.parar();
     salvarTutorialPixieVisto();
+    /* Despedida quer dizer despedida: ela não reaparece no Início depois. */
+    dispensarPixie();
     setSaida(fala);
   };
 

@@ -119,6 +119,14 @@
     "jogos_config": {
       "type": "string",
       "description": "Regras e recordes dos jogos do LynxOS em JSON (vale no desktop e no celular)"
+    },
+    "desempenho": {
+      "type": "string",
+      "description": "O que está desligado no modo leve do computador, por id: blur,brilho,animacao,fundo,pet,pixie"
+    },
+    "desempenho_celular": {
+      "type": "string",
+      "description": "O que está desligado no modo leve do celular, por id: blur,brilho,animacao,fundo,pet,pixie"
     }
   },
   "required": [

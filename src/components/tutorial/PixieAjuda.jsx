@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import GuiaPixie from '@/components/tutorial/GuiaPixie';
 import MenuFlutuante from '@/components/desktop/MenuFlutuante';
-import { assinarChamadoPixie, limparPixieEmEspera } from '@/lib/pixie';
+import {
+  assinarChamadoPixie,
+  chamarPixieDeVolta,
+  dispensarPixie,
+  limparPixieEmEspera,
+  pixieDispensada,
+} from '@/lib/pixie';
 import {
   AGRADECER_E_DESPEDIR,
   CHAMADO_PARA_PERGUNTAR,
@@ -43,8 +49,9 @@ export default function PixieAjuda() {
   /* { fala, apontando } enquanto ela tem um balão na tela. */
   const [estado, setEstado] = useState(null);
   const [menu, setMenu] = useState(null);
-  /* Flutuando em silêncio: é como ela vive na mesa. */
-  const [descansando, setDescansando] = useState(true);
+  /* Flutuando em silêncio: é como ela vive na mesa. Dispensada no
+     "Agradecer e se despedir", ela começa fora da tela. */
+  const [descansando, setDescansando] = useState(() => !pixieDispensada());
   /* Quando a pessoa clica nela em vez de apontar um lugar: ela se explica. */
   const [sobre, setSobre] = useState(null);
   /* Falando a despedida, a caminho de sair da tela. */
@@ -110,6 +117,8 @@ export default function PixieAjuda() {
       assinarChamadoPixie(({ x, y, alvo }) => {
         parar();
         setMenu(null);
+        /* Chamar Pixie desfaz a despedida: ela volta e fica. */
+        chamarPixieDeVolta();
         setDescansando(false);
         const conhecida = alvo ? resumoDoElemento(alvo) : resumoDoPonto(x, y);
         setEstado(
@@ -139,6 +148,8 @@ export default function PixieAjuda() {
       setComemorando(false);
       setDescansando(false);
       limparPixieEmEspera();
+      /* Saiu de verdade: não volta no próximo recarregamento. */
+      dispensarPixie();
     }, TEMPO_DA_DESPEDIDA);
     return () => clearTimeout(t);
   }, [saindo]);
