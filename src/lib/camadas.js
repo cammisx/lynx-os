@@ -23,3 +23,16 @@ export const RELOGIO_DESKTOP = 1200;
 
 /** Barra do chat no desktop quando o shell ainda não reservou uma camada. */
 export const CHAT_DESKTOP = 1050;
+
+/**
+ * A Pixie anda por cima de TUDO: janela, menu iniciar, confirmação de sair,
+ * toasts (9999), seletor de data e hora (12000) e até a dica do turno (99999).
+ * Se aparecer uma camada maior que estas, ela sobe junto.
+ */
+export const PIXIE = 999992;
+
+/** Menu dela (Perguntar / Agradecer e se despedir): logo sobre o desenho. */
+export const MENU_PIXIE = 999994;
+
+/** Moldura dourada do passeio: acima de todo o resto, abaixo dela. */
+export const DESTAQUE_PIXIE = 999990;

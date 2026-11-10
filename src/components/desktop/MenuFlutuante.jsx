@@ -27,7 +27,7 @@ const zoomDaRaiz = () => {
  * { separador: true }. Com `destaque` (o id de um item) aquele item ganha
  * moldura dourada e pulsa: é o "olha aqui" do tutorial.
  */
-export default function MenuFlutuante({ x = 0, y = 0, ancora = null, itens = [], destaque = null, onFechar }) {
+export default function MenuFlutuante({ x = 0, y = 0, ancora = null, itens = [], destaque = null, camada = 9700, onFechar }) {
   const caixaRef = useRef(null);
   const fecharRef = useRef(onFechar);
   fecharRef.current = onFechar;
@@ -127,7 +127,7 @@ export default function MenuFlutuante({ x = 0, y = 0, ancora = null, itens = [],
         top: pos ? pos.topo : -9999,
         minWidth: 196,
         maxWidth: 300,
-        zIndex: 9700,
+        zIndex: camada,
         padding: 6,
         borderRadius: 12,
         border: '1px solid color-mix(in srgb, var(--c1) 28%, transparent)',

@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import tiraCorpo from '@/assets/pixie/tiras/pixie-corpo.png';
 import tiraVirar from '@/assets/pixie/tiras/pixie-virar.png';
+import { PIXIE } from '@/lib/camadas';
 
 /**
  * A pixie que guia o tutorial da rota /tutorial.
@@ -379,11 +381,15 @@ export default function GuiaPixie({
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  return (
+  /* Montada direto no body: dentro da página ela herdava o empilhamento do
+     shell e ficava presa abaixo de qualquer camada com z-index positivo.
+     No body, o z-index dela vale no documento inteiro e ela fica por cima do
+     menu iniciar, dos modais, dos toasts e de tudo o mais. */
+  return createPortal(
     <div
       aria-live="polite"
       data-pixie="true"
-      style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9500 }}
+      style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: PIXIE }}
     >
       <style>{ESTILOS}</style>
 
@@ -499,6 +505,7 @@ export default function GuiaPixie({
         </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

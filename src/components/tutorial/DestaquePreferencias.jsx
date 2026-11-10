@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { EVENTO_DESTAQUE, seguirAlvo } from '@/lib/destaquePreferencias';
+import { DESTAQUE_PIXIE } from '@/lib/camadas';
 
 /**
  * A moldura dourada em volta da área que a Pixie está explicando. Só desenha:
@@ -60,7 +61,7 @@ export default function DestaquePreferencias() {
         opacity: 0,
         pointerEvents: 'none',
         /* Acima da janela, abaixo da Pixie. */
-        zIndex: 9450,
+        zIndex: DESTAQUE_PIXIE,
         transition: 'opacity 160ms ease',
       }}
     />,

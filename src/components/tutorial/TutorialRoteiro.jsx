@@ -33,6 +33,7 @@ import { definirAvisoDoPasseio } from '@/lib/pixieAvisos';
 import { garantirAvisoDoPasseio } from '@/lib/notificacoes';
 import { base44 } from '@/api/base44Client';
 import { posicaoAoRedorDaArea } from '@/lib/destaquePreferencias';
+import { MENU_PIXIE } from '@/lib/camadas';
 
 /**
  * O roteiro do tutorial da rota /tutorial.
@@ -502,6 +503,7 @@ export default function TutorialRoteiro() {
           x={menu.x}
           y={menu.y}
           itens={itensDoMenu}
+          camada={MENU_PIXIE}
           onFechar={() => setMenu(null)}
         />
       ) : null}

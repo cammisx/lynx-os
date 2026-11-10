@@ -20,6 +20,7 @@ import {
 } from '@/lib/pixiePasseios';
 import useCliqueEmPasseio from '@/lib/useCliqueEmPasseio';
 import usePasseioGuiado from '@/lib/usePasseioGuiado';
+import { MENU_PIXIE } from '@/lib/camadas';
 
 /**
  * A Pixie em qualquer lugar do sistema, fora do tutorial.
@@ -294,6 +295,7 @@ export default function PixieAjuda() {
           x={menu.x}
           y={menu.y}
           itens={itensDoMenu}
+          camada={MENU_PIXIE}
           onFechar={() => setMenu(null)}
         />
       ) : null}
