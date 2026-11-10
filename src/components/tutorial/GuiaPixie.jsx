@@ -4,6 +4,7 @@ import tiraCorpo from '@/assets/pixie/tiras/pixie-corpo.png';
 import tiraVirar from '@/assets/pixie/tiras/pixie-virar.png';
 import { PIXIE } from '@/lib/camadas';
 import { escalaAtual } from '@/lib/fonte';
+import { useDesempenho } from '@/lib/desempenho';
 
 /**
  * A pixie que guia o tutorial da rota /tutorial.
@@ -138,6 +139,11 @@ const ESTILOS = `
   background-repeat: no-repeat;
   filter: drop-shadow(0 0 7px rgba(240, 148, 58, 0.6)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
 }
+.pixie-quieta {
+  animation: none !important;
+  background-position-x: -${QUADRO_LARG * ESCALA * 3}px !important;
+}
+
 .pixie-frente {
   inset: 0;
   background-image: url(${tiraCorpo});
@@ -231,6 +237,8 @@ export default function GuiaPixie({
   /* Um ponto da tela para ela ficar perto (o ícone e o painel do widget). */
   ancora = null,
 }) {
+  /* Modo leve ligado nas Configurações: ela não voa nem anima. */
+  const parada = useDesempenho().includes('pixie');
   const grupoRef = useRef(null);
   const corpoRef = useRef(null);
   const asaRef = useRef(null);
@@ -277,9 +285,26 @@ export default function GuiaPixie({
     };
   }, [esconderBalao]);
 
+  /* Modo leve ("Pixie parada"): sem voo, sem giro e sem corações. Ela fica
+     parada no lugar de sempre — ou ao lado do alvo que estiver explicando —,
+     e o balão continua funcionando normalmente. */
+  useEffect(() => {
+    if (!parada) return undefined;
+    const grupo = grupoRef.current;
+    if (!grupo) return undefined;
+    const escala = escalaAtual();
+    const alvo = ancoraRef.current;
+    const x = alvo ? alvo.x : BASE_X * window.innerWidth;
+    const y = alvo ? alvo.y : BASE_Y * window.innerHeight;
+    grupo.style.transform = `translate3d(${(x / escala).toFixed(1)}px, ${(y / escala).toFixed(1)}px, 0)`;
+    return undefined;
+  }, [parada, ancora]);
+
   useEffect(() => {
     const grupo = grupoRef.current;
     if (!grupo) return undefined;
+    /* Parada: quem posiciona é o efeito acima, uma vez só. */
+    if (parada) return undefined;
 
     const semMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
     const inicio = performance.now();
@@ -384,7 +409,7 @@ export default function GuiaPixie({
 
     raf = requestAnimationFrame(desenhar);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [parada]);
 
   /* Montada direto no body: dentro da página ela herdava o empilhamento do
      shell e ficava presa abaixo de qualquer camada com z-index positivo.
@@ -412,7 +437,7 @@ export default function GuiaPixie({
         style={{ position: 'absolute', left: 0, top: 0, width: 0, height: 0, willChange: 'transform' }}
       >
         {/* brilho que fica para trás */}
-        {PISCADAS.map((estrela) => (
+        {parada ? null : PISCADAS.map((estrela) => (
           <Estrela key={`${estrela.x}:${estrela.y}`} {...estrela} />
         ))}
 
@@ -433,12 +458,14 @@ export default function GuiaPixie({
         >
           <div
             ref={asaRef}
-            className={comemorando ? 'pixie-frente pixie-feliz' : 'pixie-frente'}
+            className={`pixie-frente${comemorando ? ' pixie-feliz' : ''}${parada ? ' pixie-quieta' : ''}`}
           />
           <div ref={virarRef} className="pixie-virar" style={{ display: 'none' }} />
 
           {/* Agradecimento: os corações saem dela enquanto ela gira. */}
-          {comemorando ? CORACOES.map((coracao) => <Coracao key={coracao.atraso} {...coracao} />) : null}
+          {comemorando && !parada
+            ? CORACOES.map((coracao) => <Coracao key={coracao.atraso} {...coracao} />)
+            : null}
 
           {/* A área do clique direito: um pouco maior que o desenho, senão é
               difícil acertar num bicho que mexe. O menu é dela mesma, então o

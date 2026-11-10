@@ -26,6 +26,7 @@ import { abrirConfigNaAba, registrarAbridorConfig } from '@/lib/configAba';
 import useJanelas from '@/hooks/useJanelas';
 import { useAuth } from '@/lib/AuthContext';
 import { salvarBarraTarefas, salvarPerfil, usePerfil } from '@/lib/perfilUsuario';
+import { useDesempenho } from '@/lib/desempenho';
 import { MODO_CLARO, MODO_ESCURO, TEMA_PADRAO, aplicarTema } from '@/lib/temas';
 import { ChatProvider } from '@/components/chat/ChatProvider';
 import ChatSidebar from '@/components/chat/ChatSidebar';
@@ -63,6 +64,8 @@ export default function Dashboard({ tutorial = false }) {
   const navegar = useNavigate();
   // Carrega o perfil (tema, nome, foto, fundo) antes de tudo aparecer na tela.
   const perfil = usePerfil(user);
+  /* O que está desligado no modo leve deste aparelho. */
+  const leve = useDesempenho();
   // Convite pendente vira cargo, modelos e turnos no primeiro acesso.
   useAplicarConvite(user);
 
@@ -204,11 +207,11 @@ export default function Dashboard({ tutorial = false }) {
       }}
     >
       <DesktopBackground
-        imagem={perfil.fundoUrl}
-        estatico={perfil.fundoEstatico}
-        semLinhas={perfil.fundoModo === 'sem'}
+        imagem={leve.includes('fundo') ? '' : perfil.fundoUrl}
+        estatico={perfil.fundoEstatico || leve.includes('animacao')}
+        semLinhas={perfil.fundoModo === 'sem' || leve.includes('animacao')}
       />
-      {telaPequena ? null : (
+      {telaPequena || leve.includes('pet') ? null : (
         <DesktopPet
           pet={perfil.pet}
           cor={perfil.petCor}

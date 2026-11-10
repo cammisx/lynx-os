@@ -16,6 +16,7 @@ import { prepararFundo } from '@/lib/fundo';
 import { useMarcarSujo } from '@/components/desktop/JanelaContext';
 import { AVISO_ABA_CONFIG, consumirAbaConfig } from '@/lib/configAba';
 import BlocoSom, { Interruptor } from '@/components/config/BlocoSom';
+import BlocoDesempenho from '@/components/config/BlocoDesempenho';
 import { SONS, SOM_PADRAO, formatarDuracaoSom, idSomCustom } from '@/lib/sons';
 import usePreferenciaSom from '@/hooks/usePreferenciaSom';
 import useSonsCustom from '@/hooks/useSonsCustom';
@@ -26,6 +27,7 @@ const ABAS = [
   { id: 'preferencias', label: 'Preferências' },
   { id: 'notificacoes', label: 'Notificações' },
   { id: 'chat', label: 'Chat' },
+  { id: 'desempenho', label: 'Desempenho' },
 ];
 
 const inputStyle = {
@@ -860,6 +862,25 @@ export default function ConfiguracoesWindow({ onClose }) {
                 </button>
                 <span style={dicaStyle}>Encerra a sessão neste aparelho e volta para a tela de entrada.</span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {aba === 'desempenho' && (
+          <div
+            className="glass-scroll"
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+              paddingRight: 2,
+            }}
+          >
+            <div style={{ paddingBottom: 10 }}>
+              <BlocoDesempenho perfil={perfil} onSalvar={(valor) => salvarPerfil(user, valor)} />
             </div>
           </div>
         )}

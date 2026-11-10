@@ -8,6 +8,7 @@ import { FONTE_APP_PADRAO, fonteAppValida } from '@/lib/fontesApp';
 import { emLista } from '@/lib/barraTarefas';
 import { COR_PADRAO, PET_PADRAO, corValida, petValido } from '@/lib/pets';
 import { lerJogos, mesclarJogos, normalizarJogos } from '@/lib/jogosConfig';
+import { lerDesempenho } from '@/lib/desempenho';
 
 /**
  * Fundo do desktop em três estados:
@@ -48,6 +49,9 @@ export const PERFIL_PADRAO = {
   petCor: COR_PADRAO,
   /* Nome dado ao bicho, mostrado no balão de fala e no tooltip. */
   petNome: '',
+  /* O que está desligado para aliviar o computador (lista de ids de
+     desempenho: "blur,brilho,animacao,fundo,pet,pixie"). */
+  desempenho: '',
   /* Regras e recordes dos jogos da janela Jogos (vale nos dois aparelhos). */
   jogosConfig: null,
 };
@@ -72,6 +76,7 @@ export const perfilDoUsuario = (user) => ({
   pet: user?.pet || '',
   petCor: user?.pet_cor || '',
   petNome: user?.pet_nome || '',
+  desempenho: user?.desempenho || '',
   jogosConfig: lerJogos(user?.jogos_config),
 });
 
@@ -106,6 +111,7 @@ export const mesclarPerfilCom = (local = {}, remoto = {}) => {
     pet: petValido(perfil.pet),
     petCor: corValida(perfil.petCor),
     petNome: String(perfil.petNome || '').trim().slice(0, 24),
+    desempenho: lerDesempenho(perfil.desempenho).join(','),
     /* Regras da conta mandam; os recordes ficam com o melhor dos dois lados. */
     jogosConfig: mesclarJogos(perfil.jogosConfig, remoto.jogosConfig),
   };
@@ -138,6 +144,7 @@ export const PREF_POR_APARELHO = [
   'pet',
   'petCor',
   'petNome',
+  'desempenho',
 ];
 
 /** Campo do User que guarda a versão de celular de cada preferência. */
@@ -152,6 +159,7 @@ export const CAMPO_CELULAR = {
   pet: 'pet_celular',
   petCor: 'pet_cor_celular',
   petNome: 'pet_nome_celular',
+  desempenho: 'desempenho_celular',
 };
 
 /** Mesma regra do uso no app (a casca mobile troca de layout em 768px). */
@@ -171,6 +179,7 @@ export const perfilCelularDoUsuario = (user) => ({
   pet: user?.pet_celular || '',
   petCor: user?.pet_cor_celular || '',
   petNome: user?.pet_nome_celular || '',
+  desempenho: user?.desempenho_celular || '',
 });
 
 export const mesclarPerfilCelular = (local = {}, user = {}) =>
@@ -189,6 +198,7 @@ export const normalizarAparelho = (valores = {}) => ({
   pet: petValido(valores.pet),
   petCor: corValida(valores.petCor),
   petNome: String(valores.petNome || '').trim().slice(0, 24),
+  desempenho: lerDesempenho(valores.desempenho).join(','),
 });
 
 /** O que vale nos dois aparelhos, tirado de um perfil completo. */

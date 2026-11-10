@@ -8,6 +8,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { base44 } from '@/api/base44Client';
 import { MODO_SISTEMA, aplicarTema, temaPorId } from '@/lib/temas';
+import { aplicarDesempenho, escreverDesempenho } from '@/lib/desempenho';
 import { aplicarFonte, fonteDoNavegador, tamanhoPorId } from '@/lib/fonte';
 import { aplicarFonteApp, fonteAppDoNavegador } from '@/lib/fontesApp';
 import { buscarPerfil, salvarPerfilPublico } from '@/lib/perfis';
@@ -57,6 +58,8 @@ const aplicarVisual = () => {
   aplicarTema(atual.tema, atual.modo);
   aplicarFonte(atual.fonte);
   aplicarFonteApp(atual.fonteApp);
+  /* Modo leve: cada item vira um atributo no <html> que o CSS respeita. */
+  aplicarDesempenho(atual.desempenho);
 };
 
 /** Monta o que vai para o User: os dois conjuntos, sempre juntos, para que
@@ -82,6 +85,7 @@ const camposDoUser = (extras = {}) => {
     pet: d.pet || '',
     pet_cor: d.petCor || '',
     pet_nome: d.petNome || '',
+    desempenho: escreverDesempenho(d.desempenho),
     [CAMPO_CELULAR.tema]: c.tema || '',
     [CAMPO_CELULAR.modo]: c.modo || '',
     [CAMPO_CELULAR.fonte]: c.fonte || '',
@@ -92,6 +96,7 @@ const camposDoUser = (extras = {}) => {
     [CAMPO_CELULAR.pet]: c.pet || '',
     [CAMPO_CELULAR.petCor]: c.petCor || '',
     [CAMPO_CELULAR.petNome]: c.petNome || '',
+    [CAMPO_CELULAR.desempenho]: escreverDesempenho(c.desempenho),
     ...extras,
   };
 };

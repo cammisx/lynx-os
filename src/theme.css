@@ -1051,3 +1051,35 @@ body {
     transition: none;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Modo leve (aba Desempenho)                                          */
+/*                                                                     */
+/* Cada item desligado vira um atributo no <html> e o CSS abaixo tira  */
+/* o peso correspondente. O blur é inline em quase todo componente,    */
+/* então o !important é o que vence o estilo escrito no elemento.      */
+/* ------------------------------------------------------------------ */
+
+/* Vidro fosco: painéis e janelas viram superfície sólida. */
+html[data-sem-blur] *,
+html[data-sem-blur] *::before,
+html[data-sem-blur] *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Brilhos e sombras: só o glow das superfícies, sem tirar o relevo do texto. */
+html[data-sem-brilho] * {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+/* Animações: tudo que entra, pulsa ou desliza fica parado no primeiro quadro. */
+html[data-sem-animacao] *,
+html[data-sem-animacao] *::before,
+html[data-sem-animacao] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
