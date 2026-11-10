@@ -186,13 +186,14 @@ export default function StartMenu({ open, onClose, onOpenApp, onOpenConfig }) {
           background: "transparent",
         }}
       />
-      <div style={panelStyle}>
+      <div data-menu-iniciar="true" style={panelStyle}>
         <div className="glass-scroll" style={bodyStyle}>
           {(isAdmin ? APPS : APPS_CHATTER).map((app) => (
             <button
               key={app.id}
               type="button"
               className="sm-item"
+              data-passeio={app.id}
               onClick={() => {
                 onClose();
                 if (onOpenApp) onOpenApp(app.id);

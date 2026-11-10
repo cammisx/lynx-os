@@ -86,6 +86,8 @@ export default function Taskbar({
         role="button"
         tabIndex={0}
         aria-label="Iniciar"
+        data-pixie-alvo="icone-iniciar"
+        data-passeio="iniciar"
         onClick={() => setMenuOpen((prev) => !prev)}
       />
 
@@ -165,6 +167,7 @@ export default function Taskbar({
           className="taskbar-bell taskbar-chat"
           aria-label="Chat interno"
           data-pixie-alvo="icone-chat"
+          data-passeio="chat"
           onClick={() => {
             chat.alternar();
             setBellOpen(false);
@@ -227,6 +230,7 @@ export default function Taskbar({
           tabIndex={0}
           aria-label="Abrir turnos"
           data-pixie-alvo="icone-relogio"
+          data-passeio="calendario"
           onClick={() => {
             if (!clockOpen) setCamadaRelogio(proximaCamada ? proximaCamada() : 0);
             setClockOpen((prev) => !prev);

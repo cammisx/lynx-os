@@ -15,10 +15,18 @@ import {
   SOBRE_PIXIE,
   SEM_TUTORIAL,
   alvoDoPonto,
-  falaDoElemento,
-  falaDoPonto,
   lugarDoElemento,
 } from '@/lib/pixieTutoriais';
+import {
+  abrirMenuIniciar,
+  chaveDoPasseio,
+  passeioDe,
+  resumoDoElemento,
+  resumoDoPasseio,
+  resumoDoPonto,
+} from '@/lib/pixiePasseios';
+import useCliqueEmPasseio from '@/lib/useCliqueEmPasseio';
+import usePasseioGuiado from '@/lib/usePasseioGuiado';
 import useTourMesa from '@/lib/useTourMesa';
 import useTourAvisos from '@/lib/useTourAvisos';
 import { definirAvisoDoPasseio } from '@/lib/pixieAvisos';
@@ -103,14 +111,23 @@ export default function TutorialRoteiro() {
     definirAvisoDoPasseio(aviso);
   }, [user]);
 
+  /* O fim do tutorial inteiro: marca o visto e devolve o sistema para a
+     pessoa, com ela flutuando em silêncio no Início. */
+  const finalizar = useCallback(() => {
+    salvarTutorialPixieVisto();
+    marcarPixieEmEspera();
+    navegar(ROTA_DEPOIS, { replace: true });
+  }, [navegar]);
+
+  /* A ordem do primeiro acesso, um passeio emendando no outro: mesa,
+     Preferências, notificações, relógio, chat e Iniciar. O `avulso` atende os
+     passeios que ficam fora da cadeia (Turno e Páginas). */
+  const iniciarTour = usePasseioGuiado({ aoTerminar: finalizar });
+  const chatTour = usePasseioGuiado({ aoTerminar: () => iniciarTour.iniciar('iniciar') });
+  const calendarioTour = usePasseioGuiado({ aoTerminar: () => chatTour.iniciar('chat') });
+  const avulso = usePasseioGuiado({ aoTerminar: () => setDescansando(true) });
   const avisos = useTourAvisos({
-    /* Terminada a explicação inteira, a pessoa cai no Início e ela fica
-       flutuando em silêncio até alguém chamar. */
-    aoTerminar: () => {
-      salvarTutorialPixieVisto();
-      marcarPixieEmEspera();
-      navegar(ROTA_DEPOIS, { replace: true });
-    },
+    aoTerminar: () => calendarioTour.iniciar('calendario'),
     aoPrepararAviso: prepararAviso,
   });
   const tour = useTourMesa({
@@ -136,7 +153,7 @@ export default function TutorialRoteiro() {
   useEffect(
     () =>
       assinarChamadoPixie(({ x, y, alvo }) => {
-        const conhecida = alvo ? falaDoElemento(alvo) : falaDoPonto(x, y);
+        const conhecida = alvo ? resumoDoElemento(alvo) : resumoDoPonto(x, y);
         const lugar = alvo ? lugarDoElemento(alvo) : lugarDoElemento(alvoDoPonto(x, y));
         setDescansando(false);
         /* A mesa não tem fala curta: chamada ali, ela conta a área de
@@ -163,16 +180,68 @@ export default function TutorialRoteiro() {
     return () => clearTimeout(t);
   }, [saida, navegar]);
 
+  /* O passeio de ícone que estiver no ar (relógio, chat, Iniciar, ou avulso). */
+  const emPasseio = [calendarioTour, chatTour, iniciarTour, avulso].find((item) => item.emTour);
+
+  /* As páginas do Iniciar abrem por cima da camada dela: o clique nelas chega
+     por este ouvido. */
+  const escolherPagina = useCallback(
+    (chave, item) => {
+      const def = passeioDe(chave);
+      if (!def) return;
+      setResposta(null);
+      setApontando(false);
+      setDescansando(false);
+      hookDoPasseio(chave).iniciar(chave);
+      if (!document.querySelector(def.aberto)) item?.click?.();
+    },
+    [calendarioTour, chatTour, iniciarTour, avulso]
+  );
+
   const fala = useMemo(() => {
     if (saida) return saida;
     if (descansando) return null;
+    if (emPasseio) return emPasseio.fala || FALAS[passo];
     if (avisos.emTour) return avisos.fala || FALAS[passo];
     if (tour.emTour) return tour.fala || FALAS[passo];
     if (sobre !== null) return SOBRE_PIXIE[sobre];
     if (resposta) return resposta;
     if (apontando) return CHAMADO_PARA_PERGUNTAR;
     return FALAS[passo];
-  }, [saida, descansando, avisos, tour, sobre, resposta, apontando, passo]);
+  }, [saida, descansando, avisos, tour, sobre, resposta, apontando, passo, emPasseio]);
+
+  /* O passeio de cada chave: os da cadeia têm o seu próprio fio (para emendar
+     o próximo no fim); o resto usa o avulso. */
+  const hookDoPasseio = (chave) =>
+    ({ calendario: calendarioTour, chat: chatTour, iniciar: iniciarTour })[chave] || avulso;
+
+  /* Clicou num ícone que tem passeio: abre o painel e começa a explicação. Sem
+     passeio escrito, fica o resumo do lugar. O Iniciar é a porta das páginas:
+     ele abre o menu e fica no resumo, porque o passeio é o da página. */
+  const explicarPonto = (x, y) => {
+    const alvo = alvoDoPonto(x, y);
+    const itemDaPagina = alvo?.closest?.('[data-menu-iniciar] [data-passeio]');
+    const chave = itemDaPagina
+      ? itemDaPagina.getAttribute('data-passeio')
+      : chaveDoPasseio(alvo);
+    if (chave === 'iniciar') {
+      abrirMenuIniciar();
+      setResposta(resumoDoPasseio('iniciar'));
+      setApontando(true);
+      return;
+    }
+    const def = passeioDe(chave);
+    if (chave && def) {
+      const jaAberto = def.aberto ? document.querySelector(def.aberto) : null;
+      setResposta(null);
+      setApontando(false);
+      setDescansando(false);
+      hookDoPasseio(chave).iniciar(chave);
+      if (!jaAberto) alvo?.click?.();
+      return;
+    }
+    setResposta(resumoDoElemento(alvo) || SEM_TUTORIAL);
+  };
 
   /* O clique na tela: aponta o lugar, fecha uma resposta antiga ou segue o
      roteiro. O menu aberto não deixa o clique vazar para cá. */
@@ -186,6 +255,13 @@ export default function TutorialRoteiro() {
 
     const x = evento?.clientX ?? 0;
     const y = evento?.clientY ?? 0;
+
+    /* Passeio de ícone: no convite a tela é da pessoa (ela precisa abrir o
+       painel), nos outros passos o clique é o "continua". */
+    if (emPasseio) {
+      if (!emPasseio.livreParaClicar) emPasseio.avancar();
+      return;
+    }
 
     /* Ela falando dela mesma: o clique nela passa a fala, o clique na tela
        explica o lugar que a pessoa apontou. */
@@ -205,7 +281,7 @@ export default function TutorialRoteiro() {
         tour.iniciar();
         return;
       }
-      setResposta(falaDoPonto(x, y) || SEM_TUTORIAL);
+      explicarPonto(x, y);
       return;
     }
 
@@ -228,7 +304,7 @@ export default function TutorialRoteiro() {
         tour.iniciar();
         return;
       }
-      setResposta(falaDoPonto(x, y) || SEM_TUTORIAL);
+      explicarPonto(x, y);
       return;
     }
     if (resposta) {
@@ -251,7 +327,7 @@ export default function TutorialRoteiro() {
         tour.iniciar();
         return;
       }
-      setResposta(falaDoPonto(x, y) || SEM_TUTORIAL);
+      explicarPonto(x, y);
       return;
     }
     const proximo = PROXIMO[passo];
@@ -262,19 +338,24 @@ export default function TutorialRoteiro() {
      notificações existem passos em que quem age é a pessoa (abrir o sino,
      abrir o aviso) e aí a tela tem de ficar livre. Era o `passo === 'atalho'`
      do roteiro que deixava a camada ligada e engolia esses cliques. */
+  /* Esperando um lugar, ela também escuta os cliques que passam por cima. */
+  useCliqueEmPasseio(apontando && !emPasseio, escolherPagina);
+
   const capturarClique =
     !encerrado &&
     !saida &&
     !descansando &&
     !menu &&
-    (avisos.emTour
-      ? !avisos.esperando
-      : tour.emTour ||
+    (emPasseio
+      ? !emPasseio.livreParaClicar
+      : avisos.emTour
+        ? !avisos.esperando
+        : tour.emTour ||
         apontando ||
         sobre !== null ||
-        Boolean(resposta) ||
-        passo === 'atalho' ||
-        SAI_NO_CLIQUE.includes(passo));
+          Boolean(resposta) ||
+          passo === 'atalho' ||
+          SAI_NO_CLIQUE.includes(passo));
 
   const enviarNome = async (evento) => {
     evento.preventDefault();
@@ -338,11 +419,13 @@ export default function TutorialRoteiro() {
         comemorando={comemorando}
         /* No passeio das Preferências ela vai para o lado do bloco em destaque. */
         ancora={
-          avisos.caixa
-            ? posicaoAoRedorDaArea(avisos.caixa)
-            : tour.destaque
-              ? posicaoAoRedorDaArea(tour.destaque.caixa)
-              : null
+          emPasseio?.ancora
+            ? emPasseio.ancora
+            : avisos.caixa
+              ? posicaoAoRedorDaArea(avisos.caixa)
+              : tour.destaque
+                ? posicaoAoRedorDaArea(tour.destaque.caixa)
+                : null
         }
         aoClique={aoCliqueNaTela}
         aoMenu={({ x, y }) => setMenu({ x, y })}
