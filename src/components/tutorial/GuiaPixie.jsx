@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import tiraCorpo from '@/assets/pixie/tiras/pixie-corpo.png';
 import tiraVirar from '@/assets/pixie/tiras/pixie-virar.png';
 import { PIXIE } from '@/lib/camadas';
+import { escalaAtual } from '@/lib/fonte';
 
 /**
  * A pixie que guia o tutorial da rota /tutorial.
@@ -341,7 +342,11 @@ export default function GuiaPixie({
       }
       posicaoRef.current = { x, y };
 
-      grupo.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+      /* Com o tamanho de leitura fora do Normal a raiz tem `zoom`, e o px
+         daqui é multiplicado por ele: dividir pela escala mantém ela onde a
+         conta mandou (e no lugar certo quando ela vai até um alvo). */
+      const escala = escalaAtual();
+      grupo.style.transform = `translate3d(${(x / escala).toFixed(1)}px, ${(y / escala).toFixed(1)}px, 0)`;
 
       /* Ela voa sempre de frente (a tira do bote das asas 11 a 16), para os
          dois lados. Só sai dessa tira na hora do giro.
@@ -366,11 +371,11 @@ export default function GuiaPixie({
         const desvio = centro - x;/* ela mora no meio da tela: o desvio é zero, mas fica aqui para o balão continuar preso dentro dela */
         const alturaDoBalao = TOPO_VISUAL - FOLGA_DO_BALAO;
         balao.style.transform =
-          `translate(${desvio.toFixed(1)}px, ${alturaDoBalao.toFixed(1)}px) translate(-50%, -100%)`;
+          `translate(${(desvio / escala).toFixed(1)}px, ${alturaDoBalao.toFixed(1)}px) translate(-50%, -100%)`;
 
         /* A pontinha segue apontando para ela, sem sair do balão. */
         if (pontaRef.current) {
-          pontaRef.current.style.left = `${limitar(meio - desvio, 16, larguraBalao - 16).toFixed(1)}px`;
+          pontaRef.current.style.left = `${(limitar(meio - desvio, 16, larguraBalao - 16) / escala).toFixed(1)}px`;
         }
       }
 

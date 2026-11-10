@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { EVENTO_DESTAQUE, seguirAlvo } from '@/lib/destaquePreferencias';
 import { DESTAQUE_PIXIE } from '@/lib/camadas';
+import { escalaAtual } from '@/lib/fonte';
 
 /**
  * A moldura dourada em volta da área que a Pixie está explicando. Só desenha:
@@ -37,11 +38,15 @@ export default function DestaquePreferencias() {
         no.style.opacity = '0';
         return;
       }
+      /* A medida vem em pixels de tela, mas o `zoom` da raiz (tamanho de
+         leitura) multiplica de novo tudo que é posicionado em px aqui dentro:
+         dividindo pela escala a moldura cai exatamente sobre a área. */
+      const escala = escalaAtual();
       no.style.opacity = '1';
-      no.style.left = `${caixa.left}px`;
-      no.style.top = `${caixa.top}px`;
-      no.style.width = `${caixa.width}px`;
-      no.style.height = `${caixa.height}px`;
+      no.style.left = `${caixa.left / escala}px`;
+      no.style.top = `${caixa.top / escala}px`;
+      no.style.width = `${caixa.width / escala}px`;
+      no.style.height = `${caixa.height / escala}px`;
     });
   }, [alvo]);
 

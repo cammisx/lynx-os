@@ -9,6 +9,8 @@
  * A rolagem da janela é seca (sem animação), porque medir no meio de uma
  * rolagem suave é o que fazia a moldura pegar o bloco de baixo.
  */
+import { escalaAtual } from './fonte';
+
 export const EVENTO_DESTAQUE = 'lynx:area-preferencias';
 
 const ROTULO = (area) => `[data-pref-area="${area}"]`;
@@ -156,11 +158,17 @@ export const destacarSeletor = (seletor) => {
 
 /* Onde a janela precisa parar para o bloco caber na vista. */
 const rolagemIdeal = (rolagem, bloco) => {
+  /* A medida vem em pixels de tela e o scrollTop em pixels de layout: com o
+     tamanho de leitura fora do Normal (zoom na raiz) as duas escalas diferem,
+     e sem converter a rolagem parava fora do bloco. */
+  const escala = escalaAtual();
   const janela = rolagem.getBoundingClientRect();
-  const topoDoBloco = bloco.topo - janela.top;
-  const cabe = bloco.altura <= janela.height - 24;
+  const topoDoBloco = (bloco.topo - janela.top) / escala;
+  const alturaDoBloco = bloco.altura / escala;
+  const alturaDaJanela = janela.height / escala;
+  const cabe = alturaDoBloco <= alturaDaJanela - 24;
   const alvo = cabe
-    ? rolagem.scrollTop + topoDoBloco - (janela.height - bloco.altura) / 2
+    ? rolagem.scrollTop + topoDoBloco - (alturaDaJanela - alturaDoBloco) / 2
     : rolagem.scrollTop + topoDoBloco - 12;
   const limite = rolagem.scrollHeight - rolagem.clientHeight;
   return Math.min(Math.max(0, alvo), Math.max(0, limite));
